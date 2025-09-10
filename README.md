@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="spinstack-banner.gif" alt="SpinStack Banner" width="520">
+  <img src="music-headphones.gif" alt="guy from arthur who floats into space after listening to music" width="520">
 </p>
 
 <h1 align="center">SpinStack 🎵</h1>
