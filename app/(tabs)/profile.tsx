@@ -1,20 +1,21 @@
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/constants/supabase';
+import { useAuth } from './AuthContext';
 
-const supabaseUrl = 'https://rbkupzbrtrwaajuqpybc.supabase.co'
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJia3VwemJydHJ3YWFqdXFweWJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTQ4NTEsImV4cCI6MjA3MzM3MDg1MX0.xbeUAXN0Wnb4PsaxmjD0TCx_DDn1p1m-Rb2pTJQtL_M"
-export const supabase = createClient(supabaseUrl, supabaseKey)
-
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Alert, Button, Keyboard, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from "react-native";
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
-export default function ProfilePage() {
+
+export default function SignUpPage() {
     //State values for email/password
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
+    const { user } = useAuth();
 
     const handleSignUp = async () => {
 
@@ -43,18 +44,55 @@ export default function ProfilePage() {
             return Alert.alert("Signup Error", error.message);
         }
 
+        if (!data.user) {
+            // No user was created, probably email already exists
+            return Alert.alert(
+                "Email Already Registered",
+                "An account with this email already exists. Please try signing in."
+            );
+        }
+
         // Success
 
         Alert.alert(
             "Success!",
-            "User created! Please check your email to confirm your account.",
+            "Please check your email to confirm your account.",
             [
                 {
                     text: "OK",
-                    //onPress: () => navigation.replace("Profile"), // navigate to Profile screen
                 },
             ]
         );
+    };
+
+    const handleSignIn = async () => {
+        Keyboard.dismiss();
+
+        // validate email & password again
+        if (!isValidEmail(email)) {
+            return Alert.alert("Invalid Email", "Please enter a valid email address.");
+        }
+
+        if (!isValidPassword(password)) {
+            return Alert.alert(
+                "Invalid Password",
+                "Password must be at least 6 characters, 1 uppercase letter, and 1 number."
+            );
+        }
+
+        // call Supabase sign-in
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) {
+            return Alert.alert("Sign In Error", error.message);
+        }
+
+        // success!
+        Alert.alert("Welcome back!", `Signed in as ${data.user.email}`);
+        // navigation.replace("Profile") // optional navigation to Profile screen
     };
 
 
@@ -73,37 +111,56 @@ export default function ProfilePage() {
     };
 
 
+    if (!user) {
+        return (
+            <KeyboardAwareScrollView
+                style={{ flex: 1, backgroundColor: "#121212" }}
+                contentContainerStyle={{ flexGrow: 1, justifyContent: "center", padding: 0 }}
+                enableOnAndroid={true}
+                extraScrollHeight={90} // small space between input and keyboard
+            >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <View style={styles.container}>
 
-    return (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                        <Text style={styles.titleText}>SpinStack</Text>
+                        <Text style={styles.baseText}>
+                            Create account with email and password below
+                        </Text>
+                        <TextInput
+                            style={[styles.input, { color: "white" }]}
+                            placeholderTextColor="#D2D4C8"
+                            placeholder="Enter email"
+                            value={email}
+                            onChangeText={setEmail}
+                        />
+                        <TextInput
+                            style={[styles.input, { color: "white" }]}
+                            placeholderTextColor="#D2D4C8"
+                            placeholder="Enter password"
+                            secureTextEntry
+                            value={password}
+                            onChangeText={setPassword}
+                        />
+
+                        <Button color="#FCFFFD" title="Sign Up" onPress={() => handleSignUp()} />
+
+                        <Text style={styles.baseText}> or </Text>
+
+                        <Button color="#FCFFFD" title="Sign In with existing account" onPress={() => handleSignIn()} />
+                    </View>
+                </TouchableWithoutFeedback>
+            </KeyboardAwareScrollView>
+        );
+    } else if (user) {
+        return (
             <View style={styles.container}>
-
-                <Text style={styles.titleText}>SpinStack</Text>
-                <Text style={styles.baseText}>
-                    Create account with email and password below
-                </Text>
-                <TextInput
-                    style={[styles.input, { color: "white" }]}
-                    placeholderTextColor="#D2D4C8"
-                    placeholder="Enter email"
-                    value={email}
-                    onChangeText={setEmail}
-                />
-                <TextInput
-                    style={[styles.input, { color: "white" }]}
-                    placeholderTextColor="#D2D4C8"
-                    placeholder="Enter password"
-                    secureTextEntry
-                    value={password}
-                    onChangeText={setPassword}
-                />
-
-                <Button color="#FCFFFD" title="Sign Up" onPress={() => handleSignUp()} />
+                <Text style={styles.titleText}>Welcome, {user.email}</Text>
+                <Button title="Sign Out" onPress={async () => await supabase.auth.signOut()} />
             </View>
-        </TouchableWithoutFeedback>
-    );
-}
+        );
+    }
 
+}
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -114,7 +171,7 @@ const styles = StyleSheet.create({
     baseText: {
         fontFamily: "Clear-Sans",
         color: "white",
-        padding: 20,
+        padding: 10,
     },
     titleText: {
         fontSize: 50,

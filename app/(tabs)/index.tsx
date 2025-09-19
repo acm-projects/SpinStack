@@ -1,13 +1,29 @@
 import { Image } from 'expo-image';
 import { Platform, StyleSheet } from 'react-native';
 
+import { supabase } from "@/constants/supabase";
+
 import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
+import { useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 export default function HomeScreen() {
+
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const session = supabase.auth.getSession();
+    session.then(({ data }) => {
+      if (!data.session) {
+        router.replace("/profile"); // redirect to login/signup if not logged in
+      }
+    });
+  }, []);
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
