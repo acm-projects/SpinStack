@@ -6,33 +6,6 @@ const router = express.Router();
  * USERS CRUD ROUTES
  */
 
-// CREATE a new user
-// Note: In production, user creation is usually handled by Supabase Auth.
-// This is here for direct table manipulation (e.g., profile setup).
-router.post("/", async (req, res) => {
-    const { username, email, pfp_url, bio } = req.body;
-
-    try {
-        const { data, error } = await supabase
-            .from("users")
-            .insert([
-                {
-                    username,
-                    email,
-                    pfp_url: pfp_url ?? null,
-                    bio: bio ?? null,
-                },
-            ])
-            .select()
-            .single();
-
-        if (error) throw error;
-        res.status(201).json(data);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
 // READ all users
 router.get("/", async (req, res) => {
     try {
