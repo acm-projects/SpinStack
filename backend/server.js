@@ -1,14 +1,19 @@
 // server.js
+// run "node server.js" to start server before testing with postman (must run every time you change the code)
+// for each route, must add new import/require that points to file path 
+// AND must mount routes to paths/urls
 const express = require('express');
 const momentsRoutes = require('./routes/moments'); // CommonJS import
+
 
 const app = express();
 
 // Parse JSON request bodies
 app.use(express.json());
 
-// Mount your routes
+// Mount your routes (one for each ex: moments, users, stacks etc.)
 app.use('/api/moments', momentsRoutes);
+
 
 // Start the server
 const PORT = 5000; // or process.env.PORT if deployed
