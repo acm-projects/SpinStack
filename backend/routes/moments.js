@@ -205,7 +205,7 @@ router.delete("/user/:id", async (req, res) => {
 //Delete a moment by moment ID
 //Note: Once frontend is made, ensure verification of request
 router.delete("/moment/:id", async (req, res) => {
-    console.log(req.params.id);
+
     // Authenticate user (testing only)
     await supabase.auth.signInWithPassword({
         email: 'your email',
