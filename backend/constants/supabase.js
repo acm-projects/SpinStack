@@ -1,6 +1,5 @@
 // constants/supabase.js
 const { createClient } = require('@supabase/supabase-js');
-
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -16,7 +15,7 @@ const supabaseAdmin = createClient(
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
-    SUPABASE_ANON_KEY
+    process.env.SUPABASE_ANON_KEY
 );
 
 // // Helper function to create authenticated client
