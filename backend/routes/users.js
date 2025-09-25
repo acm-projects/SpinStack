@@ -1,5 +1,6 @@
 const express = require("express");
 const { supabase } = require("../constants/supabase");
+const { supabaseAdmin } = require("../constants/supabase");
 const router = express.Router();
 
 /**
@@ -60,7 +61,7 @@ router.put("/:id", async (req, res) => {
 // DELETE a user by ID
 router.delete("/:id", async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from("users")
             .delete()
             .eq("id", req.params.id)
