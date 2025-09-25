@@ -4,6 +4,7 @@
 // AND must mount routes to paths/urls
 const express = require('express');
 const momentsRoutes = require('./routes/moments'); // CommonJS import
+const usersRoutes = require('./routes/users');
 
 
 const app = express();
@@ -13,7 +14,7 @@ app.use(express.json());
 
 // Mount your routes (one for each ex: moments, users, stacks etc.)
 app.use('/api/moments', momentsRoutes);
-
+app.use('/api/users', usersRoutes);
 
 // Start the server
 const PORT = 5000; // or process.env.PORT if deployed
