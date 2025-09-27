@@ -6,6 +6,7 @@ const express = require('express');
 const momentsRoutes = require('./routes/moments'); // CommonJS import
 const usersRoutes = require('./routes/users');
 const stacksRoutes = require('./routes/stacks');
+const friendsRoutes = require('./routes/friends');
 
 
 const app = express();
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use('/api/moments', momentsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/stacks', stacksRoutes);
+app.use('/api/friends', friendsRoutes);
 
 // Start the server
 const PORT = 5000; // or process.env.PORT if deployed
