@@ -6,14 +6,16 @@ const router = express.Router();
 //CREATING STACK FOR THE FIRST TIME ONLY!!
 router.post('/', async (req, res) => {
 
-    // Authenticate user (testing only)
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email: 'your email',
-        password: 'your password'
-    });
+
 
     try {
         const { user_id, title, description, cover_url, visibility, firstMomentId } = req.body;
+
+        // Authenticate user (testing only)
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: 'email',
+            password: 'pw'
+        });
 
         if (!user_id || !title || !firstMomentId) {
             return res.status(400).json({

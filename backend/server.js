@@ -22,7 +22,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/stacks', stacksRoutes);
 app.use('/api/friends', friendsRoutes);
 app.use('/api/shelves', shelvesRoutes);
-
+console.log('helo');
 
 // Start the server
 const PORT = 5000; // or process.env.PORT if deployed
