@@ -161,23 +161,51 @@ export default function SignUpPage() {
     } else if (user) {
         const { width } = Dimensions.get("window");
         const IMAGE_SIZE = width * 0.2; // 30% of screen width
+        const numFriends = 7
         return (
             <View style={styles.container}>
-                <Text style={ globalStyles.mainText }>Profile </Text>
-                <View style={imageStyle.container}>
+                <Text style={globalStyles.mainText}>Profile </Text>
+                <View style={
+                    {
+                        display: "flex",
+                        flexDirection: 'row',
+                        width: "100%",
+                        ...styles.border
+                    }
+                    }>
                     <Image
                         source={require("../../assets/images/profile.png")}
                         style={{
                             width: IMAGE_SIZE,
                             height: IMAGE_SIZE,
                             borderRadius: IMAGE_SIZE / 2,
-  }}
-/>           <View style={{ flex: 1, position: "absolute", top: 30, left: 90}}> 
-                <Text style={{ fontSize: 20, color: "white"  }}>Haden Hicks 
+                        }}
+                    />
+                    <View style={{ 
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "center",
+                            paddingLeft: 18
 
+                     }}>
+                        <Text style={{ fontSize: 20, color: "white", fontFamily: "Intern", fontWeight: "500", }}>
+                            Haden Hicks
+                        </Text>
+                         <Text style={{ fontSize: 14, color: "white", fontFamily: "Intern", fontWeight: "400", }}>
+                            {"life is so short :("}
+                        </Text>
+                   
+                    </View>
 
-                </Text>
-            </View>
+                    <View style={{ 
+                            flexDirection: "column",
+                            justifyContent: "center",
+                            paddingLeft: 30
+                     }}>
+                        <Text style={{ fontSize: 14, color: "white", fontFamily: "Intern", fontWeight: "400", textDecorationLine: "underline" }}>
+                            {numFriends} Friends
+                        </Text>
+                    </View>
 
                 </View>
                 <Button title="Sign Out" onPress={async () => await supabase.auth.signOut()} />
@@ -219,15 +247,11 @@ const styles = StyleSheet.create({
         borderRadius: 5,
 
     },
+    border: {
+        borderColor: "red",
+        borderWidth: 1,
+
+    }
 
 });
 
-const imageStyle = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: "flex-start",
-        alignItems: "center",
-        right: 120,
-        paddingTop: 20,
-    },
-});
