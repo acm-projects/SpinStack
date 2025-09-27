@@ -1,0 +1,11 @@
+@font-face {
+    font-family: 'Inter';
+    src: local('Inter'), 
+        url('./fonts/Inter.ttf') format('truetype');
+    font-weight: normal; 
+    font-style: normal;
+}
+
+body {
+    font-family: 'Inter', comic-sans;
+}

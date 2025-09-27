@@ -1,5 +1,6 @@
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
+import "../../app.css";
 
 import { supabase } from '@/constants/supabase';
 import { useAuth } from './AuthContext';
@@ -198,12 +199,13 @@ const styles = StyleSheet.create({
         paddingTop: 75
     },
     baseText: {
-        fontFamily: "Clear-Sans",
+        fontFamily: "Inter",
         color: "white",
         padding: 10,
     },
     titleText: {
         fontSize: 25,
+        fontFamily: "Inter",
         fontWeight: "bold",
         color: "#0BFFE3",
         padding: 20,
