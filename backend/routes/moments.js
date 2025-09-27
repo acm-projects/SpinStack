@@ -29,19 +29,19 @@ const router = express.Router();
 //Note: Once frontend is made, ensure verification of request
 router.post("/", async (req, res) => {
     const {
+        user_id,
         title,
         song_url,
         start_time,
         duration,
         cover_url,
-        stack_id,
         visibility,
     } = req.body;
 
     // Authenticate user (testing only)
     const { data, error } = await supabase.auth.signInWithPassword({
-        email: 'your email',
-        password: 'your Password'
+        email: 'email',
+        password: 'pw'
     });
 
     try {
@@ -50,8 +50,6 @@ router.post("/", async (req, res) => {
             return res.status(401).json({ error: "Authentication failed" });
         }
 
-        const user = data.user;
-
 
 
         // Insert new moment
@@ -59,13 +57,12 @@ router.post("/", async (req, res) => {
             .from("moments")
             .insert([
                 {
-                    user_id: user.id,
+                    user_id,
                     title,
                     song_url,
                     start_time: start_time ?? null,
                     duration: duration ?? null,
                     cover_url: cover_url ?? null,
-                    stack_id: stack_id ?? null,
                     visibility: visibility ?? true,
                 },
             ])
@@ -142,25 +139,36 @@ router.put("/:id", async (req, res) => {
         start_time,
         duration,
         cover_url,
-        stack_id,
         visibility,
     } = req.body;
 
+    // Authenticate user (testing only)
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'your email',
+        password: 'your password'
+    });
+
     try {
+
+        // Only include fields that are defined
+        const updates = {};
+        if (title !== undefined) updates.title = title;
+        if (song_url !== undefined) updates.song_url = song_url;
+        if (start_time !== undefined) updates.start_time = start_time;
+        if (duration !== undefined) updates.duration = duration;
+        if (cover_url !== undefined) updates.cover_url = cover_url;
+        if (visibility !== undefined) updates.visibility = visibility;
+
+        // If updates object is empty, nothing to do
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ error: "No fields provided to update" });
+        }
         const { data, error } = await supabase
             .from("moments")
-            .update({
-                title,
-                song_url,
-                start_time: start_time ?? null,
-                duration: duration ?? null,
-                cover_url: cover_url ?? null,
-                stack_id: stack_id ?? null,
-                visibility: visibility ?? true,
-            })
+            .update(updates)
             .eq("id", req.params.id)
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) {
             return res
