@@ -1,5 +1,6 @@
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
+import "../../app.css";
 
 import { supabase } from '@/constants/supabase';
 import { useAuth } from './AuthContext';
@@ -7,7 +8,6 @@ import { useAuth } from './AuthContext';
 import React, { useState } from 'react';
 import { Alert, Button, Keyboard, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-
 
 export default function SignUpPage() {
     //State values for email/password
@@ -169,12 +169,13 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     baseText: {
-        fontFamily: "Clear-Sans",
+        fontFamily: "Inter",
         color: "white",
         padding: 10,
     },
     titleText: {
         fontSize: 50,
+        fontFamily: "Inter",
         fontWeight: "bold",
         color: "#C0FDFB",
         padding: 20,
