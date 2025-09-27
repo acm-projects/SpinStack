@@ -8,8 +8,8 @@ router.post('/', async (req, res) => {
 
     // Authenticate user (testing only)
     const { data, error } = await supabase.auth.signInWithPassword({
-        email: 'highskies8@gmail.com',
-        password: 'Riggsbra000!'
+        email: 'your email',
+        password: 'your password'
     });
 
     try {
@@ -78,8 +78,8 @@ router.post('/:id/moments', async (req, res) => {
 
     // Authenticate user (testing only)
     const { data, error } = await supabase.auth.signInWithPassword({
-        email: 'highskies8@gmail.com',
-        password: 'Riggsbra000!'
+        email: 'your email',
+        password: 'your password'
     });
 
     try {
@@ -147,5 +147,191 @@ router.post('/:id/moments', async (req, res) => {
         res.status(500).json({ error: "Failed to add moment to stack", details: err.message });
     }
 });
+
+//Get ALL stacks
+router.get('/', async (req, res) => {
+    // Authenticate user (testing only)
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'your email',
+        password: 'your password'
+    });
+
+    try {
+        const { data: stackData, error: stackErr } = await supabase
+            .from('stacks')
+            .select('*');
+
+        if (stackErr) throw stackErr;
+
+        res.json(stackData)
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch stacks', details: err.message });
+    }
+});
+
+//Get Stack by ID
+router.get('/stack/:id', async (req, res) => {
+    const { id } = req.params;
+
+    // Authenticate user (testing only)
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'your email',
+        password: 'your password'
+    });
+
+    try {
+
+        const { data: stackData, error: stackErr } = await supabase
+            .from('stacks')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (stackErr) throw stackErr;
+        if (!stackData) return res.status(404).json({ error: 'Stack not found' });
+
+        res.json(stackData);
+
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch stack', details: err.message });
+    }
+});
+
+//Get all stacks by user ID
+router.get('/user/:user_id', async (req, res) => {
+    const { user_id } = req.params;
+
+    // Authenticate user (testing only)
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'your email',
+        password: 'your password'
+    });
+
+    try {
+
+        const { data: stackData, err: stackErr } = await supabase
+            .from('stacks')
+            .select('*')
+            .eq('user_id', user_id);
+
+        if (stackErr) throw stackErr;
+        res.json(stackData);
+
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch user stacks', details: err.message });
+    }
+});
+
+// GET stack with its moments
+router.get('/moments/:id', async (req, res) => {
+    const { id } = req.params;
+
+    // Authenticate user (testing only)
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'your email',
+        password: 'your password'
+    });
+
+    try {
+
+        // 1. Fetch stack
+        const { data: stackData, error: stackError } = await supabase
+            .from('stacks')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (stackError) throw stackError;
+        if (!stackData) return res.status(404).json({ error: 'Stack not found' });
+
+        // 2. Fetch all moments linked to this stack
+        const { data: moments, error: momentsError } = await supabase
+            .from('moments_in_stacks')
+            .select(`
+            moment_id,
+            moments (*)
+            `)
+            .eq('stack_id', id);
+
+        if (momentsError) throw momentsError;
+
+        // 3. Combine into one response
+        res.json({
+            ...stackData,
+            moments: moments.map(row => row.moments) // flatten so client just sees moments[]
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch stack with moments', details: err.message });
+    }
+});
+
+// Update a stack by ID
+router.put('/:stack_id', async (req, res) => {
+    const { stack_id } = req.params;
+    const updates = req.body; // Whatever fields you send in Postman
+
+    // Authenticate user (testing only)
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'your email',
+        password: 'your password'
+    });
+
+    try {
+        const { data: stackData, error: stackError } = await supabase
+            .from('stacks')
+            .update(updates)   // Apply changes
+            .eq('id', stack_id) // Match the stack
+            .select();          // Return updated row(s)
+
+        if (stackError) throw stackError;
+
+        res.json(stackData);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update stack', details: err.message });
+    }
+});
+
+// Delete a stack by ID
+router.delete('/:stack_id', async (req, res) => {
+    const { stack_id } = req.params;
+
+    // Authenticate user (testing only)
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'your email',
+        password: 'your password'
+    });
+
+    try {
+        // First, optionally delete all entries in the join table (moments_in_stacks)
+        const { error: joinError } = await supabase
+            .from('moments_in_stacks')
+            .delete()
+            .eq('stack_id', stack_id);
+
+        if (joinError) throw joinError;
+
+        // Then delete the stack itself
+        const { data: stackData, error: stackError } = await supabase
+            .from('stacks')
+            .delete()
+            .eq('id', stack_id)
+            .select(); // return deleted row
+
+        if (stackError) throw stackError;
+
+        if (!stackData || stackData.length === 0) {
+            return res.status(404).json({ error: 'Stack not found' });
+        }
+
+        res.json({ message: 'Stack deleted successfully', stack: stackData[0] });
+
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to delete stack', details: err.message });
+    }
+});
+
+
+
 
 module.exports = router;
