@@ -29,19 +29,19 @@ const router = express.Router();
 //Note: Once frontend is made, ensure verification of request
 router.post("/", async (req, res) => {
     const {
+        user_id,
         title,
         song_url,
         start_time,
         duration,
         cover_url,
-        stack_id,
         visibility,
     } = req.body;
 
     // Authenticate user (testing only)
     const { data, error } = await supabase.auth.signInWithPassword({
-        email: 'your email',
-        password: 'your Password'
+        email: 'email',
+        password: 'pw'
     });
 
     try {
@@ -50,8 +50,6 @@ router.post("/", async (req, res) => {
             return res.status(401).json({ error: "Authentication failed" });
         }
 
-        const user = data.user;
-
 
 
         // Insert new moment
@@ -59,13 +57,12 @@ router.post("/", async (req, res) => {
             .from("moments")
             .insert([
                 {
-                    user_id: user.id,
+                    user_id,
                     title,
                     song_url,
                     start_time: start_time ?? null,
                     duration: duration ?? null,
                     cover_url: cover_url ?? null,
-                    stack_id: stack_id ?? null,
                     visibility: visibility ?? true,
                 },
             ])
