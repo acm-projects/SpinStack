@@ -5,8 +5,13 @@ import { supabase } from '@/constants/supabase';
 import { useAuth } from './AuthContext';
 
 import React, { useState } from 'react';
-import { Alert, Button, Keyboard, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from "react-native";
+import { Alert, Button, Keyboard, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View, Image } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
+import { globalStyles } from '@/constants/style-sheet';
+import { Dimensions } from "react-native";
+
+
 
 
 export default function SignUpPage() {
@@ -151,12 +156,35 @@ export default function SignUpPage() {
                 </TouchableWithoutFeedback>
             </KeyboardAwareScrollView>
         );
+
     } else if (user) {
+        const { width } = Dimensions.get("window");
+        const IMAGE_SIZE = width * 0.2; // 30% of screen width
         return (
             <View style={styles.container}>
-                <Text style={styles.titleText}>Welcome, {user.email}</Text>
+                <Text style={ globalStyles.mainText }>Profile </Text>
+                <View style={imageStyle.container}>
+                    <Image
+                        source={require("../../assets/images/profile.png")}
+                        style={{
+                            width: IMAGE_SIZE,
+                            height: IMAGE_SIZE,
+                            borderRadius: IMAGE_SIZE / 2,
+  }}
+/>           <View style={{ flex: 1, position: "absolute", top: 30, left: 90}}> 
+                <Text style={{ fontSize: 20, color: "white"  }}>Haden Hicks 
+
+
+                </Text>
+            </View>
+
+                </View>
                 <Button title="Sign Out" onPress={async () => await supabase.auth.signOut()} />
             </View>
+
+
+
+
         );
     }
 
@@ -164,9 +192,10 @@ export default function SignUpPage() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: "center",
+        justifyContent: "flex-start",
         alignItems: "center",
         padding: 20,
+        paddingTop: 75
     },
     baseText: {
         fontFamily: "Clear-Sans",
@@ -174,9 +203,9 @@ const styles = StyleSheet.create({
         padding: 10,
     },
     titleText: {
-        fontSize: 50,
+        fontSize: 25,
         fontWeight: "bold",
-        color: "#C0FDFB",
+        color: "#0BFFE3",
         padding: 20,
     },
     input: {
@@ -189,4 +218,14 @@ const styles = StyleSheet.create({
 
     },
 
+});
+
+const imageStyle = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: "flex-start",
+        alignItems: "center",
+        right: 120,
+        paddingTop: 20,
+    },
 });
