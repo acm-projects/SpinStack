@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
+import  React from 'react';
 import { AuthProvider } from './AuthContext';
-
+import { Image } from "react-native";
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
@@ -36,9 +36,19 @@ export default function TabLayout() {
           name="profile"
           options={{
             title: 'Profile',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.circle.fill" color={color} />
+            tabBarIcon: ({ size }) => (
+              <Image
+                source={require("../../assets/images/profile.png")}
+                style={{
+                  width: size,      // use the provided size so it matches other tabs
+                  height: size,
+                  borderRadius: size / 2, // makes it circular if it’s a square
+                }}
+              />
+            ),
           }}
         />
+
         <Tabs.Screen
           name="create"
           options={{

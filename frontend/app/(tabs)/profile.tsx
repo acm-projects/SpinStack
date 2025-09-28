@@ -15,6 +15,7 @@ import { Dimensions } from "react-native";
 
 
 
+
 export default function SignUpPage() {
     //State values for email/password
 
@@ -170,7 +171,7 @@ export default function SignUpPage() {
                         display: "flex",
                         flexDirection: 'row',
                         width: "100%",
-                        ...styles.border
+                        
                     }
                     }>
                     <Image
@@ -206,9 +207,22 @@ export default function SignUpPage() {
                             {numFriends} Friends
                         </Text>
                     </View>
-
                 </View>
-                <Button title="Sign Out" onPress={async () => await supabase.auth.signOut()} />
+                        <View style={{
+                            flexDirection: "column",
+                            justifyContent: "center",
+                            width: "95%",
+                            height: "80%",
+                            marginTop: 20,
+                            borderRadius: 10,
+                            padding: 10,
+                            backgroundColor: "#0C0C0C",
+                        }}>
+                            
+                            <Button title="Sign Out" onPress={async () => await supabase.auth.signOut()} />
+                            
+                        </View>
+                
             </View>
 
 
