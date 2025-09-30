@@ -13,14 +13,10 @@ router.post("/", async (req, res) => {
     }
 
     try {
-        const { error: authError } = await supabase.auth.signInWithPassword({
-            email: "email",
-            password: "pw"
+        const { data: auth, error: authErr } = await supabase.auth.signInWithPassword({
+            email: "highskies8@gmail.com",
+            password: "Riggsbra000!", // replace with test password
         });
-
-        if (authError) {
-            return res.status(401).json({ error: "Authentication failed", details: authError.message });
-        }
 
         // Insert into groups table
         const { data, error } = await supabase
