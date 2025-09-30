@@ -10,6 +10,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
+  
   return (
     <AuthProvider>
       <Tabs
@@ -32,6 +33,15 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
           }}
         />
+
+        <Tabs.Screen
+          name="create"
+          options={{
+            title: 'Create',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.circle.fill" color={color} />
+          }}
+        />
+
         <Tabs.Screen
           name="profile"
           options={{
@@ -47,14 +57,7 @@ export default function TabLayout() {
               />
             ),
           }}
-        />
 
-        <Tabs.Screen
-          name="create"
-          options={{
-            title: 'Create',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.circle.fill" color={color} />
-          }}
         />
       </Tabs>
     </AuthProvider>

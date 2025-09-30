@@ -6,11 +6,14 @@ import { supabase } from '@/constants/supabase';
 import { useAuth } from './AuthContext';
 
 import React, { useState } from 'react';
-import { Alert, Button, Keyboard, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View, Image } from "react-native";
+import { Alert, Button, Keyboard, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View, Image, Pressable } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import { globalStyles } from '@/constants/style-sheet';
 import { Dimensions } from "react-native";
+
+import Feather from 'react-native-vector-icons/Feather';
+
 
 
 
@@ -159,21 +162,27 @@ export default function SignUpPage() {
             </KeyboardAwareScrollView>
         );
 
+
+
     } else if (user) {
+        const feather = require('feather-icons');
         const { width } = Dimensions.get("window");
         const IMAGE_SIZE = width * 0.2; // 30% of screen width
         const numFriends = 7
+        const navigation = useNavigation();
+
         return (
             <View style={styles.container}>
+
                 <Text style={globalStyles.mainText}>Profile </Text>
                 <View style={
                     {
                         display: "flex",
                         flexDirection: 'row',
                         width: "100%",
-                        
+                        marginTop: 23
                     }
-                    }>
+                }>
                     <Image
                         source={require("../../assets/images/profile.png")}
                         style={{
@@ -182,47 +191,86 @@ export default function SignUpPage() {
                             borderRadius: IMAGE_SIZE / 2,
                         }}
                     />
-                    <View style={{ 
-                            display: "flex",
-                            flexDirection: "column",
-                            justifyContent: "center",
-                            paddingLeft: 18
+                    <View style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        paddingLeft: 18
 
-                     }}>
+                    }}>
                         <Text style={{ fontSize: 20, color: "white", fontFamily: "Intern", fontWeight: "500", }}>
                             Haden Hicks
                         </Text>
-                         <Text style={{ fontSize: 14, color: "white", fontFamily: "Intern", fontWeight: "400", }}>
+                        <Text style={{ fontSize: 14, color: "white", fontFamily: "Intern", fontWeight: "400", }}>
                             {"life is so short :("}
                         </Text>
-                   
+
                     </View>
 
-                    <View style={{ 
-                            flexDirection: "column",
-                            justifyContent: "center",
-                            paddingLeft: 30
-                     }}>
+                    <View style={{
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        paddingLeft: 30
+                    }}>
                         <Text style={{ fontSize: 14, color: "white", fontFamily: "Intern", fontWeight: "400", textDecorationLine: "underline" }}>
                             {numFriends} Friends
                         </Text>
                     </View>
+                    <View style={{
+                        flexWrap: "wrap",
+                        paddingLeft: 15,
+                    }}>
+                        <Pressable
+                            onPress={() => navigation.navigate('TargetScreen')} // 👈 your screen name
+                            style={({ pressed }) => [
+                                { opacity: pressed ? 0.6 : 1 } // nice feedback
+                            ]}
+                        >
+                            <Feather name="settings" size={30} color="white"
+                                style={{ transform: [{ translateY: -27 }] }}
+                            />
+                        </Pressable>
+                    </View>
+
                 </View>
-                        <View style={{
-                            flexDirection: "column",
-                            justifyContent: "center",
-                            width: "95%",
-                            height: "80%",
-                            marginTop: 20,
-                            borderRadius: 10,
-                            padding: 10,
-                            backgroundColor: "#0C0C0C",
-                        }}>
-                            
-                            <Button title="Sign Out" onPress={async () => await supabase.auth.signOut()} />
-                            
-                        </View>
-                
+
+                <View style={{
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    width: "95%",
+                    height: "80%",
+                    marginTop: 20,
+                    borderRadius: 10,
+                    padding: 10,
+                    backgroundColor: "#242424ff",
+
+
+                }}>
+
+                    <View style={{
+                        flexDirection: "row",
+                        justifyContent: "center",
+                        paddingBottom: 445,
+
+                    }}>
+
+
+
+
+                        <Text style={{ fontSize: 20, color: "white", fontFamily: "Intern", fontWeight: "500" }}>
+                            Stacks
+
+                        </Text>
+                    </View>
+
+
+
+
+
+                    <Button title="Sign Out" onPress={async () => await supabase.auth.signOut()} />
+
+                </View>
+
             </View>
 
 
