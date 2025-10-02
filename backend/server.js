@@ -10,6 +10,7 @@ const friendsRoutes = require('./routes/friends');
 const shelvesRoutes = require('./routes/shelves');
 const groupsRoutes = require('./routes/groups');
 const groupMemRoutes = require('./routes/group_members');
+const dailiesRoutes = require('./routes/dailies');
 
 
 
@@ -26,6 +27,7 @@ app.use('/api/friends', friendsRoutes);
 app.use('/api/shelves', shelvesRoutes);
 app.use('/api/groups', groupsRoutes);
 app.use('/api/group_members', groupMemRoutes);
+app.use('/api/dailies', dailiesRoutes);
 
 // Start the server
 const PORT = 5000; // or process.env.PORT if deployed

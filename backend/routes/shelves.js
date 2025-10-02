@@ -61,6 +61,10 @@ router.post('/', async (req, res) => {
 
 // ADD a stack to an existing shelf
 router.post('/:id/stacks', async (req, res) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'your email',
+        password: 'your password'
+    });
     const shelfId = req.params.id;
     const { stackId } = req.body;
 
@@ -126,6 +130,10 @@ router.post('/:id/stacks', async (req, res) => {
 
 // GET all shelves
 router.get('/', async (req, res) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'your email',
+        password: 'your password'
+    });
     try {
         const { data: shelves, error } = await supabase
             .from('shelves')
@@ -142,6 +150,10 @@ router.get('/', async (req, res) => {
 
 // GET shelf by ID
 router.get('/:id', async (req, res) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'your email',
+        password: 'your password'
+    });
     const { id } = req.params;
 
     try {
@@ -149,7 +161,7 @@ router.get('/:id', async (req, res) => {
             .from('shelves')
             .select('*')
             .eq('id', id)
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
         if (!shelf) return res.status(404).json({ error: 'Shelf not found' });
@@ -163,6 +175,10 @@ router.get('/:id', async (req, res) => {
 
 // GET shelves by user ID
 router.get('/user/:user_id', async (req, res) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'your email',
+        password: 'your password'
+    });
     const { user_id } = req.params;
 
     try {
@@ -182,6 +198,10 @@ router.get('/user/:user_id', async (req, res) => {
 
 // GET shelf with its stacks
 router.get('/:id/stacks', async (req, res) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'your email',
+        password: 'your password'
+    });
     const { id } = req.params;
 
     try {
@@ -220,6 +240,10 @@ router.get('/:id/stacks', async (req, res) => {
 
 // UPDATE a shelf by ID
 router.put('/:id', async (req, res) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'your email',
+        password: 'your password'
+    });
     const { id } = req.params;
     const updates = req.body;
 
@@ -241,6 +265,10 @@ router.put('/:id', async (req, res) => {
 
 // DELETE a shelf by ID
 router.delete('/:id', async (req, res) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'your email',
+        password: 'your password'
+    });
     const { id } = req.params;
 
     try {
