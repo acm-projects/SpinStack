@@ -6,7 +6,8 @@
       "@/*": [
         "./*"
       ]
-    }
+    },
+      "types": ["./declarations.d.ts"]
   },
   "include": [
     "**/*.ts",
