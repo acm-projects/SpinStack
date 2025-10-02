@@ -35,8 +35,15 @@ export default function TabLayout() {
         <Tabs.Screen
           name="profile"
           options={{
-            title: 'Profile',
+            title: 'Profile ',
             tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.circle.fill" color={color} />
+          }}
+        />
+        <Tabs.Screen
+          name = "moment"
+          options = {{
+            title: 'Moment',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="circle" color = {color}/>
           }}
         />
       </Tabs>
