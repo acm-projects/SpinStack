@@ -1,16 +1,37 @@
 const express = require("express");
-const { supabase } = require("../constants/supabase");
 const { supabaseAdmin } = require("../constants/supabase");
 const router = express.Router();
+
+// Helper to verify token
+async function verifyToken(req, res) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        res.status(401).json({ error: "Unauthorized: Missing token" });
+        return null;
+    }
+
+    const token = authHeader.split(" ")[1];
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+    if (error || !user) {
+        res.status(401).json({ error: "Unauthorized: Invalid token" });
+        return null;
+    }
+
+    return user;
+}
 
 /**
  * USERS CRUD ROUTES
  */
 
-// READ all users
+// READ all users (only admin or authorized)
 router.get("/", async (req, res) => {
+    const user = await verifyToken(req, res);
+    if (!user) return;
+
     try {
-        const { data, error } = await supabase.from("users").select("*");
+        const { data, error } = await supabaseAdmin.from("users").select("*");
         if (error) throw error;
         res.json(data);
     } catch (err) {
@@ -20,8 +41,11 @@ router.get("/", async (req, res) => {
 
 // READ a single user by ID
 router.get("/:id", async (req, res) => {
+    const user = await verifyToken(req, res);
+    if (!user) return;
+
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from("users")
             .select("*")
             .eq("id", req.params.id)
@@ -34,12 +58,20 @@ router.get("/:id", async (req, res) => {
     }
 });
 
-// UPDATE a user by ID
+// UPDATE a user by ID (only self or admin)
 router.put("/:id", async (req, res) => {
+    const user = await verifyToken(req, res);
+    if (!user) return;
+
     const { username, email, pfp_url, bio } = req.body;
 
+    // Optional: restrict updates to self
+    if (user.id !== req.params.id) {
+        return res.status(403).json({ error: "Forbidden: Cannot update other users" });
+    }
+
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from("users")
             .update({
                 username,
@@ -58,8 +90,16 @@ router.put("/:id", async (req, res) => {
     }
 });
 
-// DELETE a user by ID
+// DELETE a user by ID (only self or admin)
 router.delete("/:id", async (req, res) => {
+    const user = await verifyToken(req, res);
+    if (!user) return;
+
+    // Optional: restrict deletion to self
+    if (user.id !== req.params.id) {
+        return res.status(403).json({ error: "Forbidden: Cannot delete other users" });
+    }
+
     try {
         const { data, error } = await supabaseAdmin
             .from("users")
