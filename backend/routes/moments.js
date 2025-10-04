@@ -68,11 +68,28 @@ router.get("/", async (req, res) => {
 // GET a moment by ID
 router.get("/moment/:id", async (req, res) => {
     try {
+        console.log(req.params.id);
         const { data, error } = await supabaseAdmin
             .from("moments")
             .select("*")
             .eq("id", req.params.id)
             .single();
+
+        if (error) throw error;
+        res.status(200).json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET all moment by user ID
+router.get("/moment/user/:id", async (req, res) => {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from("moments")
+            .select("*")
+            .eq("user_id", req.params.id)
+            .maybeSingle()
 
         if (error) throw error;
         res.status(200).json(data);
