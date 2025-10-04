@@ -6,6 +6,8 @@ import { supabase } from '@/constants/supabase';
 import { Button, ScrollView, View, Text, StyleSheet, Keyboard, TextInput, TouchableWithoutFeedback, Alert } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useAuth } from './AuthContext';
+const dotenv = require('dotenv');
+dotenv.config();
 
 
 
@@ -42,7 +44,7 @@ export default function TestApiScreen() {
 
             const boolVisibility = visibility === true || visibility === "true" || visibility === "True";
 
-            const response = await fetch("https://cayson-mouthiest-kieran.ngrok-free.dev/api/moments", {
+            const response = await fetch(`${process.env.NGROK_URL}/api/moments`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -81,8 +83,8 @@ export default function TestApiScreen() {
         try {
             setLoading(true);
             const url = id
-                ? `https://cayson-mouthiest-kieran.ngrok-free.dev/api/moments/moment/${id}`
-                : "https://cayson-mouthiest-kieran.ngrok-free.dev/api/moments";
+                ? `${process.env.NGROK_URL}/moment/${id}`
+                : `${process.env.NGROK_URL}'/api/moments`;
 
             const response = await fetch(url);
             const resp = await response.json();
@@ -116,7 +118,7 @@ export default function TestApiScreen() {
 
             const boolVisibility = visibility === true || visibility === "true" || visibility === "True";
 
-            const response = await fetch(`https://cayson-mouthiest-kieran.ngrok-free.dev/api/moments/${id}`, {
+            const response = await fetch(`${process.env.NGROK_URL}/${id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -162,7 +164,7 @@ export default function TestApiScreen() {
 
             setLoading(true);
 
-            const response = await fetch(`https://cayson-mouthiest-kieran.ngrok-free.dev/api/moments/moment/${id}`, {
+            const response = await fetch(`${process.env.NGROK_URL}/moment/${id}`, {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${token}`,

@@ -42,6 +42,14 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "@wwdrew/expo-spotify-sdk",
+        {
+          "clientID": "a773bc46a02a4629befe7706a0c2b0a8",
+          "scheme": "spinstack",
+          "host": "authenticate"
+        }
       ]
     ],
     "experiments": {
