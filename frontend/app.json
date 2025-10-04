@@ -44,6 +44,14 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you share them with your friends.",
+          "cameraPermission": "The app accesses your camera to let you take profile pictures.",
+          "microphonePermission": "The app accesses your microphone to let you record videos."
+        }
+      ],
+      [
         "@wwdrew/expo-spotify-sdk",
         {
           "clientID": "a773bc46a02a4629befe7706a0c2b0a8",
