@@ -7,13 +7,16 @@
         "./*"
       ]
     },
-      "types": ["./declarations.d.ts"]
+    "types": [
+      "./declarations.d.ts"
+    ]
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "expo-env.d.ts",
+    "env.d.ts"
   ]
 }
 

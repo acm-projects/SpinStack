@@ -6,12 +6,15 @@ import { supabase } from '@/constants/supabase';
 import { Button, ScrollView, View, Text, StyleSheet, Keyboard, TextInput, TouchableWithoutFeedback, Alert } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useAuth } from '../../_context/AuthContext';
+import { NGROK_URL } from '@env';
+
 
 
 
 
 export default function TestApiScreen() {
 
+    const nUrl = NGROK_URL;
     const [title, setTitle] = useState<any>("");
     const [songURL, setSongURL] = useState<any>("");
     const [startTime, setStartTime] = useState<any>("");
@@ -20,6 +23,7 @@ export default function TestApiScreen() {
     const [visibility, setVisibility] = useState<any>(true);
     const [description, setDesc] = useState<any>("");
     const [momentID, setMomentID] = useState<any>("");
+    const [userID, setUserID] = useState<any>("");
     const [loading, setLoading] = useState(false); // disable button while waiting
     const { session, user } = useAuth();
 
@@ -42,7 +46,7 @@ export default function TestApiScreen() {
 
             const boolVisibility = visibility === true || visibility === "true" || visibility === "True";
 
-            const response = await fetch("https://cayson-mouthiest-kieran.ngrok-free.dev/api/moments", {
+            const response = await fetch(nUrl + "/api/moments", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -77,12 +81,23 @@ export default function TestApiScreen() {
         }
     };
 
-    const handleGetMoments = async (id?: string) => {
+    type GetMomentsOptions = {
+        momentId?: string;
+        userId?: string;
+    };
+
+    const handleGetMoments = async (options?: GetMomentsOptions) => {
         try {
             setLoading(true);
-            const url = id
-                ? `https://cayson-mouthiest-kieran.ngrok-free.dev/api/moments/moment/${id}`
-                : "https://cayson-mouthiest-kieran.ngrok-free.dev/api/moments";
+
+            let url = nUrl + "/api/moments";
+
+            if (options?.momentId) {
+                url += `/moment/${options.momentId}`;
+            } else if (options?.userId) {
+                url += `/moment/user/${options.userId}`;
+            }
+            // else → leave url as /api/moments for "all moments"
 
             const response = await fetch(url);
             const resp = await response.json();
@@ -116,7 +131,7 @@ export default function TestApiScreen() {
 
             const boolVisibility = visibility === true || visibility === "true" || visibility === "True";
 
-            const response = await fetch(`https://cayson-mouthiest-kieran.ngrok-free.dev/api/moments/${id}`, {
+            const response = await fetch(nUrl + `/api/moments/${id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -162,7 +177,7 @@ export default function TestApiScreen() {
 
             setLoading(true);
 
-            const response = await fetch(`https://cayson-mouthiest-kieran.ngrok-free.dev/api/moments/moment/${id}`, {
+            const response = await fetch(nUrl + `/api/moments/moment/${id}`, {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -256,6 +271,13 @@ export default function TestApiScreen() {
                         value={momentID}
                         onChangeText={setMomentID}
                     />
+                    <TextInput
+                        style={[styles.input, { color: "white" }]}
+                        placeholderTextColor="#D2D4C8"
+                        placeholder="Enter user ID (if needed)"
+                        value={userID}
+                        onChangeText={setUserID}
+                    />
 
                     <Button
                         color="#FCFFFD"
@@ -266,8 +288,17 @@ export default function TestApiScreen() {
                     <Button
                         color="#FCFFFD"
                         title={loading ? "Loading..." : "GET moment(s)"}
-                        onPress={() => handleGetMoments(momentID ? momentID : undefined)}
-                        disabled={loading} />
+                        onPress={() => {
+                            if (momentID) {
+                                handleGetMoments({ momentId: momentID });
+                            } else if (userID) {
+                                handleGetMoments({ userId: userID });
+                            } else {
+                                handleGetMoments(); // fetch all moments
+                            }
+                        }}
+                        disabled={loading}
+                    />
                     <Button
                         color="#FCFFFD"
                         title={loading ? "Loading..." : "UPDATE moment"}
