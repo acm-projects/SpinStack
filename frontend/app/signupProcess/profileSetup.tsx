@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
 export default function ProfileInfo() {
@@ -10,54 +10,60 @@ export default function ProfileInfo() {
   const [bio, setBio] = useState('');
   const handleNext = () => {
     console.log('User Info:', { firstName, lastName, handle, bio });
+    router.push("../signupProcess/profileImage");
     // You can save this info or navigate to the next page
     // router.push('/nextStep');
   };
- 
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <Text style={styles.title}>Tell us about yourself</Text>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View>
+          <Text style={styles.title2}>Create Your Profile</Text>
+          <Text style={styles.title}>Tell us about yourself</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="First Name"
-        placeholderTextColor="#aaa"
-        value={firstName}
-        onChangeText={setFirstName}
-      />
+          <TextInput
+            style={styles.input}
+            placeholder="First Name"
+            placeholderTextColor="#aaa"
+            value={firstName}
+            onChangeText={setFirstName}
+          />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Last Name"
-        placeholderTextColor="#aaa"
-        value={lastName}
-        onChangeText={setLastName}
-      />
+          <TextInput
+            style={styles.input}
+            placeholder="Last Name"
+            placeholderTextColor="#aaa"
+            value={lastName}
+            onChangeText={setLastName}
+          />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Handle (e.g. @username)"
-        placeholderTextColor="#aaa"
-        value={handle}
-        onChangeText={setHandle}
-        autoCapitalize="none"
-      />
+          <TextInput
+            style={styles.input}
+            placeholder="Handle (e.g. @username)"
+            placeholderTextColor="#aaa"
+            value={handle}
+            onChangeText={setHandle}
+            autoCapitalize="none"
+          />
 
-      <TextInput
-        style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
-        placeholder="Short bio..."
-        placeholderTextColor="#aaa"
-        value={bio}
-        onChangeText={setBio}
-        multiline
-      />
+          <TextInput
+            style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
+            placeholder="Short bio..."
+            placeholderTextColor="#aaa"
+            value={bio}
+            onChangeText={setBio}
+            multiline
+          />
 
-      <Pressable style={styles.button} onPress={handleNext}>
-        <Text style={styles.buttonText}>Next</Text>
-      </Pressable>
+          <Pressable style={styles.button} onPress={handleNext}>
+            <Text style={styles.buttonText}>Next</Text>
+          </Pressable>
+        </View>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }
@@ -76,6 +82,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 30,
   },
+  title2: {
+    color: '#fff',
+    fontSize: 35,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 50,
+  },
   input: {
     backgroundColor: '#111',
     color: '#fff',
@@ -86,13 +99,16 @@ const styles = StyleSheet.create({
     borderColor: '#222',
   },
   button: {
-    backgroundColor: '#1DB954',
+    backgroundColor: '#272727',
+    borderColor: '#0BFFE3',
+    borderWidth: 2,
+    paddingHorizontal: 20,
     paddingVertical: 15,
     borderRadius: 10,
     marginTop: 10,
   },
   buttonText: {
-    color: '#000',
+    color: '#ffffffff',
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '600',

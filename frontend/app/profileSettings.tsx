@@ -19,8 +19,8 @@ export default function ProfileSettings() {
         position: "absolute",
         top: "50%",
         left: "50%",
-        transform: [{ translateX: -25 }, { translateY: -25 }], // half of icon size
-        backgroundColor: "#00000080", // optional: semi-transparent circle
+        transform: [{ translateX: -25 }, { translateY: -25 }], 
+        backgroundColor: "#00000080", 
         borderRadius: 20,
         padding: 5,
       }}
@@ -45,9 +45,9 @@ export default function ProfileSettings() {
           width: "95%",
           height: "74%",
           backgroundColor: "#242424ff",
-          justifyContent: "flex-start", // push items to top
-          alignItems: "flex-start",      // align left
-          gap: 10,                       // optional: space between items (RN 0.71+)
+          justifyContent: "flex-start", 
+          alignItems: "flex-start",     
+          gap: 10,                      
         }}
       >
         <Text style={styles.optionText}>Edit Profile Name</Text>

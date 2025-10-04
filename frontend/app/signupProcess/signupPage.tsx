@@ -47,7 +47,7 @@ export default function SignUpPage() {
 
   return (
     <KeyboardAwareScrollView
-      style={{ flex: 1, backgroundColor: "#121212" }}
+      style={{ flex: 1, backgroundColor: "#000000ff" }}
       contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -81,6 +81,6 @@ export default function SignUpPage() {
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: "center", padding: 20, paddingTop: 75 },
   baseText: { color: "white", padding: 10 },
-  titleText: { fontSize: 25, fontWeight: "bold", color: "#0BFFE3", padding: 20 },
+  titleText: { fontSize: 35, fontWeight: "bold", color: "#0BFFE3", padding: 20 },
   input: { width: "100%", borderWidth: 1, borderColor: "gray", padding: 10, marginBottom: 10, borderRadius: 5 },
 });

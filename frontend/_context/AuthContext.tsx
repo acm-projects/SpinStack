@@ -1,21 +1,36 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/constants/supabase";
+import type { User } from "@supabase/supabase-js";
 
-type AuthContextType = {
-  user: any | null;
-  setUser: (user: any | null) => void;
+export type AuthContextType = {
+  user: User | null;
+  setUser: (user: User | null) => void;
+  signOut: () => Promise<void>;
   isLoading: boolean;
 };
 
-const AuthContext = createContext<AuthContextType>({
+export const AuthContext = React.createContext<AuthContextType>({
   user: null,
   setUser: () => {},
-  isLoading: true,
+  signOut: async () => {},
+  isLoading: false,
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = React.useState<User | null>(null);
+  const [isLoading, setIsLoading] = React.useState<boolean>(true);
+
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      // swallow errors; caller can check auth state or implement better handling
+      console.error("Error signing out:", e);
+    } finally {
+      setUser(null);
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -28,15 +43,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      setIsLoading(false);
     });
 
     return () => {
-      listener.subscription.unsubscribe();
+      // listener may be undefined in some envs
+      try {
+        listener.subscription.unsubscribe();
+      } catch (e) {
+        // ignore
+      }
     };
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, setUser, isLoading }}>
+    <AuthContext.Provider value={{ user, setUser, signOut, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

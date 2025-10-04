@@ -14,7 +14,7 @@ export default function ProfileScreen() {
 
   const handleSignOut = async () => {
     await signOut(); // updates context
-    router.replace('../signupProcess/signupPage'); // optional: redirect immediately
+    router.replace('/signupProcess/signupPage'); 
   };
 
 

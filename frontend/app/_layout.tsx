@@ -81,11 +81,71 @@ function RootStack() {
           ),
         }}
       />
-
-      
+      <Stack.Screen
+        name="signupProcess/profileSetup"
+        options={{
+          title: '',
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
+          headerLeft: () => (
+            <Pressable
+              onPress={() => router.back()}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+            >
+              <Feather name="arrow-left" size={30} color="white" />
+              <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
+                Back
+              </Text>
+            </Pressable>
+          ),
+        }}
+      />
+      <Stack.Screen
+        name="signupProcess/profileImage"
+        options={{
+          title: '',
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
+          headerLeft: () => (
+            <Pressable
+              onPress={() => router.back()}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+            >
+              <Feather name="arrow-left" size={30} color="white" />
+              <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
+                Back
+              </Text>
+            </Pressable>
+          ),
+        }}
+      />
+      <Stack.Screen
+        name="signupProcess/spotifyConnect"
+        options={{
+          title: '',
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
+          headerLeft: () => (
+            <Pressable
+              onPress={() => router.back()}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+            >
+              <Feather name="arrow-left" size={30} color="white" />
+              <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
+                Back
+              </Text>
+            </Pressable>
+          ),
+        }}
+      />
     </Stack>
   );
 }
+
+ 
+
+
+
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
