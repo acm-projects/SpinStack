@@ -2,7 +2,7 @@ const express = require("express");
 const { supabaseAdmin } = require("../constants/supabase");
 const router = express.Router();
 
-// Helper to verify the user from Bearer token
+// Helper to verify token
 async function verifyToken(req, res) {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -21,104 +21,111 @@ async function verifyToken(req, res) {
     return user;
 }
 
-// CREATE a moment
+/**
+ * GROUPS CRUD ROUTES
+ */
+
+// CREATE a group
 router.post("/", async (req, res) => {
     const user = await verifyToken(req, res);
     if (!user) return;
 
-    const { title, song_url, start_time, duration, cover_url, visibility, description } = req.body;
-
-    console.log("Token user ID:", user.id);
+    const { name, max_members } = req.body;
+    if (!name || !max_members) {
+        return res.status(400).json({ error: "Name and max_members are required" });
+    }
 
     try {
         const { data, error } = await supabaseAdmin
-            .from("moments")
-            .insert([{
-                user_id: user.id,
-                title,
-                song_url,
-                start_time: start_time ?? null,
-                duration: duration ?? null,
-                cover_url: cover_url ?? null,
-                visibility: visibility === true || visibility === "true",
-                description
-            }])
+            .from("groups")
+            .insert([{ name, max_members, owner_id: user.id }])
             .select()
             .single();
 
         if (error) throw error;
-        res.status(201).json(data);
-    } catch (err) {
-        console.error("Insert error:", err);
-        res.status(500).json({ error: "Database error", details: err.message });
-    }
-});
-
-// GET all moments
-router.get("/", async (req, res) => {
-    try {
-        const { data, error } = await supabaseAdmin.from("moments").select("*");
-        if (error) throw error;
-        res.status(200).json(data);
+        res.status(201).json({ group: data });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// GET a moment by ID
-router.get("/moment/:id", async (req, res) => {
+// READ all groups
+router.get("/", async (req, res) => {
+    const user = await verifyToken(req, res);
+    if (!user) return;
+
+    try {
+        const { data, error } = await supabaseAdmin.from("groups").select("*");
+        if (error) throw error;
+        res.json({ groups: data });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// READ a single group by ID
+router.get("/:id", async (req, res) => {
+    const user = await verifyToken(req, res);
+    if (!user) return;
+
     try {
         const { data, error } = await supabaseAdmin
-            .from("moments")
+            .from("groups")
             .select("*")
             .eq("id", req.params.id)
             .single();
 
         if (error) throw error;
-        res.status(200).json(data);
+        res.json({ group: data });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// UPDATE a moment
+// UPDATE a group
 router.put("/:id", async (req, res) => {
     const user = await verifyToken(req, res);
     if (!user) return;
 
-    const updates = { ...req.body };
+    const { name, max_members } = req.body;
+    if (!name && !max_members) {
+        return res.status(400).json({ error: "At least one field (name or max_members) is required" });
+    }
+
+    const updates = {};
+    if (name) updates.name = name;
+    if (max_members) updates.max_members = max_members;
 
     try {
         const { data, error } = await supabaseAdmin
-            .from("moments")
+            .from("groups")
             .update(updates)
             .eq("id", req.params.id)
-            .eq("user_id", user.id) // only allow owner to update
             .select()
-            .maybeSingle();
+            .single();
 
         if (error) throw error;
-        res.status(200).json(data);
+        res.json({ group: data });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// DELETE a moment
-router.delete("/moment/:id", async (req, res) => {
+// DELETE a group
+router.delete("/:id", async (req, res) => {
     const user = await verifyToken(req, res);
     if (!user) return;
 
     try {
         const { data, error } = await supabaseAdmin
-            .from("moments")
+            .from("groups")
             .delete()
             .eq("id", req.params.id)
-            .eq("user_id", user.id) // only allow owner to delete
-            .select();
+            .select()
+            .single();
 
         if (error) throw error;
-        res.status(200).json(data);
+        res.json({ message: "Group deleted successfully", group: data });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

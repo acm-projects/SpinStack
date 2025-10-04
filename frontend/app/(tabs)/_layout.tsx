@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import  React from 'react';
-import { AuthProvider } from '../../_context/AuthContext';
+import { AuthProvider } from '@/_context/AuthContext';
 import { Image } from "react-native";
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -38,7 +38,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="profile"
           options={{
-            title: 'Profile',
+            title: 'Profile ',
             tabBarIcon: ({ size }) => (
               <Image
                 source={require("../../assets/images/profile.png")}
@@ -50,7 +50,20 @@ export default function TabLayout() {
               />
             ),
           }}
-
+          />
+        <Tabs.Screen
+          name = "moment"
+          options = {{
+            title: 'Moment',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="circle" color = {color}/>
+          }}
+        />
+        <Tabs.Screen
+          name="testAPIs"
+          options={{
+            title: 'testAPIs ',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.circle.fill" color={color} />
+          }}
         />
       </Tabs>
     </AuthProvider>

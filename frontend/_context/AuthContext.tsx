@@ -1,66 +1,63 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "@/constants/supabase";
-import type { User } from "@supabase/supabase-js";
+// Use this file as a shortcut to verifying user sessions
+// import { useAuth } from './AuthContext';
 
-export type AuthContextType = {
-  user: User | null;
-  setUser: (user: User | null) => void;
-  signOut: () => Promise<void>;
-  isLoading: boolean;
+// const { user } = useAuth();
+// "user" will return null if they are NOT logged in, 
+// otherwise it contains the currently authenticated user’s info.
+// so use this whenever you need to fetch/store user information (moments, friends, etc..)
+
+
+import { supabase } from '@/constants/supabase';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { AppState } from 'react-native'
+
+// make sure you register this only once!
+AppState.addEventListener('change', (state) => {
+    if (state === 'active') {
+        supabase.auth.startAutoRefresh()
+    } else {
+        supabase.auth.stopAutoRefresh()
+    }
+})
+
+type AuthContextType = {
+    session: any | null;
+    user: any | null;
+    setSession: (session: any | null) => void;
+    setUser: (user: any | null) => void;
 };
 
-export const AuthContext = React.createContext<AuthContextType>({
-  user: null,
-  setUser: () => {},
-  signOut: async () => {},
-  isLoading: false,
+const AuthContext = createContext<AuthContextType>({
+    session: null,
+    user: null,
+    setSession: () => { },
+    setUser: () => { },
 });
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = React.useState<User | null>(null);
-  const [isLoading, setIsLoading] = React.useState<boolean>(true);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [session, setSession] = useState<any | null>(null);
+    const [user, setUser] = useState<any | null>(null);
 
-  const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      // swallow errors; caller can check auth state or implement better handling
-      console.error("Error signing out:", e);
-    } finally {
-      setUser(null);
-      setIsLoading(false);
-    }
-  };
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data }) => {
+            setSession(data.session ?? null);
+            setUser(data.session?.user ?? null);
+        });
 
-  useEffect(() => {
-    const fetchSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setUser(data.session?.user ?? null);
-      setIsLoading(false);
-    };
+        const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+            setSession(newSession ?? null);
+            setUser(newSession?.user ?? null);
+        });
 
-    fetchSession();
+        return () => listener.subscription.unsubscribe();
+    }, []);
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
-
-    return () => {
-      // listener may be undefined in some envs
-      try {
-        listener.subscription.unsubscribe();
-      } catch (e) {
-        // ignore
-      }
-    };
-  }, []);
-
-  return (
-    <AuthContext.Provider value={{ user, setUser, signOut, isLoading }}>
-      {children}
-    </AuthContext.Provider>
-  );
+    return (
+        <AuthContext.Provider value={{ session, user, setSession, setUser }}>
+            {children}
+        </AuthContext.Provider>
+    );
 };
 
 export const useAuth = () => useContext(AuthContext);
+

@@ -3,17 +3,18 @@ import { View, Text, Image, Button, StyleSheet, Pressable, Dimensions, Alert } f
 import Feather from "react-native-vector-icons/Feather";
 import { supabase } from "@/constants/supabase";
 import { useRouter } from "expo-router";
-import { useAuth } from '../../_context/AuthContext';
+import { useAuth } from '@/_context/AuthContext';
 import { router } from "expo-router";
 export default function ProfileScreen() {
   const { width } = Dimensions.get("window");
   const IMAGE_SIZE = width * 0.2;
   const numFriends = 7;
-  const { signOut } = useAuth();
+  const { setSession, setUser } = useAuth();
   const router = useRouter();
 
   const handleSignOut = async () => {
-    await signOut(); // updates context
+    setSession(null);
+    setUser(null); // updates context
     router.replace('/signupProcess/signupPage'); 
   };
 
@@ -63,6 +64,7 @@ export default function ProfileScreen() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
