@@ -3,7 +3,7 @@
 // for each route, must add new import/require that points to file path 
 // AND must mount routes to paths/urls
 const express = require('express');
-const momentsRoutes = require('./routes/moments'); // CommonJS import
+const momentsRoutes = require('./routes/moments');
 const usersRoutes = require('./routes/users');
 const stacksRoutes = require('./routes/stacks');
 const friendsRoutes = require('./routes/friends');
@@ -11,6 +11,8 @@ const shelvesRoutes = require('./routes/shelves');
 const groupsRoutes = require('./routes/groups');
 const groupMemRoutes = require('./routes/group_members');
 const dailiesRoutes = require('./routes/dailies');
+const likesStacksRoutes = require('./routes/likes_stacks');
+const likesMomentsRoutes = require('./routes/likes_moments');
 
 
 
@@ -28,6 +30,8 @@ app.use('/api/shelves', shelvesRoutes);
 app.use('/api/groups', groupsRoutes);
 app.use('/api/group_members', groupMemRoutes);
 app.use('/api/dailies', dailiesRoutes);
+app.use('/api/likes_stacks', likesStacksRoutes);
+app.use('/api/likes_moments', likesMomentsRoutes);
 
 // Start the server
 const PORT = 5000; // or process.env.PORT if deployed
