@@ -1,194 +1,89 @@
-import 'react-native-get-random-values';
-import 'react-native-url-polyfill/auto';
-import "../index.css";
+import React from "react";
+import { View, Text, Image, Button, StyleSheet, Pressable, Dimensions, Alert } from "react-native";
+import Feather from "react-native-vector-icons/Feather";
+import { supabase } from "@/constants/supabase";
+import { useRouter } from "expo-router";
+import { useAuth } from '@/_context/AuthContext';
+import { router } from "expo-router";
+export default function ProfileScreen() {
+  const { width } = Dimensions.get("window");
+  const IMAGE_SIZE = width * 0.2;
+  const numFriends = 7;
+  const { setSession, setUser } = useAuth();
+  const router = useRouter();
 
-import { supabase } from '@/constants/supabase';
-import { useAuth } from './AuthContext';
-
-import React, { useState } from 'react';
-import { Alert, Button, Keyboard, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from "react-native";
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import Stack from '@/assets/other/Stack.svg';
-
-export default function SignUpPage() {
-    //State values for email/password
-
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-
-    const { user } = useAuth();
-
-    const handleSignUp = async () => {
-
-        Keyboard.dismiss();
-
-        // Validate email
-
-        if (!isValidEmail(email)) {
-            return Alert.alert("Invalid Email", "Please enter a valid email address.");
-        }
-
-        // Validate password
-
-        if (!isValidPassword(password)) {
-            return Alert.alert(
-                "Invalid Password",
-                "Password must be at least 6 characters, 1 uppercase letter, and 1 number and special character."
-            );
-        }
-
-        // Call Supabase signup
-
-        const { data, error } = await supabase.auth.signUp({ email, password });
-
-        if (error) {
-            return Alert.alert("Signup Error", error.message);
-        }
-
-        if (!data.user) {
-            // No user was created, probably email already exists
-            return Alert.alert(
-                "Email Already Registered",
-                "An account with this email already exists. Please try signing in."
-            );
-        }
-
-        // Success
-
-        Alert.alert(
-            "Success!",
-            "Please check your email to confirm your account.",
-            [
-                {
-                    text: "OK",
-                },
-            ]
-        );
-    };
-
-    const handleSignIn = async () => {
-        Keyboard.dismiss();
-
-        // validate email & password again
-        if (!isValidEmail(email)) {
-            return Alert.alert("Invalid Email", "Please enter a valid email address.");
-        }
-
-        if (!isValidPassword(password)) {
-            return Alert.alert(
-                "Invalid Password",
-                "Password must be at least 6 characters, 1 uppercase letter, and 1 number."
-            );
-        }
-
-        // call Supabase sign-in
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-
-        if (error) {
-            return Alert.alert("Sign In Error", error.message);
-        }
-
-        // success!
-        Alert.alert("Welcome back!", `Signed in as ${data.user.email}`);
-        // navigation.replace("Profile") // optional navigation to Profile screen
-    };
+  const handleSignOut = async () => {
+    setSession(null);
+    setUser(null); // updates context
+    router.replace('/signupProcess/signupPage'); 
+  };
 
 
-    const isValidEmail = (email: string) => {
+  return (
+    
+    <View style={styles.container}>
+      <Text style={styles.header}>Profile</Text>
 
-        const regex = /^\S+@\S+\.\S+$/;
-        return regex.test(email);
+      <View style={{ flexDirection: "row", marginTop: 5 }}>
+        <Image
+          source={require("../../assets/images/profile.png")}
+          style={{
+            width: IMAGE_SIZE,
+            height: IMAGE_SIZE,
+            borderRadius: IMAGE_SIZE / 2,
+          }}
+        />
+        <View style={{ justifyContent: "center", paddingLeft: 18 }}>
+          <Text style={{ fontSize: 20, color: "white", fontWeight: "500" }}>Haden Hicks</Text>
+          <Text style={{ fontSize: 14, color: "white" }}>{"life is so short :("}</Text>
+        </View>
+        <View style={{ justifyContent: "center", paddingLeft: 30 }}>
+          <Text
+            style={{
+              fontSize: 14,
+              color: "white",
+              textDecorationLine: "underline",
+            }}
+          >
+            {numFriends} Friends
+          </Text>
+        </View>
+        <Pressable
+          onPress={() => router.push("/profileSettings")}
+          style={{ transform: [{ translateY: -42 }, { translateX: 5 }] }}
+        >
+          <Feather name="settings" size={30} color="white" />
+        </Pressable>
+      </View>
 
-    };
-
-    const isValidPassword = (password: string) => {
-
-        const regex = /^(?=.*[0-9])(?=.*[A-Z]).{6,}$/;
-        return regex.test(password);
-        //At least 6 characters, 1 uppercase letter and number
-    };
-
-
-    if (!user) {
-        return (
-            <KeyboardAwareScrollView
-                style={{ flex: 1, backgroundColor: "#121212" }}
-                contentContainerStyle={{ flexGrow: 1, justifyContent: "center", padding: 0 }}
-                enableOnAndroid={true}
-                extraScrollHeight={90} // small space between input and keyboard
-            >
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                    <View style={styles.container}>
-
-                        <Text style={styles.titleText}>SpinStack</Text>
-                        <Text style={styles.baseText}>
-                            Create account with email and password below
-                        </Text>
-                        <TextInput
-                            style={[styles.input, { color: "white" }]}
-                            placeholderTextColor="#D2D4C8"
-                            placeholder="Enter email"
-                            value={email}
-                            onChangeText={setEmail}
-                        />
-                        <TextInput
-                            style={[styles.input, { color: "white" }]}
-                            placeholderTextColor="#D2D4C8"
-                            placeholder="Enter password"
-                            secureTextEntry
-                            value={password}
-                            onChangeText={setPassword}
-                        />
-
-                        <Button color="#FCFFFD" title="Sign Up" onPress={() => handleSignUp()} />
-                        <Stack></Stack>
-                        <Text style={styles.baseText}> or </Text>
-
-                        <Button color="#FCFFFD" title="Sign In with existing account" onPress={() => handleSignIn()} />
-                    </View>
-                </TouchableWithoutFeedback>
-            </KeyboardAwareScrollView>
-        );
-    } else if (user) {
-        return (
-            <View style={styles.container}>
-                <Text style={styles.titleText}>Welcome, {user.email}</Text>
-                <Button title="Sign Out" onPress={async () => await supabase.auth.signOut()} />
-            </View>
-        );
-    }
-
+      <View style={styles.content}>
+        <Text style={{ fontSize: 20, color: "white", fontWeight: "500" }}>Stacks</Text>
+        {/*  Sign Out Button */}
+        <Button title="Sign Out" onPress={handleSignOut} color="#0BFFE3" />
+      </View>
+    </View>
+  );
 }
+
+
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 20,
-    },
-    baseText: {
-        fontFamily: "Inter",
-        color: "white",
-        padding: 10,
-    },
-    titleText: {
-        fontSize: 50,
-        fontFamily: "Inter",
-        fontWeight: "bold",
-        color: "#C0FDFB",
-        padding: 20,
-    },
-    input: {
-        width: "100%",
-        borderWidth: 1,
-        borderColor: "gray",
-        padding: 10,
-        marginBottom: 10,
-        borderRadius: 5,
-
-    },
-
+  container: {
+    flex: 1,
+    padding: 10,
+    paddingTop: 75,
+    justifyContent: "flex-start",
+    alignItems: "center",
+  },
+  header: { fontSize: 35, fontWeight: "600", color: "white" },
+  content: {
+    flexDirection: "column",
+    marginTop: 20,
+    borderRadius: 10,
+    padding: 0,
+    width: "97%",
+    height: "78%",
+    backgroundColor: "#242424ff",
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });
