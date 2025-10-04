@@ -1,112 +1,170 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState } from "react";
+import { View, Text, TextInput, Pressable, Image, FlatList, StyleSheet, } from "react-native";
 
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+const mockData = [
+  {
+    id: "1",
+    title: "Golden",
+    artist: "HUNTR/X: EJAE, Audrey Nuna & REI AMI",
+    image: require("@/assets/images/album1.jpeg"),
+  },
+  {
+    id: "2",
+    title: "Ordinary",
+    artist: "Alex Warren",
+    image: require("@/assets/images/album2.jpeg"),
+  },
+  {
+    id: "3",
+    title: "Manchild",
+    artist: "Sabrina Carpenter",
+    image: require("@/assets/images/album3.jpeg"),
+  },
+];
 
-export default function TabTwoScreen() {
+export default function SearchPage() {
+  const [activeFilter, setActiveFilter] = useState("Songs");
+  const [search, setSearch] = useState("");
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
+    <View style={styles.container}>
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search..."
+          placeholderTextColor="#ccc"
+          value={search}
+          onChangeText={setSearch}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+      </View>
+
+      {/* Filter Buttons */}
+      <View style={styles.filterRow}>
+        {["Songs", "Stacks", "Users"].map((filter) => (
+          <Pressable
+            key={filter}
+            style={[
+              styles.filterButton,
+              activeFilter === filter && styles.filterButtonActive,
+            ]}
+            onPress={() => setActiveFilter(filter)}
+          >
+            <Text
+              style={[
+                styles.filterText,
+                activeFilter === filter && styles.filterTextActive,
+              ]}
+            >
+              {filter}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* Section Title */}
+      <Text style={styles.sectionTitle}>Top Hits This Week</Text>
+
+      {/* Song List */}
+      <FlatList
+        data={mockData}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item, index }) => (
+          <View style={styles.songRow}>
+            <Text style={styles.rank}>{index + 1}</Text>
+            <View style={styles.songInfo}>
+              <Text style={styles.songTitle}>{item.title}</Text>
+              <Text style={styles.songArtist}>{item.artist}</Text>
+            </View>
+            <Image source={item.image} style={styles.albumArt} />
+          </View>
+        )}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    backgroundColor: "#000",
+    paddingHorizontal: 16,
+    paddingTop: 70,
   },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
+  searchContainer: {
+    backgroundColor: "#1a1a1a",
+    borderRadius: 25,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+  },
+  searchInput: {
+    color: "white",
+    fontSize: 16,
+  },
+  filterRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 15,
+  },
+  filterButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    marginHorizontal: 5,
+    backgroundColor: "#272727",
+    borderColor: '#0BFFE3',
+    borderWidth: 2,
+  },
+  filterButtonActive: {
+    backgroundColor: "#0BFFE3",
+    borderColor: '#0BFFE3',
+    borderWidth: 2,
+  },
+  filterText: {
+    color: "white",
+    fontSize: 14,
+  },
+  filterTextActive: {
+    color: "black",
+    fontWeight: "600",
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "white",
+    marginTop: 25,
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  songRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 13,
+    paddingHorizontal: 18,
+    backgroundColor: "#272727",
+    width: '100%',
+    borderRadius: 15
+  },
+  rank: {
+    color: "white",
+    fontSize: 20,
+    width: 20,
+  },
+  songInfo: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  songTitle: {
+    color: "white",
+    fontSize: 16,
+  },
+  songArtist: {
+    color: "#aaa",
+    fontSize: 13,
+  },
+  albumArt: {
+    width: 40,
+    height: 40,
+    borderRadius: 5,
   },
 });
