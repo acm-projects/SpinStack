@@ -8,7 +8,6 @@ import { useAuth } from './AuthContext';
 import React, { useState } from 'react';
 import { Alert, Button, Keyboard, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import Stack from '@/assets/other/Stack.svg';
 
 export default function SignUpPage() {
     //State values for email/password
@@ -144,7 +143,6 @@ export default function SignUpPage() {
                         />
 
                         <Button color="#FCFFFD" title="Sign Up" onPress={() => handleSignUp()} />
-                        <Stack></Stack>
                         <Text style={styles.baseText}> or </Text>
 
                         <Button color="#FCFFFD" title="Sign In with existing account" onPress={() => handleSignIn()} />
