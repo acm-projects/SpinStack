@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, Image, Button, StyleSheet, Pressable, Dimensions, Alert } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { supabase } from "@/constants/supabase";
-import { useRouter } from "expo-router";
+import { RelativePathString, useRouter } from "expo-router";
 import { useAuth } from '@/_context/AuthContext';
 import { router } from "expo-router";
 export default function ProfileScreen() {
@@ -15,7 +15,7 @@ export default function ProfileScreen() {
   const handleSignOut = async () => {
     setSession(null);
     setUser(null); // updates context
-    router.replace('/signupProcess/signupPage'); 
+    router.replace('/signupProcess/signupPage' as RelativePathString); 
   };
 
 
@@ -49,7 +49,7 @@ export default function ProfileScreen() {
           </Text>
         </View>
         <Pressable
-          onPress={() => router.push("/profileSettings")}
+          onPress={() => router.push("/profileSettings" as RelativePathString)}
           style={{ transform: [{ translateY: -42 }, { translateX: 5 }] }}
         >
           <Feather name="settings" size={30} color="white" />
