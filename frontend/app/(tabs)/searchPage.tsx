@@ -10,15 +10,57 @@ const mockData = [
   },
   {
     id: "2",
-    title: "Ordinary",
-    artist: "Alex Warren",
+    title: "back to friends",
+    artist: "sombr",
     image: require("@/assets/images/album2.jpeg"),
   },
   {
     id: "3",
-    title: "Manchild",
-    artist: "Sabrina Carpenter",
+    title: "Ordinary",
+    artist: "Alex Warren",
     image: require("@/assets/images/album3.jpeg"),
+  },
+  {
+    id: "4",
+    title: "Man I Need",
+    artist: "Olivia Dean",
+    image: require("@/assets/images/album4.jpg"),
+  },
+  {
+    id: "5",
+    title: "TIT FOR TAT",
+    artist: "Tate McRae",
+    image: require("@/assets/images/album5.jpg"),
+  },
+  {
+    id: "6",
+    title: "Don't Say You Love Me",
+    artist: "Jin",
+    image: require("@/assets/images/album6.jpg"),
+  },
+  {
+    id: "7",
+    title: "Soda Pop",
+    artist: "Saja Boys: Andrew Choi, Neckwav, Danny Chung, Kevin Woo & samUIL Lee",
+    image: require("@/assets/images/album7.jpg"),
+  },
+  {
+    id: "8",
+    title: "Die With A Smile",
+    artist: "Morgan Wallen Featuring Tate McRae",
+    image: require("@/assets/images/album8.jpg"),
+  },
+  {
+    id: "9",
+    title: "BIRDS OF A FEATHER",
+    artist: "Billie Eillish",
+    image: require("@/assets/images/album9.jpg"),
+  },
+  {
+    id: "10",
+    title: "Gabriela",
+    artist: "KATSEYE",
+    image: require("@/assets/images/album10.jpg"),
   },
 ];
 
@@ -68,6 +110,7 @@ export default function SearchPage() {
       {/* Song List */}
       <FlatList
         data={mockData}
+        contentContainerStyle={{ backgroundColor: '#272727', borderRadius: 15, paddingVertical: 5 }}
         keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => (
           <View style={styles.songRow}>
@@ -132,23 +175,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "white",
-    marginTop: 25,
-    marginBottom: 10,
+    marginTop: 15,
+    marginBottom: 15,
     textAlign: "center",
   },
   songRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 13,
-    paddingHorizontal: 18,
-    backgroundColor: "#272727",
+    paddingHorizontal: 15,
     width: '100%',
     borderRadius: 15
   },
   rank: {
     color: "white",
     fontSize: 20,
-    width: 20,
+    width: 25,
+    textAlign: 'center'
+    
   },
   songInfo: {
     flex: 1,
