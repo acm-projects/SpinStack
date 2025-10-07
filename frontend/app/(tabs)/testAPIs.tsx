@@ -11,7 +11,6 @@ import { NGROK_URL } from '@env';
 
 
 
-
 export default function TestApiScreen() {
 
     const nUrl = NGROK_URL;
