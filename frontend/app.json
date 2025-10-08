@@ -58,7 +58,8 @@
           "scheme": "myapp",
           "host": "authenticate"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
