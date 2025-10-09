@@ -29,7 +29,7 @@ type PlaybackState = {
 export default function TestSpotify() {
   const [token, setToken] = useState<string | null>(null)
   const [playback, setPlayback] = useState<PlaybackState | null>(null)
-  const pollingRef = useRef<NodeJS.Timer | null>(null)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const title = playback?.item?.name ?? ""
   const artist = useMemo(
@@ -47,6 +47,7 @@ export default function TestSpotify() {
     try {
       const session = await Spotify.Authenticate.authenticateAsync({
         scopes: [
+          "user-read-currently-playing",
           "user-read-playback-state",
           "user-modify-playback-state",
           "app-remote-control",
@@ -78,6 +79,7 @@ export default function TestSpotify() {
     const res = await api("/me/player/devices")
     if (!res.ok) throw new Error(`devices: ${res.status}`)
     const data = await res.json()
+    console.log(data);
     return data.devices as Device[]
   }
 
@@ -230,6 +232,7 @@ export default function TestSpotify() {
     <View style={styles.container}>
       <Text style={styles.title}>Spotify Auth + Play (Web API)</Text>
       <Button title="Authorize Spotify" onPress={authorize} />
+      <Button title="Get All Devices" onPress={getDevices} />
       <Button
         title="Play Track on Device"
         onPress={playOnActiveDevice}

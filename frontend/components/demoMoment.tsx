@@ -39,8 +39,8 @@ export const demoMoments = [
     {
         moment: {
             id: "76Oysc8zao2adNBqN3prw9",
-            songName: "Like This",
-            artist: "Atura",
+            songName: "Hacking to the Gate",
+            artist: "AmaLee",
             songStart: 10,
             songDuration: 10,
             start: 0.1,
@@ -58,8 +58,8 @@ export const demoMoments = [
     {
         moment: {
             id: "5XbhCs9IBWBRJwsJoU3BeD",
-            songName: "Let It Happen",
-            artist: "Tame Impala",
+            songName: "Paragon",
+            artist: "Sawano Hiroyuki",
             songStart: 20,
             songDuration: 20,
             start: 0.65,
@@ -77,8 +77,8 @@ export const demoMoments = [
     {
         moment: {
             id: "6oMWSgvctf10gC6DxS75Al",
-            songName: "Headlock",
-            artist: "Imogen Heap",
+            songName: "Jeopardy",
+            artist: "Sawano Hiroyuki",
             songStart: 30,
             songDuration: 10,
             start: 0.65,
@@ -96,8 +96,8 @@ export const demoMoments = [
     {
         moment: {
             id: "2joT0CjcGqc1fr8Fvk7itj",
-            songName: "Cigarettes out the Window",
-            artist: "TV Girl",
+            songName: "Inertia",
+            artist: "Sawano Hiroyuki",
             songStart: 40,
             songDuration: 10,
             start: 0.65,
