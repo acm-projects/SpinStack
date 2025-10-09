@@ -1,49 +1,108 @@
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 import React, { useState, useEffect } from "react";
-import { Alert, Keyboard, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View, Button } from "react-native";
+import { Alert, Keyboard, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View, Button, ActivityIndicator } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { supabase } from "@/constants/supabase";
-import { AuthProvider, useAuth } from "@/_context/AuthContext"; // Adjusted path, update as needed
-
+import { useAuth } from "@/_context/AuthContext";
 import { useRouter } from 'expo-router';
 
 export default function SignUpPage() {
   const router = useRouter();
-  const { user, setUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [signingUp, setSigningUp] = useState(false);
 
-  // Redirect if already logged in
+  // ✅ CORRECT: Call useAuth at the top level of the component
+  const { session, loading } = useAuth();
+
+  // Check if user is already logged in and redirect
   useEffect(() => {
-    if (user) router.replace("../(tabs)/profile");
-  }, [user]);
+    // Wait for auth to finish loading (checking AsyncStorage)
+    if (loading) return;
+
+    // If session exists, user is already logged in - redirect to profile
+    if (session) {
+      router.replace("/(tabs)/profile");
+    }
+  }, [session, loading]); // Re-run when session or loading changes
 
   const handleSignUp = async () => {
     Keyboard.dismiss();
+
     const regexEmail = /^\S+@\S+\.\S+$/;
     const regexPass = /^(?=.*[0-9])(?=.*[A-Z]).{6,}$/;
 
-    if (!regexEmail.test(email)) return Alert.alert("Invalid Email");
-    if (!regexPass.test(password)) return Alert.alert("Invalid Password");
+    if (!regexEmail.test(email)) {
+      return Alert.alert("Invalid Email", "Please enter a valid email address.");
+    }
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) return Alert.alert("Signup Error", error.message);
+    if (!regexPass.test(password)) {
+      return Alert.alert(
+        "Invalid Password",
+        "Password must be at least 6 characters with 1 number and 1 uppercase letter."
+      );
+    }
 
-    if (data.user) setUser(data.user);
-    Alert.alert("Success", "Check your email to confirm your account.");
-    router.replace("../(tabs)/profile"); // redirect to home after signup
+    setSigningUp(true);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        Alert.alert("Signup Error", error.message);
+        return;
+      }
+
+      Alert.alert("Success", "Account created! Welcome!");
+      router.replace("/(tabs)/profile");
+
+    } catch (error) {
+      console.error("Signup error:", error);
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    } finally {
+      setSigningUp(false);
+    }
   };
 
   const handleSignIn = async () => {
     Keyboard.dismiss();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return Alert.alert("Sign In Error", error.message);
 
-    if (data.user) setUser(data.user);
-    Alert.alert("Welcome back!", `Signed in as ${data.user.email}`);
-    router.replace("../(tabs)/profile"); // redirect after login
+    setSigningUp(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        Alert.alert("Sign In Error", error.message);
+        return;
+      }
+
+      Alert.alert("Welcome back!", `Signed in as ${data.user?.email}`);
+      router.replace("/(tabs)/profile");
+
+    } catch (error) {
+      console.error("Sign in error:", error);
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    } finally {
+      setSigningUp(false);
+    }
   };
+
+  // Show loading while checking if user is already logged in
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
+        <ActivityIndicator size="large" color="#0BFFE3" />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAwareScrollView
@@ -60,6 +119,7 @@ export default function SignUpPage() {
             placeholderTextColor="#D2D4C8"
             value={email}
             onChangeText={setEmail}
+            editable={!signingUp}
           />
           <TextInput
             style={[styles.input, { color: "white" }]}
@@ -68,10 +128,19 @@ export default function SignUpPage() {
             secureTextEntry
             value={password}
             onChangeText={setPassword}
+            editable={!signingUp}
           />
-          <Button title="Sign Up" onPress={() => router.push("./profileSetup")} />
+          <Button
+            title={signingUp ? "Loading..." : "Sign Up"}
+            onPress={handleSignUp}
+            disabled={signingUp}
+          />
           <Text style={styles.baseText}> or </Text>
-          <Button title="Sign In" onPress={handleSignIn} />
+          <Button
+            title={signingUp ? "Loading..." : "Sign In"}
+            onPress={handleSignIn}
+            disabled={signingUp}
+          />
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAwareScrollView>

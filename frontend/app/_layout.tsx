@@ -7,39 +7,41 @@ import { useRouter } from 'expo-router';
 import Feather from 'react-native-vector-icons/Feather';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '../_context/AuthContext';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/constants/supabase';
+import { useEffect } from 'react';
 
-export const unstable_settings = {  initialRouteName: 'signupProcess/signupPage' };
+//export const unstable_settings = { initialRouteName: 'signupProcess/signupPage' }; causes error, idk why
 
 function RootStack() {
   const colorScheme = useColorScheme();
   const router = useRouter();
-  const { user, isLoading, setUser } = useAuth();
-  const [isReady, setIsReady] = useState(false);
+  const { session, user, loading, logout } = useAuth(); // Added 'loading' from AuthContext
 
-  // --------------- FORCE SIGN-OUT FOR TESTING ---------------
-  useEffect(() => {
-    supabase.auth.signOut().then(() => {
-      setUser(null);    // ensure context is cleared
-      setIsReady(true); // mark ready after sign out
-    });
-  }, []);
-
-  // --------------- REDIRECT LOGIC ---------------
+  // --------------- FORCE SIGN-OUT FOR TESTING (Optional - comment out when done testing) ---------------
   /* useEffect(() => {
-    if (isReady && !isLoading) {
-      if (!user) {
-        router.replace('/signupProcess/signupPage'); // Not logged in → signup
-      } else {
-        router.replace('/(tabs)/home'); // Logged in → home
-      }
-    }
-  }, [isReady, isLoading, user]);
+    const forceLogout = async () => {
+      await logout();
+    };
+    forceLogout();
+  }, []); // Empty array means it only runs once on mount
   */
 
+  // --------------- REDIRECT LOGIC ---------------
+  useEffect(() => {
+    // Wait until auth context finishes checking AsyncStorage
+    if (loading) return;
+
+    if (!session) {
+      // Not logged in → redirect to signup
+      router.replace('/signupProcess/signupPage');
+    } else {
+      // Logged in → redirect to home
+      router.replace('/(tabs)/profile');
+    }
+  }, [loading, session]); // Re-run when loading or session changes
+
   // --------------- LOADING SPINNER ---------------
-  if (!isReady || isLoading) {
+  // Show loading while AuthContext checks AsyncStorage for existing session
+  if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
         <ActivityIndicator size="large" color="white" />
@@ -48,13 +50,13 @@ function RootStack() {
   }
 
   return (
-    
     <Stack>
       {/* Signup Page */}
       <Stack.Screen
         name="signupProcess/signupPage"
         options={{ headerShown: false }}
       />
+
       {/* Tabs */}
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 
@@ -81,6 +83,7 @@ function RootStack() {
           ),
         }}
       />
+
       <Stack.Screen
         name="signupProcess/profileSetup"
         options={{
@@ -100,6 +103,7 @@ function RootStack() {
           ),
         }}
       />
+
       <Stack.Screen
         name="signupProcess/profileImage"
         options={{
@@ -119,6 +123,7 @@ function RootStack() {
           ),
         }}
       />
+
       <Stack.Screen
         name="signupProcess/spotifyConnect"
         options={{
@@ -141,11 +146,6 @@ function RootStack() {
     </Stack>
   );
 }
-
- 
-
-
-
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();

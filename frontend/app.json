@@ -50,7 +50,8 @@
           "cameraPermission": "The app accesses your camera to let you take profile pictures.",
           "microphonePermission": "The app accesses your microphone to let you record videos."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
