@@ -11,21 +11,19 @@ export default function SignUpPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [signingUp, setSigningUp] = useState(false);
+  const { signingUp, setSigningUp } = useAuth();
+  const [isSigningIn, setIsSigningIn] = useState(false); // Add this flag
 
-  // ✅ CORRECT: Call useAuth at the top level of the component
   const { session, loading } = useAuth();
 
-  // Check if user is already logged in and redirect
   useEffect(() => {
-    // Wait for auth to finish loading (checking AsyncStorage)
     if (loading) return;
 
-    // If session exists, user is already logged in - redirect to profile
-    if (session) {
+    // Only redirect if we're not actively signing in/up
+    if (session && !signingUp && !isSigningIn) {
       router.replace("/(tabs)/profile");
     }
-  }, [session, loading]); // Re-run when session or loading changes
+  }, [session, loading, signingUp, isSigningIn]);
 
   const handleSignUp = async () => {
     Keyboard.dismiss();
@@ -44,7 +42,6 @@ export default function SignUpPage() {
       );
     }
 
-    setSigningUp(true);
 
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -54,24 +51,25 @@ export default function SignUpPage() {
 
       if (error) {
         Alert.alert("Signup Error", error.message);
+        setSigningUp(false); // Only set to false on error
         return;
       }
 
+      setSigningUp(true);
       Alert.alert("Success", "Account created! Welcome!");
-      router.replace("/(tabs)/profile");
+      router.push("/signupProcess/profileSetup");
 
     } catch (error) {
       console.error("Signup error:", error);
       Alert.alert("Error", "Something went wrong. Please try again.");
-    } finally {
       setSigningUp(false);
     }
   };
 
   const handleSignIn = async () => {
     Keyboard.dismiss();
-
-    setSigningUp(true);
+    setIsSigningIn(true); // Set flag before signing in
+    setSigningUp(false);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -81,17 +79,19 @@ export default function SignUpPage() {
 
       if (error) {
         Alert.alert("Sign In Error", error.message);
+        setIsSigningIn(false);
         return;
       }
 
+      console.log("Signed in");
       Alert.alert("Welcome back!", `Signed in as ${data.user?.email}`);
-      router.replace("/(tabs)/profile");
+      // Let layout.tsx handle the redirect
 
     } catch (error) {
       console.error("Sign in error:", error);
       Alert.alert("Error", "Something went wrong. Please try again.");
-    } finally {
-      setSigningUp(false);
+      setIsSigningIn(false);
+      setSigningUp(true);
     }
   };
 
@@ -119,7 +119,7 @@ export default function SignUpPage() {
             placeholderTextColor="#D2D4C8"
             value={email}
             onChangeText={setEmail}
-            editable={!signingUp}
+          //editable={!signingUp}
           />
           <TextInput
             style={[styles.input, { color: "white" }]}
@@ -128,18 +128,18 @@ export default function SignUpPage() {
             secureTextEntry
             value={password}
             onChangeText={setPassword}
-            editable={!signingUp}
+          //editable={!signingUp}
           />
           <Button
             title={signingUp ? "Loading..." : "Sign Up"}
             onPress={handleSignUp}
-            disabled={signingUp}
+          //disabled={signingUp}
           />
           <Text style={styles.baseText}> or </Text>
           <Button
             title={signingUp ? "Loading..." : "Sign In"}
             onPress={handleSignIn}
-            disabled={signingUp}
+          //disabled={signingUp}
           />
         </View>
       </TouchableWithoutFeedback>

@@ -14,7 +14,7 @@ import { useEffect } from 'react';
 function RootStack() {
   const colorScheme = useColorScheme();
   const router = useRouter();
-  const { session, user, loading, logout } = useAuth(); // Added 'loading' from AuthContext
+  const { session, loading, profileComplete, checkingProfile } = useAuth(); // Added 'loading' from AuthContext
 
   // --------------- FORCE SIGN-OUT FOR TESTING (Optional - comment out when done testing) ---------------
   /* useEffect(() => {
@@ -27,21 +27,19 @@ function RootStack() {
 
   // --------------- REDIRECT LOGIC ---------------
   useEffect(() => {
-    // Wait until auth context finishes checking AsyncStorage
-    if (loading) return;
+    if (loading || checkingProfile) return;
 
     if (!session) {
-      // Not logged in → redirect to signup
       router.replace('/signupProcess/signupPage');
+    } else if (!profileComplete) {
+      router.push('/signupProcess/profileSetup');
     } else {
-      // Logged in → redirect to home
       router.replace('/(tabs)/profile');
     }
-  }, [loading, session]); // Re-run when loading or session changes
+  }, [loading, checkingProfile, session, profileComplete]);
 
-  // --------------- LOADING SPINNER ---------------
-  // Show loading while AuthContext checks AsyncStorage for existing session
-  if (loading) {
+  //Loading spinner while AuthContext checks for existing session
+  if (loading || checkingProfile) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
         <ActivityIndicator size="large" color="white" />
