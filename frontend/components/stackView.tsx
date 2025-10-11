@@ -110,6 +110,7 @@ export default function StackView({ moments = demoMoments }: { moments?: typeof 
   useEffect(() => {
     const fetchToken = async () => {
       const storedToken = await SecureStore.getItemAsync('spotifyToken');
+      console.log("WE ARE FETCHING STORED TOKEN:", storedToken);
       setToken(storedToken);
     };
     fetchToken();

@@ -53,6 +53,9 @@ export default function TestSpotify() {
           "app-remote-control",
         ],
       })
+
+      console.log("Got session:", session)
+      if (!session?.accessToken) throw new Error("No access token")
       setToken(session.accessToken)
       await SecureStore.setItemAsync('spotifyToken', session.accessToken);
       Alert.alert("Spotify", "Authorized!")
