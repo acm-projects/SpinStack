@@ -6,20 +6,38 @@ type AuthContextType = {
     session: Session | null;
     user: User | null;
     loading: boolean; // Important: indicates if we're still checking for existing session
+    checkingProfile: boolean;
     logout: () => Promise<void>;
+    signingUp: boolean;
+    setSigningUp: React.Dispatch<React.SetStateAction<boolean>>;
+    pfpUrl: string | null;
+    setPfpUrl: React.Dispatch<React.SetStateAction<string | null>>;
+    profileComplete: boolean;
+    setProfileComplete: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 const AuthContext = createContext<AuthContextType>({
     session: null,
     user: null,
     loading: true,
+    checkingProfile: true,
     logout: async () => { },
+    signingUp: true,
+    setSigningUp: () => { },
+    pfpUrl: null,
+    setPfpUrl: () => { },
+    profileComplete: false,
+    setProfileComplete: () => { },
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [session, setSession] = useState<Session | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true); // Start as true while we check AsyncStorage
+    const [checkingProfile, setCheckingProfile] = useState(true);
+    const [signingUp, setSigningUp] = useState(true);
+    const [pfpUrl, setPfpUrl] = useState<string | null>(null);
+    const [profileComplete, setProfileComplete] = useState(false);
 
     useEffect(() => {
         // Step 1: Check AsyncStorage for existing session on app startup
@@ -34,6 +52,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     // User has a valid session stored - they're logged in!
                     setSession(session);
                     setUser(session.user);
+                    setSigningUp(false);
+
                 } else {
                     // No session found or session expired - user needs to log in
                     setSession(null);
@@ -58,12 +78,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             async (_event, newSession) => {
                 // When user logs in or session refreshes, update state
                 if (newSession) {
+                    setSigningUp(false);
                     setSession(newSession);
                     setUser(newSession.user);
                 } else {
                     // When user logs out or session expires, clear state
                     setSession(null);
                     setUser(null);
+                    setPfpUrl(null);
+                    setProfileComplete(false);
+                    setSigningUp(true);
+
                 }
 
                 // Make sure we're not in loading state after auth changes
@@ -75,18 +100,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => subscription.unsubscribe();
     }, []);
 
+    // ----------------- Check Profile Completeness -----------------
+    useEffect(() => {
+        const checkProfileComplete = async () => {
+            if (!user?.id) {
+                setProfileComplete(false);
+                setPfpUrl(null);
+                setCheckingProfile(false);
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('username, bio, first_name, last_name, pfp_url')
+                    .eq('id', user.id)
+                    .maybeSingle();
+
+                if (!error && data) {
+                    const isComplete =
+                        !!data.username &&
+                        !!data.bio &&
+                        !!data.first_name &&
+                        !!data.last_name &&
+                        !!data.pfp_url;
+
+                    setProfileComplete(isComplete);
+                    setPfpUrl(data.pfp_url ?? null);
+                } else {
+                    setProfileComplete(false);
+                    setPfpUrl(null);
+                }
+            } catch (err) {
+                console.error('Error checking profile completion:', err);
+                setProfileComplete(false);
+                setPfpUrl(null);
+            } finally {
+                setCheckingProfile(false);
+            }
+        };
+
+        checkProfileComplete();
+    }, [user?.id]);
+
     // Logout function - Supabase handles clearing AsyncStorage automatically
     const logout = async () => {
         try {
             await supabase.auth.signOut();
+            setSigningUp(true);
+            setPfpUrl(null);
+            setProfileComplete(false);
+
             // State will be cleared automatically by onAuthStateChange listener
         } catch (error) {
             console.error('Error signing out:', error);
         }
     };
 
+
     return (
-        <AuthContext.Provider value={{ session, user, loading, logout }}>
+        <AuthContext.Provider value={{ session, user, loading, logout, signingUp, setSigningUp, pfpUrl, setPfpUrl, profileComplete, setProfileComplete, checkingProfile }}>
             {children}
         </AuthContext.Provider>
     );

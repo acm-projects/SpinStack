@@ -13,7 +13,7 @@ import { router } from "expo-router";
 export default function ProfileScreen() {
   const { width } = Dimensions.get("window");
   const IMAGE_SIZE = width * 0.2;
-  const { user, session, loading } = useAuth();
+  const { user, session, loading, pfpUrl, setPfpUrl } = useAuth();
   const router = useRouter();
   const { logout } = useAuth();
 
@@ -24,48 +24,63 @@ export default function ProfileScreen() {
 
 
   useEffect(() => {
-    console.log(user)
-    if (!user?.id) {
-      console.log("user not loaded error");
-      return;
-    }
+    if (!user?.id) return;
 
     const fetchUserInfo = async () => {
-      // Fetch username and bio
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("username, bio")
-        .eq("id", user.id)
-        .maybeSingle();
+      try {
+        // Fetch user info from Supabase
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("username, bio, pfp_url")
+          .eq("id", user.id)
+          .maybeSingle();
 
-      if (userError) {
-        console.error("Error fetching user info:", userError);
-      } else {
+        if (userError) {
+          console.error("Error fetching user info:", userError);
+          return;
+        }
+
         setUsername(userData?.username ?? "Unknown");
         setBio(userData?.bio ?? "");
-      }
 
-      // Fetch number of friends
-      const { count, error: friendsError } = await supabase
-        .from("friends")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id);
+        // Fetch presigned URL if user has a profile image
+        if (userData?.pfp_url) {
+          try {
+            const res = await fetch(
+              `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
+            );
+            if (res.ok) {
+              const { downloadURL } = await res.json();
+              setPfpUrl(downloadURL); // Set global pfpUrl
+            } else {
+              console.error("Failed to fetch presigned URL:", res.status);
+            }
+          } catch (err) {
+            console.error("Error fetching presigned URL:", err);
+          }
+        }
 
-      if (friendsError) {
-        console.error("Error fetching friends count:", friendsError);
-      } else {
-        setNumFriends(count ?? 0);
+        // Fetch number of friends
+        const { count, error: friendsError } = await supabase
+          .from("friends")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id);
+
+        if (friendsError) {
+          console.error("Error fetching friends count:", friendsError);
+        } else {
+          setNumFriends(count ?? 0);
+        }
+      } catch (err) {
+        console.error("Unexpected error fetching user info:", err);
       }
     };
 
-    fetchUserInfo(); // call the async function
+    fetchUserInfo();
   }, [user?.id]);
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut()  // updates context
-    if (error) {
-      console.log(error);
-    }
+    logout();
     router.replace('/signupProcess/signupPage' as RelativePathString);
   };
 
@@ -90,8 +105,7 @@ export default function ProfileScreen() {
       <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5, paddingLeft: 5 }}>
         {/* Profile Image */}
         <Image
-          source={require("../../assets/images/profile.png")}
-          style={{
+          source={pfpUrl ? { uri: pfpUrl } : require("../../assets/images/profile.png")} style={{
             width: IMAGE_SIZE,
             height: IMAGE_SIZE,
             borderRadius: IMAGE_SIZE / 2,
@@ -111,11 +125,11 @@ export default function ProfileScreen() {
 
           <AutoSizeText
             mode={ResizeTextMode.max_lines}
-            numberOfLines={1}
-            fontSize={14}
-            style={{ color: "white" }}
+            numberOfLines={2}
+            fontSize={12}
+            style={{ color: "white", flexWrap: "wrap" }}
           >
-            {bio}
+            "{bio}"
           </AutoSizeText>
         </View>
 

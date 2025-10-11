@@ -1,10 +1,14 @@
 import React from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { router, useRouter } from 'expo-router';
+import { useAuth } from "@/_context/AuthContext";
 
 export default function SpotifyConnect() {
+  const { signingUp, setSigningUp } = useAuth();
+
   const handleNext = () => {
-    router.replace("../profile");
+    setSigningUp(false);
+    router.push("../profile");
 
   };
   return (
