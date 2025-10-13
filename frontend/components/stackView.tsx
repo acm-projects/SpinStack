@@ -1,6 +1,6 @@
 import React from "react";
 import { FlatList, Dimensions, View } from "react-native";
-import MomentView from "./moment";
+import MomentView from "./newMoment";
 import {demoMoments} from "./demoMoment"; 
 
 export default function StackView({ moments = demoMoments }: { moments?: typeof demoMoments }) {

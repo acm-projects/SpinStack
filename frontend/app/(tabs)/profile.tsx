@@ -15,7 +15,7 @@ export default function ProfileScreen() {
   const handleSignOut = async () => {
     setSession(null);
     setUser(null); // updates context
-    router.replace('/signupProcess/signupPage' as RelativePathString); 
+    router.replace('/momentEx' as RelativePathString); 
   };
 
 

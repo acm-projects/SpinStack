@@ -5,7 +5,10 @@ import { router, useRouter } from 'expo-router';
 export default function SpotifyConnect() {
   const handleNext = () => {
     router.replace("../profile");
-
+    /*this will fix but not yet (needs some more work)
+    setTimeout(() => {
+    router.dismissAll(); //dismiss all previous screens
+  }, 100);*/
   };
   return (
     <View style={styles.container}>
@@ -44,9 +47,9 @@ const styles = StyleSheet.create({
     marginBottom: 50
   },
   SbuttonText: {
-    color: "white",
+    color: "black",
     fontSize: 18,
-    fontWeight: "500",
+    fontWeight: "bold",
   },
   button: {
     justifyContent: 'center',

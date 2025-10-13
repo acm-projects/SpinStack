@@ -1,4 +1,4 @@
-import MomentView from "../../components/moment";
+import MomentView from "../../components/newMoment";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import MomentInfo from "../../components/momentInfo";
 

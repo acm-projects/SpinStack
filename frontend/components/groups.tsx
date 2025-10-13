@@ -1,9 +1,12 @@
-import { StyleSheet, Text, View, TouchableOpacity, FlatList, Image} from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList } from 'react-native';
 import {useState} from 'react';
+import {useRouter, usePathname} from 'expo-router';
 import {SafeAreaView} from "react-native-safe-area-context";
 import GroupInfo from './groupInfo';
 import {demoGroups} from './demoMoment'
 import GroupProfile from './groupProfile';
+
+
 
 function ClickableTab({ label, isActive, onPress }: { 
   label: string; 
@@ -16,53 +19,33 @@ function ClickableTab({ label, isActive, onPress }: {
       style={{
         padding: 10,
         opacity: isActive ? 1 : 0.5,
+        
       }}
     >
-        <View style = {{borderRadius: 12, borderWidth: 1, borderColor: "#0BFFE3", flexDirection: "row", justifyContent: "center", alignContent: "center", height: 20}}>
-            <Text style={{ color: "white"}}>{label}</Text>
+        <View style = {{justifyContent: 'center',
+    backgroundColor: '#272727',
+    borderColor: '#0BFFE3',
+    borderWidth: 2,
+    borderRadius: 10,
+    
+     }}>
+            <Text style={{fontSize: 16, color: "white", marginHorizontal: 20, marginVertical: 10}}>{label}</Text>
         </View>
       
     </TouchableOpacity>     
   );
 }
 
-export default function GroupsView({ data = demoGroups }: { data?: typeof demoGroups} ) {
-    const [active, setActive] = useState<number | null>(null);
-
-    const buttons = ["Recent", "Search", "Create"];
-
+function GroupClickTab({ item, onPress }: { 
+  item: GroupInfo; 
+  onPress: () => void; 
+}) {
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <View style={styles.header}>
-            <View style = {{flex: 1, justifyContent: "center", alignItems: "center"}}>
-                <Text style = {{fontSize: 40, color: 'hsl(0,100%,100%)'}}>Dailies</Text>
-            </View>
-            
-        </View>
-        <View style = {[styles.main, {}]}>
-            <View style = {{flex: 0.1, justifyContent: 'center', alignContent: "center"}}>
-                <View style = {{flexDirection: 'row', flex: 1, justifyContent: 'space-around', alignContent: "center", gap: 10}}>
-                    {[0,1,2].map((i) => (
-                        <ClickableTab key = {i} label = {buttons[i]} isActive ={active == i} onPress = {() => setActive(i)}></ClickableTab>
-                        
-                    ))}
-                </View>
-            </View>
+   <TouchableOpacity
+      onPress={onPress}
 
-            <View style = {{justifyContent: 'flex-start', alignContent: "center", marginTop: 40}}>
-                <FlatList
-                    data={data}
-                    keyExtractor={(item, index) => index.toString()}
-                    renderItem={({ item }) => (
-                    <View
-                        style={{
-                        backgroundColor: "#3D3D3D",
-                        padding: 15,
-                        borderRadius: 10,
-                        marginTop: 5,
-                        }}
-                    >   
-                        <View style = {{flexDirection: 'row', justifyContent: 'space-between'}}>
+    >
+        <View style = {{flexDirection: 'row', justifyContent: 'space-between'}}>
                             <View style = {{flexDirection: 'column', justifyContent: 'center'}}>
                                 <Text style={{ fontSize: 20, fontWeight: "bold", color: "white" }}>
                                 {item.name}
@@ -82,6 +65,50 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
                                 <GroupProfile pics={item.users.slice(0, 3).map(user => user.profilePic)}/>
                             </View>
                         </View>
+    </TouchableOpacity>     
+  );
+}
+
+export default function GroupsView({ data = demoGroups }: { data?: typeof demoGroups} ) {
+    const [active, setActive] = useState<number>(0);
+    const [groupActive, setActive2] = useState<number | null>();
+    const router = useRouter();
+    const buttons = ["Recent", "Search", "Create"];
+
+    const pathname = usePathname();
+    console.log('Current path:', pathname);
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <View style={styles.header}>
+            <View style = {{flex: 1, justifyContent: "center", alignItems: "center"}}>
+                <Text style = {{fontSize: 40, color: 'hsl(0,100%,100%)'}}>Dailies</Text>
+            </View>
+            
+        </View>
+        <View style = {[styles.main, {}]}>
+            <View style = {{justifyContent: 'center', alignContent: "center"}}>
+                <View style = {{flexDirection: 'row', justifyContent: 'center', gap: 20}}>
+                    {[0,1,2].map((i) => (
+                        <ClickableTab key = {i} label = {buttons[i]} isActive ={active == i} onPress = {() => setActive(i)}></ClickableTab>
+                    ))}
+                </View>
+            </View>
+
+            <View style = {{justifyContent: 'flex-start', alignContent: "center", marginBottom: 60}}>
+                <FlatList
+                    data={data}
+                    keyExtractor={(item, index) => index.toString()}
+                    renderItem={({ item }) => (
+                    <View
+                        style={{
+                        backgroundColor: "#3D3D3D",
+                        padding: 15,
+                        borderRadius: 10,
+                        marginTop: 5,
+                        }}
+                    >   
+                        <GroupClickTab item = {item} onPress = {() => router.push('../../../components/group')}></GroupClickTab>
                     </View>
                     )}
                 />
