@@ -31,7 +31,7 @@ export default function ProfileSettings() {
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Image
             source={require("../assets/images/backBubble.png")}
-            style={{ paddingTop: 5, marginRight: 30 }}
+            style={{ paddingTop: 5, marginRight: 47 }}
           />
         </Pressable>
         <Text style={styles.header}>Settings</Text>
@@ -82,6 +82,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
     width: "90%",
+    marginRight: 30
   },
   backButton: {
     marginRight: 10,
