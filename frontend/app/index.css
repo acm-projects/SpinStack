@@ -1,11 +1,15 @@
-@font-face {
-    font-family: 'Inter';
-    src: local('Inter'), 
-        url('./fonts/Inter.ttf') format('truetype');
-    font-weight: normal; 
+body {
+    font-family: 'Luxurious Roman', serif;
+}
+
+.luxurious-roman-regular {
+    font-family: 'Luxurious Roman', serif;
+    font-weight: 400;
     font-style: normal;
 }
 
-body {
-    font-family: 'Inter', comic-sans;
+.jacques-francois-regular {
+    font-family: 'Jacques Francois', serif;
+    font-weight: 400;
+    font-style: normal;
 }

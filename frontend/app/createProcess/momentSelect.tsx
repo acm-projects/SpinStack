@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, Image, FlatList, StyleSheet, } from "react-native";
+import { router } from "expo-router";
 
 const mockData = [
   {
@@ -83,7 +84,7 @@ export default function SearchPage() {
 
       {/* Filter Buttons */}
       <View style={styles.filterRow}>
-        {["Songs", "Stacks", "Users"].map((filter) => (
+        {["Songs", "Stacks"].map((filter) => (
           <Pressable
             key={filter}
             style={[
@@ -105,7 +106,7 @@ export default function SearchPage() {
       </View>
 
       {/* Section Title */}
-      <Text style={styles.sectionTitle}>Top Hits This Week</Text>
+      <Text style={styles.sectionTitle}>Select a Song</Text>
 
       {/* Song List */}
       <FlatList
@@ -113,7 +114,8 @@ export default function SearchPage() {
         contentContainerStyle={{ backgroundColor: '#272727', borderRadius: 15, paddingVertical: 5 }}
         keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => (
-          <View style={styles.songRow}>
+          <Pressable onPress={() => router.push("/createProcess/momentCut")}>
+            <View style={styles.songRow}>
             <Text style={styles.rank}>{index + 1}</Text>
             <View style={styles.songInfo}>
               <Text style={styles.songTitle}>{item.title}</Text>
@@ -121,6 +123,7 @@ export default function SearchPage() {
             </View>
             <Image source={item.image} style={styles.albumArt} />
           </View>
+          </Pressable>
         )}
       />
     </View>
@@ -132,7 +135,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#000",
     paddingHorizontal: 16,
-    paddingTop: 70,
+    paddingTop: 20,
   },
   searchContainer: {
     backgroundColor: "#1a1a1a",
@@ -211,3 +214,4 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
 });
+
