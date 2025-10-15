@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, Image, StyleSheet, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system';
 import { router, useRouter } from 'expo-router';
 import { useAuth } from '@/_context/AuthContext';
 import { supabase } from '@/constants/supabase';
@@ -10,7 +12,28 @@ export default function ProfileImageScreen() {
   const { user, session, loading, signingUp, setSigningUp, pfpUrl, setPfpUrl, profileComplete, setProfileComplete } = useAuth();
 
 
-  const pickImage = async () => {
+  // Convert image to WebP and return new URI
+  const convertToWebP = async (uri: string): Promise<string | null> => {
+    console.log(uri);
+    try {
+      const manipulatedImage = await ImageManipulator.manipulateAsync(
+        uri,
+        [], // no transforms, just format conversion
+        {
+          compress: 0.8, // compression quality
+          format: ImageManipulator.SaveFormat.WEBP,
+        }
+      );
+
+      return manipulatedImage.uri;
+    } catch (err) {
+      console.error('WebP conversion error:', err);
+      Alert.alert('Error', 'Failed to convert image to WebP.');
+      return null;
+    }
+  };
+
+  const pickImage = async (): Promise<void> => {
     try {
       // Request permission
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -19,81 +42,75 @@ export default function ProfileImageScreen() {
         return;
       }
 
-      // Launch image picker
+      // Launch picker
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images, // still correct in TS
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 1,
       });
 
-      if (result.canceled || !result.assets || result.assets.length === 0) return;
+      if (result.canceled || !result.assets?.length) return;
 
       const image = result.assets[0];
-      const fileUri = image.uri;
-      const fileName = image.fileName || `user_${user?.id}_profile.jpg`;
-      const fileType = fileUri.endsWith('.png') ? 'image/png' : 'image/jpeg';
+      const originalUri = image.uri;
 
-      // Show local image immediately
-      setImageUri(fileUri);
+      // Convert to WebP
+      const webpUri = await convertToWebP(originalUri);
+      if (!webpUri) return;
 
-      // Request presigned upload URL from backend
+      // Show converted image in UI
+      setImageUri(webpUri);
+
+      // Prepare upload info
+      const fileName = `user_${user?.id}_profile.webp`;
+      const fileType = 'image/webp';
+
+      // Get presigned URL from backend
+      const uploadUrlRes = await fetch(
+        'https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/presigned-url',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName, fileType }),
+        }
+      );
+
+      const text = await uploadUrlRes.text();
       let uploadURL: string | undefined;
       try {
-        const uploadUrlRes = await fetch(
-          'https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/presigned-url',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fileName, fileType }),
-          }
-        );
-
-        // Read response body only once
-        const text = await uploadUrlRes.text();
-        try {
-          const json = JSON.parse(text);
-          uploadURL = json.uploadURL;
-        } catch {
-          console.error('Server response was not JSON:', text);
-          Alert.alert('Upload Error', 'Failed to get upload URL from server.');
-          return;
-        }
-
-        if (!uploadURL) {
-          console.error('No uploadURL returned by server');
-          return;
-        }
-      } catch (err) {
-        console.error('Network error fetching upload URL:', err);
-        Alert.alert('Upload Error', 'Failed to fetch upload URL.');
+        const json = JSON.parse(text);
+        uploadURL = json.uploadURL;
+      } catch {
+        console.error('Server response was not JSON:', text);
+        Alert.alert('Upload Error', 'Failed to get upload URL from server.');
         return;
       }
 
-      // Upload image to S3
-      try {
-        const fileData = await fetch(fileUri);
-        const blob = await fileData.blob();
+      if (!uploadURL) {
+        console.error('No uploadURL returned by server');
+        return;
+      }
 
-        const s3Res = await fetch(uploadURL, {
-          method: 'PUT',
-          headers: { 'Content-Type': fileType },
-          body: blob,
-        });
+      // Read the file as a blob (works on all modern Expo SDKs)
+      const fileData = await fetch(webpUri);
+      const blob = await fileData.blob();
 
-        if (!s3Res.ok) {
-          console.error('S3 upload failed', s3Res.status, await s3Res.text());
-          Alert.alert('Upload Error', 'Failed to upload image to S3.');
-          return;
-        }
-      } catch (err) {
-        console.error('S3 upload error:', err);
+      // Upload directly to S3 using fetch
+      const s3Res = await fetch(uploadURL, {
+        method: 'PUT',
+        headers: { 'Content-Type': fileType },
+        body: blob,
+      });
+
+      if (!s3Res.ok) {
+        console.error('S3 upload failed', s3Res.status, await s3Res.text());
         Alert.alert('Upload Error', 'Failed to upload image to S3.');
         return;
       }
 
-      // Update Supabase with object key
-      const { data, error } = await supabase
+      // Update Supabase user profile record
+      const { error } = await supabase
         .from('users')
         .update({ pfp_url: fileName })
         .eq('id', user?.id);

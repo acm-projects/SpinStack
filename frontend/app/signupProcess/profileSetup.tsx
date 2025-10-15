@@ -10,7 +10,7 @@ export default function ProfileInfo() {
   const [lastName, setLastName] = useState('');
   const [handle, setHandle] = useState('');
   const [bio, setBio] = useState('');
-  const { user, session, loading, signingUp, setSigningUp} = useAuth();
+  const { user, session, loading, signingUp, setSigningUp } = useAuth();
 
 
   const handleNext = () => {

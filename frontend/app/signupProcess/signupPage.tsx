@@ -131,13 +131,13 @@ export default function SignUpPage() {
           //editable={!signingUp}
           />
           <Button
-            title={signingUp ? "Loading..." : "Sign Up"}
+            title={"Sign Up"}
             onPress={handleSignUp}
           //disabled={signingUp}
           />
           <Text style={styles.baseText}> or </Text>
           <Button
-            title={signingUp ? "Loading..." : "Sign In"}
+            title={"Sign In"}
             onPress={handleSignIn}
           //disabled={signingUp}
           />
