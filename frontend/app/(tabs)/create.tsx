@@ -224,59 +224,50 @@ export default function TestSpotify() {
     }
   }
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Spotify Auth + Play (Web API)</Text>
-      <Button title="Authorize Spotify" onPress={authorize} />
-      <Button
-        title="Play Track on Device"
-        onPress={playOnActiveDevice}
-        disabled={!token}
-      />
-      <Button title="Stop Snippet" onPress={stopSnippet} disabled={!token} />
+    const [hasSong, setHasSong] = useState(null);
 
-      {/* Now Playing UI */}
-      {playback?.item ? (
-        <View style={styles.nowPlaying}>
-          {!!albumArt && (
-            <Image
-              source={{ uri: albumArt }}
-              style={styles.art}
-              resizeMode="cover"
-            />
-          )}
-          <View style={{ flex: 1 }}>
-            <Text style={styles.track} numberOfLines={1}>
-              {title}
-            </Text>
-            <Text style={styles.artist} numberOfLines={1}>
-              {artist}
-            </Text>
+    if (hasSong === null) {
+        return (
 
-            {/* progress bar */}
-            <View style={styles.barBg}>
-              <View style={[styles.barFill, { flex: progressPct }]} />
-              <View style={{ flex: 1 - progressPct }} />
+            <View style={{
+                display: "flex",
+                alignItems: "center",
+                paddingTop: 110,
+                flex: 1,
+
+            }}>
+                <Text style={{ color: "white", fontSize: 30, fontFamily: "Intern", fontWeight: 500 }}>
+                    Create Your Moment
+                </Text>
+                <View style={{
+                    alignItems: "center",
+                    paddingTop: 100,
+                }}>
+                    <Text style={{ color: "white", fontSize: 20, fontFamily: "Intern", fontWeight: 500 }}>
+                        Select a Song
+                    </Text>
+                </View>
+
+                <View style={{ width: "48%", height: "29%", backgroundColor: "#272727", borderRadius: 30, marginTop: 30,
+                    justifyContent: "center", alignContent: "center", alignItems: "center"
+                 }}> 
+                <Pressable
+                          onPress={() => router.push("/createProcess/momentSelect")}
+                          style={{ }}
+                        >
+                          <Feather name="plus" size={120} color="white" />
+                        </Pressable>
+
+                </View>
             </View>
 
-            <View style={styles.timeRow}>
-              <Text style={styles.time}>{formatTime(progressMs)}</Text>
-              <Text style={styles.time}>{formatTime(durationMs)}</Text>
-            </View>
-            <Text style={styles.playState}>
-              {playback.is_playing ? "Playing" : "Paused"}
-            </Text>
-          </View>
-        </View>
-      ) : (
-        <Text style={{ opacity: 0.7, marginTop: 8 }}>
-          Tip: open the Spotify app once so your phone is an active device.
-        </Text>
-      )}
-    </View>
-  )
+
+
+
+        )
+    }
+
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

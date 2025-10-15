@@ -5,15 +5,14 @@ import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-
-
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Stack from '@/assets/other/Stack.svg';
 import { RNSVGSvgIOS } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { Dimensions, Image, View } from 'react-native';
+import { Dimensions, Image, View, ActivityIndicator } from 'react-native';
 import { demoMoment, demoMoments, demoGroups } from '../../components/demoMoment';
 import { supabase } from '@/constants/supabase';
+import { useFonts } from 'expo-font';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -64,15 +63,22 @@ export default function TabLayout() {
 
     fetchUserInfo();
   }, [user?.id]);
+  const createPic = require('../../assets/images/createPic.png');
+
+  
+  
+  
 
   return (
     <AuthProvider>
-      <Tabs initialRouteName="profile"
+      <Tabs
+        initialRouteName="profile"
         screenOptions={{
           tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
           headerShown: false,
           tabBarButton: HapticTab,
         }}
+      >
       >
         <Tabs.Screen
           name="momentEx"
@@ -81,65 +87,76 @@ export default function TabLayout() {
           }}
           options={{
             title: 'Home',
-            tabBarIcon: ({ color }) => <FontAwesome6 name="house" size={24} color="hsla(0, 0%, 67%, 1.00)" />,
+            tabBarIcon: ({ color }) => (
+              <FontAwesome6 name="house" size={24} color="hsla(0, 0%, 67%, 1.00)" />
+            ),
           }}
         />
         <Tabs.Screen
-          name="index"
+          name="searchPage"
           options={{
             title: 'Search',
-            tabBarIcon: ({ color }) => <FontAwesome6 name="magnifying-glass" size={24} color="hsla(0, 0%, 67%, 1.00)" />,
+            tabBarIcon: ({ color }) => (
+              <FontAwesome6 name="magnifying-glass" size={24} color="hsla(0, 0%, 67%, 1.00)" />
+            ),
           }}
         />
-
         <Tabs.Screen
-          name="stack"
-          initialParams={{
-            momentInfo: demoMoments
-          }}
+          name="create"
           options={{
             title: ' ',
-            tabBarIcon: ({ color }) =>
-              <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignContent: 'center' }}>
-                <RNSVGSvgIOS><Stack width={40} height={40} /></RNSVGSvgIOS>
+            tabBarIcon: () => (
+              <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'flex-end', paddingTop: 41 }}>
+                <Image source={createPic} style={{ width: 40, height: 40, borderRadius: 50, overflow: 'hidden' }} />
               </View>
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="stack"
+          initialParams={{ momentInfo: demoMoments }}
+          options={{
+            title: ' ',
+            tabBarIcon: () => (
+              <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignContent: 'center' }}>
+                <RNSVGSvgIOS>
+                  <Stack width={40} height={40} />
+                </RNSVGSvgIOS>
+              </View>
+            ),
           }}
         />
         <Tabs.Screen
           name="dGroup"
-          initialParams={{
-            groupInfo: demoGroups
-          }}
+          initialParams={{ groupInfo: demoGroups }}
           options={{
             title: 'Dailies',
-            tabBarIcon: ({ color }) => <Ionicons name="people-sharp" size={24} color="hsla(0, 0%, 67%, 1.00)" />
+            tabBarIcon: () => (
+              <Ionicons name="people-sharp" size={24} color="hsla(0, 0%, 67%, 1.00)" />
+            ),
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
             title: 'Profile',
-            tabBarIcon: ({ color }) =>
+            tabBarIcon: () => (
               <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'flex-end', alignContent: 'center' }}>
-                <Image
-                  source={pfpUrl ? { uri: pfpUrl } : require("../../assets/images/profile.png")} style={{
-                    width: IMAGE_SIZE / 3,
-                    height: IMAGE_SIZE / 3,
-                    borderRadius: IMAGE_SIZE / 2,
-                  }}
-                />
+                <Image source={profilePic} style={{ width: 30, height: 30, borderRadius: 50, overflow: 'hidden' }} />
               </View>
+            ),
           }}
         />
         <Tabs.Screen
           name="testAPIs"
           options={{
-            title: 'testAPIs ',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.circle.fill" color={color} />
+            title: 'testAPIs',
+            tabBarIcon: ({ color }) => (
+              <IconSymbol size={28} name="person.circle.fill" color={color} />
+            ),
           }}
         />
       </Tabs>
     </AuthProvider>
-
   );
 }
