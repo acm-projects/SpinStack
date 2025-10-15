@@ -13,8 +13,7 @@ const groupMemRoutes = require('./routes/group_members');
 const dailiesRoutes = require('./routes/dailies');
 const likesStacksRoutes = require('./routes/likes_stacks');
 const likesMomentsRoutes = require('./routes/likes_moments');
-
-
+const spotifyRoutes = require('./routes/spotify');
 
 const app = express();
 
@@ -32,6 +31,7 @@ app.use('/api/group_members', groupMemRoutes);
 app.use('/api/dailies', dailiesRoutes);
 app.use('/api/likes_stacks', likesStacksRoutes);
 app.use('/api/likes_moments', likesMomentsRoutes);
+app.use('/api/spotify', spotifyRoutes);
 
 // Start the server
 const PORT = 5000; // or process.env.PORT if deployed

@@ -38,7 +38,7 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="index" 
+          name="search" 
           options={{
             title: 'Search', 
             tabBarIcon: ({ color }) => <FontAwesome6 name="magnifying-glass" size={24} color="hsla(0, 0%, 67%, 1.00)" />,
@@ -76,6 +76,12 @@ export default function TabLayout() {
             <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'flex-end', alignContent: 'center'}}>
               <Image source = {profilePic} style = {[{width: 30, height: 30, borderRadius: 50, overflow: 'hidden'}]}/>
             </View>
+          }}
+        />
+        <Tabs.Screen
+          name="index"
+          options={{
+            href: null, // This hides it from the tab bar
           }}
         />
         <Tabs.Screen

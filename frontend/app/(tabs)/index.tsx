@@ -7,7 +7,6 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Link, Redirect } from 'expo-router';
 
-
 export default function HomeScreen() {
   return (
     <Redirect href="/signupProcess/signupPage" /> 
