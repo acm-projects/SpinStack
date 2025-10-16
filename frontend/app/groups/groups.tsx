@@ -27,11 +27,11 @@ function ClickableTab({ label, isActive, onPress }: {
         <View style = {{justifyContent: 'center',
     backgroundColor: isActive ? ("#F9DDC3") : ("#E8C585"),
     borderColor: '#2E3337',
-    borderWidth: 4,
-    borderRadius: 20,
+    borderWidth: 3,
+    borderRadius: 50,
     
      }}>
-            <Text style={{fontSize: 16, color: "#333C42", marginHorizontal: 20, fontWeight: 'bold', marginVertical: 10}}>{label}</Text>
+            <Text style={{fontSize: 16, fontFamily: 'Jacques Francois', color: "#333C42", marginHorizontal: 20, fontWeight: 'bold', marginVertical: 10}}>{label}</Text>
         </View>
       
     </TouchableOpacity>     
@@ -57,11 +57,11 @@ function GroupClickTab({ item, onPress }: {
                             </View>
                             }
                             <View style = {{flex: 1, flexDirection: 'column', justifyContent: 'center'}}>
-                                <Text style={{ fontSize: 20, fontWeight: "bold", color: "#333C42" }}>
+                                <Text style={{ fontSize: 20, fontFamily: 'Jacques Francois', color: "#333C42" }}>
                                 {item.name}
                                 </Text>
 
-                                <Text style = {{fontSize: 15, fontWeight: 'normal', color: '#39868F'}}>
+                                <Text style = {{fontSize: 15, fontFamily: 'Jacques Francois', color: '#39868F'}}>
                                     {item.dailies[0].title}
                                 </Text>
                             </View>
@@ -144,7 +144,7 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
     <SafeAreaView style={[styles.container, {backgroundColor: "#FFF0E2"}]} edges={['top', 'left', 'right']}>
         <View style={styles.header}>
             <View style = {{flex: 1, justifyContent: "center", alignItems: "center"}}>
-                <Text style = {{fontSize: 40, color: '#333C42'}}>Dailies</Text>
+                <Text style = {{fontSize: 40, fontFamily: 'Luxurious Roman', color: '#333C42'}}>Dailies</Text>
             </View>
             
         </View>
@@ -200,7 +200,8 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
                     </TouchableOpacity>
                     <TextInput
                     placeholder="Search groups..."
-                    style={{ flex: 1, fontSize: 16 }}
+                    placeholderTextColor="#333C42"
+                    style={{ flex: 1, fontSize: 16, fontFamily: "Jacques Francois"}}
                     autoFocus = {false}
                     ref = {textInputRef}
                     value = {searchQuery}

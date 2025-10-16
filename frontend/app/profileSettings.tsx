@@ -1,79 +1,133 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useAuth } from "@/_context/AuthContext";
+import { supabase } from "@/constants/supabase";
 import { View, Text, StyleSheet, Image, Pressable, Dimensions } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
+import { useRouter } from "expo-router";
+import Bubble from '../assets/other/bubble.svg';
+import Featherr from '@expo/vector-icons/Feather';
 
 export default function ProfileSettings() {
   const { width } = Dimensions.get("window");
+  // State for user info
+  const [username, setUsername] = useState<string>("Loading...");
+  const [bio, setBio] = useState<string>("");
+  const { user, session, loading, pfpUrl, setPfpUrl } = useAuth();
   const IMAGE_SIZE = width * 0.2;
+  const router = useRouter();
+
   return (
     <View style={styles.container}>
-    <Text style={styles.text}>Settings</Text>
-   <View style={{ flexDirection: "row", marginTop: 5, paddingRight: 130 }}>
-  <View style={{ position: "relative" }}> 
-    <Image
-      source={require("../assets/images/profile.png")}
-      style={{ width: IMAGE_SIZE, height: IMAGE_SIZE, borderRadius: IMAGE_SIZE / 2 }}
-    />
-    <Pressable
-      style={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: [{ translateX: -25 }, { translateY: -25 }], 
-        backgroundColor: "#00000080", 
-        borderRadius: 20,
-        padding: 5,
-      }}
-      onPress={() => console.log("Change profile picture")}
-    >
-      <Feather name="camera" size={40} color="white" />
-    </Pressable>
-  </View>
+      {/* Header Row */}
+      <View style={[styles.headerRow]}>
+        <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <View style = {{marginLeft: 10, width: 60, height: 60}}>
+              <View style = {{position: 'absolute', alignItems: 'center'}}>
+                <Bubble width = {50} height = {50}/>
+                <View style = {{marginTop: -40}}>
+                  <Featherr name="arrow-left" size={30} color="black"/>
+                </View>
+              </View>
+            </View>
+        </Pressable>
+        <Text style={[styles.header, {marginBottom: 10}]}>Settings</Text>
+      </View>
 
-  <View style={{ justifyContent: "center", paddingLeft: 18 }}>
-    <Text style={{ fontSize: 20, color: "white", fontWeight: "500" }}>Haden Hicks</Text>
-    <Text style={{ fontSize: 14, color: "white" }}>{"life is so short :("}</Text>
-  </View>
-</View>
+      {/* Profile Image + Info */}
+      <View style={{ flexDirection: "row", paddingRight: 141 }}>
+        <View style={{ position: "relative" }}>
+          <Image
+            source={require("../assets/images/profile.png")}
+            style={{ width: IMAGE_SIZE, height: IMAGE_SIZE, borderRadius: IMAGE_SIZE / 2 }}
+          />
+          <Pressable
+            style={styles.cameraButton}
+            onPress={() => console.log("Change profile picture")}
+          >
+            <Feather name="camera" size={28} color="#FFF0E2" />
+          </Pressable>
+        </View>
 
-      <View
-        style={{
-          flexDirection: "column",
-          marginTop: 20,
-          borderRadius: 10,
-          padding: 10,
-          width: "95%",
-          height: "74%",
-          backgroundColor: "#242424ff",
-          justifyContent: "flex-start", 
-          alignItems: "flex-start",     
-          gap: 10,                      
-        }}
-      >
+        <View style={{ justifyContent: "center", paddingLeft: 18 }}>
+          <Text style={styles.nameText}>Haden Hicks</Text>
+          <Text style={styles.bioText}>{"life is so short :("}</Text>
+        </View>
+      </View>
+
+      {/* Settings List */}
+      <View style={styles.contentBox}>
         <Text style={styles.optionText}>Edit Profile Name</Text>
         <Text style={styles.optionText}>Edit Bio</Text>
         <Text style={styles.optionText}>Edit Username</Text>
         <Text style={styles.optionText}>Edit Email</Text>
         <Text style={styles.optionText}>Edit Password</Text>
       </View>
-
     </View>
-
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'flex-start', alignItems: "center", backgroundColor: "#000000ff" },
-  text: {
-    color: "white",
+  container: {
+    flex: 1,
+    paddingTop: 75,
+    alignItems: "center",
+    backgroundColor: "#FFF0E2",
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    width: "90%",
+    marginRight: 30
+  },
+  backButton: {
+    marginRight: 10,
+  },
+  header: {
+    color: "#333C42",
     fontSize: 35,
-    fontFamily: "Intern",
+    fontFamily: "Luxurious Roman",
     fontWeight: "600",
+    alignItems: "center"
+  },
+  nameText: {
+    fontSize: 20,
+    fontFamily: "Jacques Francois",
+    color: "#333C42",
+    fontWeight: "500",
+  },
+  bioText: {
+    fontSize: 14,
+    fontFamily: "Jacques Francois",
+    color: "#333C42",
+  },
+  cameraButton: {
+    position: "absolute",
+    bottom: -5,
+    right: -5,
+    backgroundColor: "#8DD2CA",
+    borderRadius: 20,
+    padding: 6,
+    borderWidth: 1,
+    borderColor: "#333C42",
+  },
+  contentBox: {
+    flexDirection: "column",
+    marginTop: 25,
+    borderRadius: 10,
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    width: "94%",
+    height: "70%",
+    backgroundColor: "#8DD2CA",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
   },
   optionText: {
-    fontSize: 20,
-    color: "white",
-    fontWeight: "300",
+    fontSize: 18,
+    color: "#333C42",
+    fontFamily: "Jacques Francois",
     textDecorationLine: "underline",
+    marginBottom: 12,
   },
 });

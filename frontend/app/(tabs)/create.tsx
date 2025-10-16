@@ -3,7 +3,6 @@ import TopL from '../../assets/other/Top_L.svg';
 import BottomM from '../../assets/other/Bottom_M.svg';
 import TopM from '../../assets/other/Top_M.svg';
 import BottomR from '../../assets/other/Bottom_R.svg';
-import { RNSVGSvgIOS } from 'react-native-svg';
 import MomentPick from '../createProcess/momentPick'
 import MomentSpecify from '../createProcess/momentSpecify';
 import MomentFinalize from '../createProcess/momentFinalize';

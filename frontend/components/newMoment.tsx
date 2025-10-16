@@ -69,8 +69,8 @@ export default function MomentView({data} : {data: MomentInfo}) {
                         </View>
                     </View>
                     <View style = {{marginLeft: 10}}>
-                        <Text style={[styles.texxt]}>{data.moment.songName}</Text>
-                        <Text style={styles.texxt}>{data.moment.artist} </Text>
+                        <Text style={[styles.texxt, {fontFamily: 'Luxurious Roman'}]}>{data.moment.songName}</Text>
+                        <Text style={[styles.texxt, {fontSize: 15, fontFamily: 'Jacques Francois'}]}>{data.moment.artist} </Text>
                     </View>
                     
                 </View>
@@ -117,6 +117,6 @@ const styles = StyleSheet.create({
     texxt: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: 'hsl(0, 100%, 100%)'
+        color: '#333C42'
     }
 })

@@ -137,13 +137,13 @@ export default function MomentPickView({ moment = demoMoment.moment, scrollFunc}
         edges={['top', 'left', 'right']}
       >
         <View style={{ justifyContent: 'center', alignItems: 'center'}}>
-            <Text style={{ fontSize: 40, fontWeight: 'bold' }}>Pick Your Moment</Text>
+            <Text style={{ fontSize: 40, fontFamily: 'Luxurious Roman', fontWeight: 'bold' }}>Pick Your Moment</Text>
         </View>
 
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ justifyContent: 'center', alignItems: 'center' }}>
             <View style={{ marginLeft: 10, marginBottom: 30 }}>
-              <Text style={{ fontSize: 30, fontWeight: 'bold' }}>
+              <Text style={{ fontSize: 30, fontFamily: 'Jacques Francois'}}>
                 {moment.songName} - {moment.artist}
               </Text>
             </View>
@@ -214,14 +214,14 @@ export default function MomentPickView({ moment = demoMoment.moment, scrollFunc}
         <View
             style={{
                 backgroundColor: '#E4D7CB',
-                borderRadius: 10,
+                borderRadius: 50,
                 borderWidth: 4,
                 borderColor: '#333C42',
                 alignItems: 'flex-start',
                 justifyContent: 'center',
                 width: '60%',
                 marginBottom: 30,
-                height: 30,
+                height: 40,
                 overflow: 'hidden',
             }}
             >
@@ -241,8 +241,8 @@ export default function MomentPickView({ moment = demoMoment.moment, scrollFunc}
                     <View
                     key={i}
                     style={{
-                        width: 3,
-                        height: '100%',
+                        width: 4,
+                        height: '50%',
                         borderRadius: 10,
                         backgroundColor: '#333C42',
                     }}
@@ -253,11 +253,12 @@ export default function MomentPickView({ moment = demoMoment.moment, scrollFunc}
             <Animated.View
                 style={{
                     position: 'absolute',
-                    top: 0,
+                    top: 4,
                     bottom: 0,
+                    height: '75%',
                     backgroundColor: '#39868F',
-                    width: 20,
-                    borderRadius: 8,
+                    width: 6,
+                    borderRadius: 80,
                     transform: [
                     {
                         translateX: progress.interpolate({
@@ -269,9 +270,6 @@ export default function MomentPickView({ moment = demoMoment.moment, scrollFunc}
                     ],
                 }}
             />
-
-            
-
 
         </View>
         <TouchableOpacity style={{

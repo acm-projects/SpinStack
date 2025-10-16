@@ -22,7 +22,7 @@ export default function MomentFinalizeView({ moment = demoMoment.moment, scrollF
       >    
 
         <View style={{ justifyContent: 'center', alignItems: 'center'}}>
-            <Text style={{ fontSize: 40, fontWeight: 'bold' }}>Bubbles 2</Text>
+            <Text style={{ fontSize: 40, fontWeight: 'bold' }}>placeholder 2</Text>
         </View>
 
             
@@ -45,7 +45,7 @@ export default function MomentFinalizeView({ moment = demoMoment.moment, scrollF
                     </View>
                     <View style={{ width: 350, justifyContent: 'center', alignItems: 'center', marginTop: 30 }}>
                         <View style={{ marginLeft: 10}}>
-                            <Text style={{ fontSize: 30, fontWeight: 'bold' }}>
+                            <Text style={{ fontSize: 30, fontFamily: 'Jacques Francois', fontWeight: 'bold' }}>
                             {moment.songName} - {moment.artist}
                             </Text>
                         </View>

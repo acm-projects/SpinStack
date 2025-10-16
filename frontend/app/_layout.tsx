@@ -9,37 +9,38 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '../_context/AuthContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/constants/supabase';
-
+import { useFonts } from "expo-font";
 export const unstable_settings = {  initialRouteName: 'signupProcess/signupPage' };
 
 function RootStack() {
   const colorScheme = useColorScheme();
   const router = useRouter();
-  const { user, isLoading, setUser } = useAuth();
-  const [isReady, setIsReady] = useState(false);
+  const { session, loading, profileComplete, checkingProfile } = useAuth(); // Added 'loading' from AuthContext
 
-  // --------------- FORCE SIGN-OUT FOR TESTING ---------------
-  useEffect(() => {
-    supabase.auth.signOut().then(() => {
-      setUser(null);    // ensure context is cleared
-      setIsReady(true); // mark ready after sign out
-    });
-  }, []);
-
-  // --------------- REDIRECT LOGIC ---------------
+  // --------------- FORCE SIGN-OUT FOR TESTING (Optional - comment out when done testing) ---------------
   /* useEffect(() => {
-    if (isReady && !isLoading) {
-      if (!user) {
-        router.replace('/signupProcess/signupPage'); // Not logged in → signup
-      } else {
-        router.replace('/(tabs)/home'); // Logged in → home
-      }
-    }
-  }, [isReady, isLoading, user]);
+    const forceLogout = async () => {
+      await logout();
+    };
+    forceLogout();
+  }, []); // Empty array means it only runs once on mount
   */
 
-  // --------------- LOADING SPINNER ---------------
-  if (!isReady || isLoading) {
+  // --------------- REDIRECT LOGIC ---------------
+  useEffect(() => {
+    if (loading || checkingProfile) return;
+
+    if (!session) {
+      router.replace('/signupProcess/signupPage');
+    } else if (!profileComplete) {
+      router.push('/signupProcess/profileSetup');
+    } else {
+      router.replace('/(tabs)/profile');
+    }
+  }, [loading, checkingProfile, session, profileComplete]);
+
+  //Loading spinner while AuthContext checks for existing session
+  if (loading || checkingProfile) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
         <ActivityIndicator size="large" color="white" />
@@ -49,12 +50,13 @@ function RootStack() {
 
   return (
     
-    <Stack>
+    <Stack screenOptions={{ headerShown: false }}>
       {/* Signup Page */}
       <Stack.Screen
         name="signupProcess/signupPage"
         options={{ headerShown: false }}
       />
+
       {/* Tabs */}
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 
@@ -81,12 +83,13 @@ function RootStack() {
           ),
         }}
       />
+
       <Stack.Screen
         name="signupProcess/profileSetup"
         options={{
           title: '',
           headerShadowVisible: false,
-          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
+          headerStyle: { backgroundColor: "rgba(255, 255, 255, 1)" },
           headerLeft: () => (
             <Pressable
               onPress={() => router.back()}
@@ -100,6 +103,7 @@ function RootStack() {
           ),
         }}
       />
+
       <Stack.Screen
         name="signupProcess/profileImage"
         options={{
@@ -119,8 +123,49 @@ function RootStack() {
           ),
         }}
       />
+
       <Stack.Screen
         name="signupProcess/spotifyConnect"
+        options={{
+          title: '',
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
+          headerLeft: () => (
+            <Pressable
+              onPress={() => router.back()}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+            >
+              <Feather name="arrow-left" size={30} color="white" />
+              <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
+                Back
+              </Text>
+            </Pressable>
+          ),
+        }}
+      />
+
+
+        <Stack.Screen
+        name="createProcess/momentSelect"
+        options={{
+          title: '',
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
+          headerLeft: () => (
+            <Pressable
+              onPress={() => router.back()}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+            >
+              <Feather name="arrow-left" size={30} color="white" />
+              <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
+                Back
+              </Text>
+            </Pressable>
+          ),
+        }}
+      />
+      <Stack.Screen
+        name="createProcess/momentCut"
         options={{
           title: '',
           headerShadowVisible: false,
@@ -142,18 +187,13 @@ function RootStack() {
   );
 }
 
- 
-
-
-
-
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   return (
     <AuthProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <RootStack />
-        <StatusBar style="auto" />
+        <StatusBar style="dark" />
       </ThemeProvider>
     </AuthProvider>
   );

@@ -1,49 +1,131 @@
-import React from "react";
-import { View, Text, Image, Button, StyleSheet, Pressable, Dimensions, Alert } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, Image, Button, StyleSheet, Pressable, Dimensions, FlatList } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
-import { supabase } from "@/constants/supabase";
 import { RelativePathString, useRouter } from "expo-router";
-import { useAuth } from '@/_context/AuthContext';
-import { router } from "expo-router";
+import { supabase } from "@/constants/supabase";
+import { useAuth } from "@/_context/AuthContext";
+import * as Font from "expo-font";
+
 export default function ProfileScreen() {
   const { width } = Dimensions.get("window");
   const IMAGE_SIZE = width * 0.2;
-  const numFriends = 7;
-  const { setSession, setUser } = useAuth();
+  const { user, session, loading, pfpUrl, setPfpUrl } = useAuth();
   const router = useRouter();
+  const { logout } = useAuth();
+
+  // State for user info
+  const [username, setUsername] = useState<string>("Loading...");
+  const [bio, setBio] = useState<string>("");
+  const [numFriends, setNumFriends] = useState<number>(0);
+
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchUserInfo = async () => {
+      try {
+        // Fetch user info from Supabase
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("username, bio, pfp_url")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (userError) {
+          console.error("Error fetching user info:", userError);
+          return;
+        }
+
+        setUsername(userData?.username ?? "Unknown");
+        setBio(userData?.bio ?? "");
+
+        // Fetch presigned URL if user has a profile image
+        if (userData?.pfp_url) {
+          try {
+            const res = await fetch(
+              `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
+            );
+            if (res.ok) {
+              const { downloadURL } = await res.json();
+              setPfpUrl(downloadURL); // Set global pfpUrl
+            } else {
+              console.error("Failed to fetch presigned URL:", res.status);
+            }
+          } catch (err) {
+            console.error("Error fetching presigned URL:", err);
+          }
+        }
+
+        // Fetch number of friends
+        const { count, error: friendsError } = await supabase
+          .from("friends")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id);
+
+        if (friendsError) {
+          console.error("Error fetching friends count:", friendsError);
+        } else {
+          setNumFriends(count ?? 0);
+        }
+      } catch (err) {
+        console.error("Unexpected error fetching user info:", err);
+      }
+    };
+
+    fetchUserInfo();
+  }, [user?.id]);
 
   const handleSignOut = async () => {
-    setSession(null);
-    setUser(null); // updates context
-    router.replace('/momentEx' as RelativePathString); 
+    logout();
+    router.replace('/signupProcess/signupPage' as RelativePathString);
   };
 
+  const polaroids = [
+    require("../../assets/images/polaroidFrame.png"),
+    require("../../assets/images/polaroidFrame.png"),
+    require("../../assets/images/polaroidFrame.png"),
+    require("../../assets/images/polaroidFrame.png"),
+    require("../../assets/images/polaroidFrame.png"),
+    require("../../assets/images/polaroidFrame.png"),
+  ];
 
   return (
-    
-    <View style={styles.container}>
-      <Text style={styles.header}>Profile</Text>
 
+    <View style={styles.container}>
+      
+  
+
+        {/* Centered title */}
+        <Text style={[styles.header, { textAlign: "center" }]}>Profile</Text>
+
+      {/* --- Profile Header --- */}
       <View style={{ flexDirection: "row", marginTop: 5 }}>
         <Image
-          source={require("../../assets/images/profile.png")}
-          style={{
+          source={pfpUrl ? { uri: pfpUrl } : require("../../assets/images/profile.png")} style={{
             width: IMAGE_SIZE,
             height: IMAGE_SIZE,
             borderRadius: IMAGE_SIZE / 2,
           }}
         />
         <View style={{ justifyContent: "center", paddingLeft: 18 }}>
-          <Text style={{ fontSize: 20, color: "white", fontWeight: "500" }}>Haden Hicks</Text>
-          <Text style={{ fontSize: 14, color: "white" }}>{"life is so short :("}</Text>
+          <Text style={{ fontSize: 20, fontFamily: "Jacques Francois", color: "#333C42", fontWeight: "500" }}>
+            Haden Hicks
+          </Text>
+          <Text style={{ fontSize: 14, fontFamily: "Jacques Francois", color: "#333C42" }}>
+            {"life is so short :("}
+          </Text>
         </View>
-        <View style={{ justifyContent: "center", paddingLeft: 30 }}>
+
+        {/* Friends count */}
+        <View style={{ justifyContent: "center", paddingHorizontal: 10 }}>
           <Text
             style={{
               fontSize: 14,
-              color: "white",
+              color: "#333C42",
               textDecorationLine: "underline",
+              fontFamily: "Luxurious Roman",
             }}
+            numberOfLines={1}
           >
             {numFriends} Friends
           </Text>
@@ -52,19 +134,46 @@ export default function ProfileScreen() {
           onPress={() => router.push("/profileSettings" as RelativePathString)}
           style={{ transform: [{ translateY: -42 }, { translateX: 5 }] }}
         >
-          <Feather name="settings" size={30} color="white" />
+          <Feather name="settings" size={30} color="#333C42" />
         </Pressable>
       </View>
 
+      {/* --- Content --- */}
       <View style={styles.content}>
-        <Text style={{ fontSize: 20, color: "white", fontWeight: "500" }}>Stacks</Text>
-        {/*  Sign Out Button */}
-        <Button title="Sign Out" onPress={handleSignOut} color="#0BFFE3" />
+        {/* Header Row */}
+        <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8 }}>
+          <Pressable>
+            <Feather style={{ paddingRight: 107 }} name="plus-circle" size={28} color="#333C42" />
+          </Pressable>
+          <Text style={{ fontSize: 24, color: "#333C42", fontWeight: "500", fontFamily: "Jacques Francois" }}>
+            Stacks
+          </Text>
+          <Pressable>
+            <Feather style={{ paddingLeft: 107 }} name="filter" size={28} color="#333C42" />
+          </Pressable>
+        </View>
+
+        {/* --- Scrollable Polaroid Grid --- */}
+        <View style={{ flex: 1, width: "100%", paddingHorizontal: 10, paddingTop: 10 }}>
+          <FlatList
+            data={polaroids}
+            numColumns={2}
+            showsVerticalScrollIndicator={false}
+            keyExtractor={(_, index) => index.toString()}
+            contentContainerStyle={{ paddingVertical: 0 }}
+            renderItem={({ item }) => (
+              <View style={styles.polaroidContainer}>
+                <Image source={item} style={styles.polaroidImage} />
+              </View>
+            )}
+          />
+        </View>
+
+        
       </View>
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -73,17 +182,32 @@ const styles = StyleSheet.create({
     paddingTop: 75,
     justifyContent: "flex-start",
     alignItems: "center",
+    backgroundColor: "#FFF0E2",
   },
-  header: { fontSize: 35, fontWeight: "600", color: "white" },
+  header: {
+    fontSize: 35,
+    fontWeight: "600",
+    color: "#333C42",
+    fontFamily: "Luxurious Roman",
+    
+  },
   content: {
-    flexDirection: "column",
+    flex: 1,
     marginTop: 20,
     borderRadius: 10,
-    padding: 0,
     width: "97%",
-    height: "78%",
-    backgroundColor: "#242424ff",
-    justifyContent: "center",
+    backgroundColor: "#8DD2CA",
+    alignItems: "center"
+  },
+  polaroidContainer: {
+    flex: 1,
     alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
+  },
+  polaroidImage: {
+    width: 150,
+    height: 180,
+    resizeMode: "contain",
   },
 });
