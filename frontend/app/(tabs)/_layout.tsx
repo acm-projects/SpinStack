@@ -103,7 +103,7 @@ export default function TabLayout() {
 
   return (
     <AuthProvider>
-      <Tabs initialRouteName="momentEx"
+      <Tabs initialRouteName="stack"
         tabBar={props => <MyCustomTabBar {...props}/>}
         screenOptions={{
           tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
@@ -112,27 +112,27 @@ export default function TabLayout() {
         }}
         >
         <Tabs.Screen
-          name="momentEx"
+          name="stack"
           initialParams = {{
-            momentInfo: demoMoment
+            momentInfo: demoMoments
           }}
           options={{
-            title: 'Home',
+            title: ' ',
             tabBarIcon: ({ color }) => <FontAwesome6 name="house" size={30} color="hsla(0, 0%, 67%, 1.00)" style = {{marginLeft: 6}}/>,
           }}
         />
         <Tabs.Screen
           name="index" 
           options={{
-            title: 'Search', 
+            title: ' ', 
             tabBarIcon: ({ color }) => <FontAwesome6 name="magnifying-glass" size={30} color="hsla(0, 0%, 67%, 1.00)" />,
           }}
         />
 
         <Tabs.Screen
-          name="stack"
+          name="create"
           initialParams = {{
-            momentInfo: demoMoments
+            momentInfo: demoMoment
           }}
           options={{
             title: ' ',
@@ -148,14 +148,14 @@ export default function TabLayout() {
             groupInfo: demoGroups
           }}
           options = {{
-            title: 'Dailies',
+            title: ' ',
             tabBarIcon: ({ color }) => <Ionicons name="people-sharp" size={30} color="hsla(0, 0%, 67%, 1.00)" />
           }}
           />
         <Tabs.Screen
           name = "profile"
           options = {{
-            title: 'Profile', 
+            title: ' ', 
             tabBarIcon: ({ color }) => 
             <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignContent: 'center'}}>
               <Image source = {profilePic} style = {[{width: 40, height: 40, borderRadius: 50, overflow: 'hidden', borderWidth: 1, borderColor: 'white', marginRight: 5}]}/>

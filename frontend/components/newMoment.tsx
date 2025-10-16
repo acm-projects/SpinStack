@@ -2,7 +2,6 @@ import { StyleSheet, Text, View, Image, Easing, Animated} from 'react-native';
 import {useRef, useEffect} from 'react';
 import {SafeAreaView} from "react-native-safe-area-context";
 import {useWindowDimensions} from 'react-native';
-import TextCorner from '../assets/other/TextCorner.svg';
 import Waveform from './waveform';
 import MomentInfo from './momentInfo';
 import LikeButton from './likeButton';
@@ -64,7 +63,7 @@ export default function MomentView({data} : {data: MomentInfo}) {
                         <View style = {{marginLeft: 10, marginRight: 40, flexDirection: 'row', flex: 1}}>
                             <View style = {[{width: '100%', justifyContent: "center"}]}>
                                 <View style = {[{width: '100%', height: 12, borderRadius: 50, backgroundColor: 'hsl(0, 100%, 100%)'}]}/>
-                                <View style = {{marginTop: 30}}><Waveform data = {data.moment.waveform} height = {25} start = {data.moment.start} end = {data.moment.end}/></View>
+                                <View style = {{marginTop: 30}}><Waveform data = {data.moment.waveform} height = {25} start = {data.moment.start} end = {data.moment.end} baseColor = "white" selectedColor = "#87bd84" anim = {true}/></View>
                         
                             </View>
                         </View>
