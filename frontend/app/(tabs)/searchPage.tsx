@@ -18,19 +18,6 @@ const mockData = [
 export default function SearchPage() {
   const [activeFilter, setActiveFilter] = useState("Songs");
   const [search, setSearch] = useState("");
-  const [fontsLoaded, setFontsLoaded] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      await Font.loadAsync({
-        "Luxurious Roman": require("@/fonts/LuxuriousRoman-Regular.ttf"),
-        "Jacques Francois": require("@/fonts/JacquesFrancois-Regular.ttf"),
-      });
-      setFontsLoaded(true);
-    })();
-  }, []);
-
-  if (!fontsLoaded) return null;
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -80,11 +67,12 @@ export default function SearchPage() {
 
       {/* Song List */}
       <FlatList
+        style = {{marginBottom: 92}}
         data={mockData}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
         renderItem={({ item, index }) => (
-          <View style={styles.songRow}>
+          <View style={[styles.songRow]}>
             <Text style={styles.rank}>{index + 1}</Text>
             <View style={styles.songInfo}>
               <Text style={styles.songTitle}>{item.title}</Text>

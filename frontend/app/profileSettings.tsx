@@ -3,8 +3,9 @@ import { useAuth } from "@/_context/AuthContext";
 import { supabase } from "@/constants/supabase";
 import { View, Text, StyleSheet, Image, Pressable, Dimensions } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
-import * as Font from "expo-font";
 import { useRouter } from "expo-router";
+import Bubble from '../assets/other/bubble.svg';
+import Featherr from '@expo/vector-icons/Feather';
 
 export default function ProfileSettings() {
   const { width } = Dimensions.get("window");
@@ -13,38 +14,27 @@ export default function ProfileSettings() {
   const [bio, setBio] = useState<string>("");
   const { user, session, loading, pfpUrl, setPfpUrl } = useAuth();
   const IMAGE_SIZE = width * 0.2;
-  const [fontsLoaded, setFontsLoaded] = useState(false);
   const router = useRouter();
-
-  const loadFonts = async () => {
-    await Font.loadAsync({
-      "Luxurious Roman": require("@/fonts/LuxuriousRoman-Regular.ttf"),
-      "Jacques Francois": require("@/fonts/JacquesFrancois-Regular.ttf"),
-    });
-    setFontsLoaded(true);
-  };
-
-  useEffect(() => {
-    loadFonts();
-  }, []);
-
-  if (!fontsLoaded) return null;
 
   return (
     <View style={styles.container}>
       {/* Header Row */}
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow]}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Image
-            source={require("../assets/images/backBubble.png")}
-            style={{ paddingTop: 5, marginRight: 47 }}
-          />
+          <View style = {{marginLeft: 10, width: 60, height: 60}}>
+              <View style = {{position: 'absolute', alignItems: 'center'}}>
+                <Bubble width = {50} height = {50}/>
+                <View style = {{marginTop: -40}}>
+                  <Featherr name="arrow-left" size={30} color="black"/>
+                </View>
+              </View>
+            </View>
         </Pressable>
-        <Text style={styles.header}>Settings</Text>
+        <Text style={[styles.header, {marginBottom: 10}]}>Settings</Text>
       </View>
 
       {/* Profile Image + Info */}
-      <View style={{ flexDirection: "row", marginTop: 15, paddingRight: 141 }}>
+      <View style={{ flexDirection: "row", paddingRight: 141 }}>
         <View style={{ position: "relative" }}>
           <Image
             source={require("../assets/images/profile.png")}

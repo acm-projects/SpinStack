@@ -7,20 +7,13 @@ import * as Font from 'expo-font';
 import { useAuth } from '@/_context/AuthContext';
 import { supabase } from '@/constants/supabase';
 
+
+import OpeningSplash from '../../assets/other/openingSplash.svg';
+import Bubble from '../../assets/other/bubble.svg';
+import Feather from '@expo/vector-icons/Feather';
+
 export default function ProfileImageScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [fontsLoaded, setFontsLoaded] = useState(false);
-  const loadFonts = async () => {
-    await Font.loadAsync({
-      'Luxurious Roman': require('@/fonts/LuxuriousRoman-Regular.ttf'),
-      'Jacques Francois': require('@/fonts/JacquesFrancois-Regular.ttf'),
-    });
-    setFontsLoaded(true);
-  };
-
-  useEffect(() => {
-    loadFonts();
-  }, []);
   const { user, session, loading, signingUp, setSigningUp, pfpUrl, setPfpUrl, profileComplete, setProfileComplete } = useAuth();
 
 
@@ -134,19 +127,29 @@ export default function ProfileImageScreen() {
   };
 
   return (
-    <ImageBackground
-      source={require("../../assets/images/signUpBackground.png")} //
-      style={{ flex: 1 }}
-      resizeMode="cover"
-    >
+    <View style = {[StyleSheet.absoluteFill, {flex: 1}]}>
+      <View
+        style={{
+          flex: 1,
+          position: 'absolute',
+          flexDirection: 'column',
+          width: '100%',
+          height: '100%',
+          backgroundColor: "#FFF0E2",
+        }}
+      >
+        <OpeningSplash width="100%" height="100%" style = {{marginTop: -30}}/>
+      </View>
       <View style={{ marginBottom: 10, marginLeft: 10, paddingTop: 70 }}>
         <Pressable onPress={() => router.back()}>
-          <Image
-            source={require("../../assets/images/backBubble.png")}
-            style={{
-
-            }}
-          />
+          <View style = {{marginBottom: 60, marginLeft: 10}}>
+              <View style = {{position: 'absolute', alignItems: 'center'}}>
+                <Bubble width = {50} height = {50}/>
+                <View style = {{marginTop: -40}}>
+                  <Feather name="arrow-left" size={30} color="black"/>
+                </View>
+              </View>
+            </View>
 
         </Pressable>
       </View>
@@ -169,7 +172,7 @@ export default function ProfileImageScreen() {
           </View>
         </Pressable>
       </View>
-    </ImageBackground>
+    </View>
   );
 }
 

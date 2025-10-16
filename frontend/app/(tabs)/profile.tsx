@@ -74,19 +74,6 @@ export default function ProfileScreen() {
 
     fetchUserInfo();
   }, [user?.id]);
-  const [fontsLoaded, setFontsLoaded] = useState(false);
-
-  const loadFonts = async () => {
-    await Font.loadAsync({
-      "Luxurious Roman": require("@/fonts/LuxuriousRoman-Regular.ttf"),
-      "Jacques Francois": require("@/fonts/JacquesFrancois-Regular.ttf"),
-    });
-    setFontsLoaded(true);
-  };
-
-  useEffect(() => {
-    loadFonts();
-  }, []);
 
   const handleSignOut = async () => {
     logout();

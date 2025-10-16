@@ -4,6 +4,10 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Font from 'expo-font';
 import { supabase } from '@/constants/supabase';
 import { useAuth } from '@/_context/AuthContext';
+import OpeningSplash from '../../assets/other/openingSplash.svg';
+import Bubble from '../../assets/other/bubble.svg';
+import Feather from '@expo/vector-icons/Feather';
+
 
 export default function ProfileInfo() {
   const router = useRouter();
@@ -34,11 +38,19 @@ export default function ProfileInfo() {
   }, []);
 
   return (
-    <ImageBackground
-      source={require("../../assets/images/signUpBackground.png")} //
-      style={{ flex: 1 }}
-      resizeMode="cover"
-    >
+    <View style = {[StyleSheet.absoluteFill, {flex: 1}]}>
+      <View
+        style={{
+          flex: 1,
+          position: 'absolute',
+          flexDirection: 'column',
+          width: '100%',
+          height: '100%',
+          backgroundColor: "#FFF0E2",
+        }}
+      >
+        <OpeningSplash width="100%" height="100%" style = {{marginTop: -30}}/>
+      </View>
 
 
       <KeyboardAvoidingView
@@ -47,13 +59,15 @@ export default function ProfileInfo() {
       >
         <View style={{ marginBottom: 50, marginLeft: 10 }}>
           <Pressable onPress={() => router.back()}>
-            <Image
-              source={require("../../assets/images/backBubble.png")}
-              style={{
-
-              }}
-            />
-
+            <View style = {{marginBottom: 60, marginLeft: 10}}>
+              <View style = {{position: 'absolute', alignItems: 'center'}}>
+                <Bubble width = {50} height = {50}/>
+                <View style = {{marginTop: -40}}>
+                  <Feather name="arrow-left" size={30} color="black"/>
+                </View>
+              </View>
+            </View>
+            
           </Pressable>
         </View>
 
@@ -106,7 +120,7 @@ export default function ProfileInfo() {
       </KeyboardAvoidingView>
 
 
-    </ImageBackground>
+    </View>
   );
 }
 

@@ -1,10 +1,10 @@
 import React, {useState, useEffect} from "react";
-import { View } from "react-native";
+import { View, ColorValue } from "react-native";
 import Svg, { Rect, Ellipse } from "react-native-svg";
 
 //specify types for some dumbahh reason
 //start and end are the relative starts and ends of the moments
-const Waveform = ({ data, height, start, end}: {data: number[], height: number, start: number, end: number}) => {
+const Waveform = ({ data, height, start, end, baseColor='#ffffff', selectedColor = "#87bd84", anim=true}: {data: number[], height: number, start: number, end: number, baseColor: ColorValue, selectedColor: ColorValue, anim: boolean}) => {
     const [width, setWidth] = useState(0);
     const barWidth = width / data.length;
     const maxVal = Math.max(...data);
@@ -12,15 +12,17 @@ const Waveform = ({ data, height, start, end}: {data: number[], height: number, 
     const [progress, setProgress] = useState(0);
     const loopDuration = 6767;
 
-    //create animation for sliding progress
-    useEffect(() => {
-        const start = Date.now();
-        const interval = setInterval(() => {
-        const elapsed = (Date.now() - start) % loopDuration;
-        setProgress(elapsed / loopDuration);
-        }, 30);
-        return () => clearInterval(interval);
-    }, [loopDuration]);
+    if(anim) {
+        //create animation for sliding progress
+        useEffect(() => {
+            const start = Date.now();
+            const interval = setInterval(() => {
+            const elapsed = (Date.now() - start) % loopDuration;
+            setProgress(elapsed / loopDuration);
+            }, 30);
+            return () => clearInterval(interval);
+        }, [loopDuration]);
+    } 
 
     const sIndex = Math.trunc(start * data.length);
     const fIndex = Math.trunc(end * data.length);
@@ -45,9 +47,10 @@ const Waveform = ({ data, height, start, end}: {data: number[], height: number, 
                 const y = height - barHeight + 5;
 
                 const pIndex = Math.trunc((start + (end - start) * progress) * data.length);
-
-                const color = (i >= sIndex && i <= fIndex) ? ((i < pIndex) ? ('#84DA7F') : ("#87bd84")) : ("white");
-
+                let color = (i >= sIndex && i <= fIndex) ? (selectedColor) : (baseColor);
+                if(anim) {
+                    color = (i < pIndex) ? ('#84DA7F') : (selectedColor);
+                }
                 return (
                     <React.Fragment key={i}>
                     <Rect

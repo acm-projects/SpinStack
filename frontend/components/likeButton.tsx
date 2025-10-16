@@ -12,7 +12,7 @@ export default function LikeButton() {
     <TouchableOpacity onPress={handlePress}>
       <FontAwesome
         name={liked ? 'heart' : 'heart-o'}
-        size={40}
+        size={60}
         color={liked ? 'red' : 'gray'}
       />
     </TouchableOpacity>
