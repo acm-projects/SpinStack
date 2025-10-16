@@ -1,14 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, Image, Button, StyleSheet, Pressable, Dimensions, Alert } from "react-native";
-import { AutoSizeText, ResizeTextMode } from 'react-native-auto-size-text';
+import React, { useState, useEffect } from "react";
+import { View, Text, Image, Button, StyleSheet, Pressable, Dimensions, FlatList } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
-import { supabase } from "@/constants/supabase";
 import { RelativePathString, useRouter } from "expo-router";
-import { RFValue } from "react-native-responsive-fontsize";
-import { useAuth } from '@/_context/AuthContext';
-import { router } from "expo-router";
-
-
+import { supabase } from "@/constants/supabase";
+import { useAuth } from "@/_context/AuthContext";
+import * as Font from "expo-font";
 
 export default function ProfileScreen() {
   const { width } = Dimensions.get("window");
@@ -78,32 +74,45 @@ export default function ProfileScreen() {
 
     fetchUserInfo();
   }, [user?.id]);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+
+  const loadFonts = async () => {
+    await Font.loadAsync({
+      "Luxurious Roman": require("@/fonts/LuxuriousRoman-Regular.ttf"),
+      "Jacques Francois": require("@/fonts/JacquesFrancois-Regular.ttf"),
+    });
+    setFontsLoaded(true);
+  };
+
+  useEffect(() => {
+    loadFonts();
+  }, []);
 
   const handleSignOut = async () => {
     logout();
     router.replace('/signupProcess/signupPage' as RelativePathString);
   };
 
-
+  const polaroids = [
+    require("../../assets/images/polaroidFrame.png"),
+    require("../../assets/images/polaroidFrame.png"),
+    require("../../assets/images/polaroidFrame.png"),
+    require("../../assets/images/polaroidFrame.png"),
+    require("../../assets/images/polaroidFrame.png"),
+    require("../../assets/images/polaroidFrame.png"),
+  ];
 
   return (
 
     <View style={styles.container}>
-      <View style={{ flexDirection: "row", alignItems: "center", width: "100%", paddingHorizontal: 10 }}>
-        {/* Empty view to balance spacing on the left */}
-        <View style={{ width: 30 }} />
+      
+  
 
         {/* Centered title */}
-        <Text style={[styles.header, { textAlign: "center", flex: 1 }]}>Profile</Text>
+        <Text style={[styles.header, { textAlign: "center" }]}>Profile</Text>
 
-        {/* Settings icon on the right */}
-        <Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
-          <Feather name="settings" size={30} color="white" />
-        </Pressable>
-      </View>
-
-      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5, paddingLeft: 5 }}>
-        {/* Profile Image */}
+      {/* --- Profile Header --- */}
+      <View style={{ flexDirection: "row", marginTop: 5 }}>
         <Image
           source={pfpUrl ? { uri: pfpUrl } : require("../../assets/images/profile.png")} style={{
             width: IMAGE_SIZE,
@@ -111,26 +120,13 @@ export default function ProfileScreen() {
             borderRadius: IMAGE_SIZE / 2,
           }}
         />
-
-        {/* Username + Bio */}
-        <View style={{ flex: 1, paddingLeft: 18, justifyContent: "center" }}>
-          <AutoSizeText
-            mode={ResizeTextMode.max_lines}
-            numberOfLines={1}
-            fontSize={18}
-            style={{ color: "white", fontWeight: "500" }}
-          >
-            {username}
-          </AutoSizeText>
-
-          <AutoSizeText
-            mode={ResizeTextMode.max_lines}
-            numberOfLines={2}
-            fontSize={12}
-            style={{ color: "white", flexWrap: "wrap" }}
-          >
-            "{bio}"
-          </AutoSizeText>
+        <View style={{ justifyContent: "center", paddingLeft: 18 }}>
+          <Text style={{ fontSize: 20, fontFamily: "Jacques Francois", color: "#333C42", fontWeight: "500" }}>
+            Haden Hicks
+          </Text>
+          <Text style={{ fontSize: 14, fontFamily: "Jacques Francois", color: "#333C42" }}>
+            {"life is so short :("}
+          </Text>
         </View>
 
         {/* Friends count */}
@@ -138,26 +134,59 @@ export default function ProfileScreen() {
           <Text
             style={{
               fontSize: 14,
-              color: "white",
+              color: "#333C42",
               textDecorationLine: "underline",
+              fontFamily: "Luxurious Roman",
             }}
             numberOfLines={1}
           >
             {numFriends} Friends
           </Text>
         </View>
-
+        <Pressable
+          onPress={() => router.push("/profileSettings" as RelativePathString)}
+          style={{ transform: [{ translateY: -42 }, { translateX: 5 }] }}
+        >
+          <Feather name="settings" size={30} color="#333C42" />
+        </Pressable>
       </View>
 
+      {/* --- Content --- */}
       <View style={styles.content}>
-        <Text style={{ fontSize: 20, color: "white", fontWeight: "500" }}>Stacks</Text>
-        {/*  Sign Out Button */}
-        <Button title="Sign Out" onPress={handleSignOut} color="#0BFFE3" />
+        {/* Header Row */}
+        <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8 }}>
+          <Pressable>
+            <Feather style={{ paddingRight: 107 }} name="plus-circle" size={28} color="#333C42" />
+          </Pressable>
+          <Text style={{ fontSize: 24, color: "#333C42", fontWeight: "500", fontFamily: "Jacques Francois" }}>
+            Stacks
+          </Text>
+          <Pressable>
+            <Feather style={{ paddingLeft: 107 }} name="filter" size={28} color="#333C42" />
+          </Pressable>
+        </View>
+
+        {/* --- Scrollable Polaroid Grid --- */}
+        <View style={{ flex: 1, width: "100%", paddingHorizontal: 10, paddingTop: 10 }}>
+          <FlatList
+            data={polaroids}
+            numColumns={2}
+            showsVerticalScrollIndicator={false}
+            keyExtractor={(_, index) => index.toString()}
+            contentContainerStyle={{ paddingVertical: 0 }}
+            renderItem={({ item }) => (
+              <View style={styles.polaroidContainer}>
+                <Image source={item} style={styles.polaroidImage} />
+              </View>
+            )}
+          />
+        </View>
+
+        
       </View>
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -166,17 +195,32 @@ const styles = StyleSheet.create({
     paddingTop: 75,
     justifyContent: "flex-start",
     alignItems: "center",
+    backgroundColor: "#FFF0E2",
   },
-  header: { fontSize: 35, fontWeight: "600", color: "white" },
+  header: {
+    fontSize: 35,
+    fontWeight: "600",
+    color: "#333C42",
+    fontFamily: "Luxurious Roman",
+    
+  },
   content: {
-    flexDirection: "column",
+    flex: 1,
     marginTop: 20,
     borderRadius: 10,
-    padding: 0,
     width: "97%",
-    height: "78%",
-    backgroundColor: "#242424ff",
-    justifyContent: "center",
+    backgroundColor: "#8DD2CA",
+    alignItems: "center"
+  },
+  polaroidContainer: {
+    flex: 1,
     alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
+  },
+  polaroidImage: {
+    width: 150,
+    height: 180,
+    resizeMode: "contain",
   },
 });

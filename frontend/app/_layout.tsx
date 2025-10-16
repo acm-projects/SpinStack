@@ -7,9 +7,10 @@ import { useRouter } from 'expo-router';
 import Feather from 'react-native-vector-icons/Feather';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '../_context/AuthContext';
-import { useEffect } from 'react';
-
-//export const unstable_settings = { initialRouteName: 'signupProcess/signupPage' }; causes error, idk why
+import { useEffect, useState } from 'react';
+import { supabase } from '@/constants/supabase';
+import { useFonts } from "expo-font";
+export const unstable_settings = {  initialRouteName: 'signupProcess/signupPage' };
 
 function RootStack() {
   const colorScheme = useColorScheme();
@@ -48,7 +49,8 @@ function RootStack() {
   }
 
   return (
-    <Stack>
+    
+    <Stack screenOptions={{ headerShown: false }}>
       {/* Signup Page */}
       <Stack.Screen
         name="signupProcess/signupPage"
@@ -87,7 +89,7 @@ function RootStack() {
         options={{
           title: '',
           headerShadowVisible: false,
-          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
+          headerStyle: { backgroundColor: "rgba(255, 255, 255, 1)" },
           headerLeft: () => (
             <Pressable
               onPress={() => router.back()}
@@ -141,6 +143,46 @@ function RootStack() {
           ),
         }}
       />
+
+
+        <Stack.Screen
+        name="createProcess/momentSelect"
+        options={{
+          title: '',
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
+          headerLeft: () => (
+            <Pressable
+              onPress={() => router.back()}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+            >
+              <Feather name="arrow-left" size={30} color="white" />
+              <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
+                Back
+              </Text>
+            </Pressable>
+          ),
+        }}
+      />
+      <Stack.Screen
+        name="createProcess/momentCut"
+        options={{
+          title: '',
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
+          headerLeft: () => (
+            <Pressable
+              onPress={() => router.back()}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+            >
+              <Feather name="arrow-left" size={30} color="white" />
+              <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
+                Back
+              </Text>
+            </Pressable>
+          ),
+        }}
+      />
     </Stack>
   );
 }
@@ -151,7 +193,7 @@ export default function RootLayout() {
     <AuthProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <RootStack />
-        <StatusBar style="auto" />
+        <StatusBar style="dark" />
       </ThemeProvider>
     </AuthProvider>
   );

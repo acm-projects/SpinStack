@@ -1,11 +1,10 @@
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/_context/AuthContext";
 import { supabase } from "@/constants/supabase";
-import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image, Pressable, Dimensions } from "react-native";
-import { AutoSizeText, ResizeTextMode } from "react-native-auto-size-text";
 import Feather from "react-native-vector-icons/Feather";
-
-
+import * as Font from "expo-font";
+import { useRouter } from "expo-router";
 
 export default function ProfileSettings() {
   const { width } = Dimensions.get("window");
@@ -14,137 +13,131 @@ export default function ProfileSettings() {
   const [bio, setBio] = useState<string>("");
   const { user, session, loading, pfpUrl, setPfpUrl } = useAuth();
   const IMAGE_SIZE = width * 0.2;
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+  const router = useRouter();
 
+  const loadFonts = async () => {
+    await Font.loadAsync({
+      "Luxurious Roman": require("@/fonts/LuxuriousRoman-Regular.ttf"),
+      "Jacques Francois": require("@/fonts/JacquesFrancois-Regular.ttf"),
+    });
+    setFontsLoaded(true);
+  };
 
   useEffect(() => {
-    if (!user?.id) return;
+    loadFonts();
+  }, []);
 
-    const fetchUserInfo = async () => {
-      try {
-        // Fetch user info from Supabase
-        const { data: userData, error: userError } = await supabase
-          .from("users")
-          .select("username, bio, pfp_url")
-          .eq("id", user.id)
-          .maybeSingle();
-
-        if (userError) {
-          console.error("Error fetching user info:", userError);
-          return;
-        }
-
-        setUsername(userData?.username ?? "Unknown");
-        setBio(userData?.bio ?? "");
-
-        // Fetch presigned URL if user has a profile image
-        if (userData?.pfp_url) {
-          try {
-            const res = await fetch(
-              `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
-            );
-            if (res.ok) {
-              const { downloadURL } = await res.json();
-              setPfpUrl(downloadURL); // Set global pfpUrl
-            } else {
-              console.error("Failed to fetch presigned URL:", res.status);
-            }
-          } catch (err) {
-            console.error("Error fetching presigned URL:", err);
-          }
-        }
-      } catch (err) {
-        console.error("Unexpected error fetching user info:", err);
-      }
-    };
-
-    fetchUserInfo();
-  }, [user?.id]);
-
-
+  if (!fontsLoaded) return null;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Settings</Text>
-      <View style={{ flexDirection: "row", marginTop: 5, paddingRight: 130 }}>
+      {/* Header Row */}
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Image
+            source={require("../assets/images/backBubble.png")}
+            style={{ paddingTop: 5, marginRight: 47 }}
+          />
+        </Pressable>
+        <Text style={styles.header}>Settings</Text>
+      </View>
+
+      {/* Profile Image + Info */}
+      <View style={{ flexDirection: "row", marginTop: 15, paddingRight: 141 }}>
         <View style={{ position: "relative" }}>
           <Image
-            source={pfpUrl ? { uri: pfpUrl } : require("../assets/images/profile.png")}
+            source={require("../assets/images/profile.png")}
             style={{ width: IMAGE_SIZE, height: IMAGE_SIZE, borderRadius: IMAGE_SIZE / 2 }}
           />
           <Pressable
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: [{ translateX: -25 }, { translateY: -25 }],
-              backgroundColor: "#00000080",
-              borderRadius: 20,
-              padding: 5,
-            }}
+            style={styles.cameraButton}
             onPress={() => console.log("Change profile picture")}
           >
-            <Feather name="camera" size={40} color="white" />
+            <Feather name="camera" size={28} color="#FFF0E2" />
           </Pressable>
         </View>
 
-        <View style={{ flex: 2, paddingLeft: 18, justifyContent: "center" }}>
-          <AutoSizeText
-            mode={ResizeTextMode.max_lines}
-            numberOfLines={1}
-            fontSize={18}
-            style={{ color: "white", fontWeight: "500" }}
-          >
-            {username}
-          </AutoSizeText>
-          <AutoSizeText
-            mode={ResizeTextMode.max_lines}
-            numberOfLines={1}
-            fontSize={25}
-            style={{ color: "white", fontWeight: "500", width: "150%" }}
-          >
-            "{bio}"
-          </AutoSizeText>
+        <View style={{ justifyContent: "center", paddingLeft: 18 }}>
+          <Text style={styles.nameText}>Haden Hicks</Text>
+          <Text style={styles.bioText}>{"life is so short :("}</Text>
         </View>
       </View>
 
-      <View
-        style={{
-          flexDirection: "column",
-          marginTop: 20,
-          borderRadius: 10,
-          padding: 10,
-          width: "95%",
-          height: "74%",
-          backgroundColor: "#242424ff",
-          justifyContent: "flex-start",
-          alignItems: "flex-start",
-          gap: 10,
-        }}
-      >
+      {/* Settings List */}
+      <View style={styles.contentBox}>
         <Text style={styles.optionText}>Edit Profile Name</Text>
         <Text style={styles.optionText}>Edit Bio</Text>
         <Text style={styles.optionText}>Edit Username</Text>
         <Text style={styles.optionText}>Edit Email</Text>
         <Text style={styles.optionText}>Edit Password</Text>
       </View>
-
     </View>
-
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'flex-start', alignItems: "center", backgroundColor: "#000000ff" },
-  text: {
-    color: "white",
+  container: {
+    flex: 1,
+    paddingTop: 75,
+    alignItems: "center",
+    backgroundColor: "#FFF0E2",
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    width: "90%",
+    marginRight: 30
+  },
+  backButton: {
+    marginRight: 10,
+  },
+  header: {
+    color: "#333C42",
     fontSize: 35,
-    fontFamily: "Intern",
+    fontFamily: "Luxurious Roman",
     fontWeight: "600",
+    alignItems: "center"
+  },
+  nameText: {
+    fontSize: 20,
+    fontFamily: "Jacques Francois",
+    color: "#333C42",
+    fontWeight: "500",
+  },
+  bioText: {
+    fontSize: 14,
+    fontFamily: "Jacques Francois",
+    color: "#333C42",
+  },
+  cameraButton: {
+    position: "absolute",
+    bottom: -5,
+    right: -5,
+    backgroundColor: "#8DD2CA",
+    borderRadius: 20,
+    padding: 6,
+    borderWidth: 1,
+    borderColor: "#333C42",
+  },
+  contentBox: {
+    flexDirection: "column",
+    marginTop: 25,
+    borderRadius: 10,
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    width: "94%",
+    height: "70%",
+    backgroundColor: "#8DD2CA",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
   },
   optionText: {
-    fontSize: 20,
-    color: "white",
-    fontWeight: "300",
+    fontSize: 18,
+    color: "#333C42",
+    fontFamily: "Jacques Francois",
     textDecorationLine: "underline",
+    marginBottom: 12,
   },
 });
