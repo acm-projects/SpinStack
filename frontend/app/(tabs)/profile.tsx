@@ -41,6 +41,7 @@ export default function ProfileScreen() {
   ];
 
   return (
+    
     <View style={styles.container}>
       <Text style={styles.header}>Profile</Text>
 
