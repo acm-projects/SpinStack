@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Image, Text, StyleSheet, Pressable, ImageBackground } from "react-native";
 import { router, useRouter } from 'expo-router';
-import * as Font from 'expo-font';
 import { useAuth } from "@/_context/AuthContext";
 
 import OpeningSplash from '../../assets/other/openingSplash.svg';

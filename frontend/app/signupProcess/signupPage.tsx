@@ -18,6 +18,20 @@ export default function SignUpPage() {
   const [isSigningIn, setIsSigningIn] = useState(false); // Add this flag
 
   const { session, loading } = useAuth();
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+
+  const loadFonts = async () => {
+    await Font.loadAsync({
+      'Luxurious Roman': require('@/fonts/LuxuriousRoman-Regular.ttf'),
+      'Jacques Francois': require('@/fonts/JacquesFrancois-Regular.ttf'),
+    });
+    setFontsLoaded(true);
+  };
+
+  useEffect(() => {
+    loadFonts();
+  }, []);
+
 
   useEffect(() => {
     if (loading) return;

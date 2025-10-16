@@ -5,15 +5,19 @@ import { useEffect, useState } from "react";
 import { supabase } from '@/constants/supabase';
 import { Button, ScrollView, View, Text, StyleSheet, Keyboard, TextInput, TouchableWithoutFeedback, Alert } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+<<<<<<< HEAD:frontend/app/(tabs)/testAPIs.tsx
+import { useAuth } from '../../_context/AuthContext';
+=======
 import { useAuth } from '../_context/AuthContext';
 import { NGROK_URL } from '@env';
 
+>>>>>>> main:frontend/components/testAPIs.tsx
 
 
 
 export default function TestApiScreen() {
 
-    const nUrl = NGROK_URL;
+    const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
     const [title, setTitle] = useState<any>("");
     const [songURL, setSongURL] = useState<any>("");
     const [startTime, setStartTime] = useState<any>("");

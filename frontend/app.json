@@ -51,8 +51,6 @@
           "microphonePermission": "The app accesses your microphone to let you record videos."
         }
       ],
-      "expo-font",
-      
       [
         "@wwdrew/expo-spotify-sdk",
         {
@@ -61,7 +59,8 @@
           "host": "authenticate"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,

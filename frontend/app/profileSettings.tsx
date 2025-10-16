@@ -1,43 +1,84 @@
-import React, { useEffect, useState } from "react";
 import { useAuth } from "@/_context/AuthContext";
 import { supabase } from "@/constants/supabase";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image, Pressable, Dimensions } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { useRouter } from "expo-router";
 import Bubble from '../assets/other/bubble.svg';
-import Featherr from '@expo/vector-icons/Feather';
+import { AutoSizeText, ResizeTextMode } from 'react-native-auto-size-text'; // import these
 
 export default function ProfileSettings() {
   const { width } = Dimensions.get("window");
-  // State for user info
   const [username, setUsername] = useState<string>("Loading...");
   const [bio, setBio] = useState<string>("");
-  const { user, session, loading, pfpUrl, setPfpUrl } = useAuth();
+  const { user, pfpUrl, setPfpUrl } = useAuth();
   const IMAGE_SIZE = width * 0.2;
   const router = useRouter();
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchUserInfo = async () => {
+      try {
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("username, bio, pfp_url")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (userError) {
+          console.error("Error fetching user info:", userError);
+          return;
+        }
+
+        setUsername(userData?.username ?? "Unknown");
+        setBio(userData?.bio ?? "");
+
+        if (userData?.pfp_url) {
+          try {
+            const res = await fetch(
+              `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
+            );
+            if (res.ok) {
+              const { downloadURL } = await res.json();
+              setPfpUrl(downloadURL);
+            } else {
+              console.error("Failed to fetch presigned URL:", res.status);
+            }
+          } catch (err) {
+            console.error("Error fetching presigned URL:", err);
+          }
+        }
+      } catch (err) {
+        console.error("Unexpected error fetching user info:", err);
+      }
+    };
+
+    fetchUserInfo();
+  }, [user?.id]);
 
   return (
     <View style={styles.container}>
       {/* Header Row */}
       <View style={[styles.headerRow]}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <View style = {{marginLeft: 10, width: 60, height: 60}}>
-              <View style = {{position: 'absolute', alignItems: 'center'}}>
-                <Bubble width = {50} height = {50}/>
-                <View style = {{marginTop: -40}}>
-                  <Featherr name="arrow-left" size={30} color="black"/>
-                </View>
+          <View style={{ marginLeft: 10, width: 60, height: 60 }}>
+            <View style={{ position: 'absolute', alignItems: 'center' }}>
+              <Bubble width={50} height={50} />
+              <View style={{ marginTop: -40 }}>
+                <Feather name="arrow-left" size={30} color="black" />
               </View>
             </View>
+          </View>
         </Pressable>
-        <Text style={[styles.header, {marginBottom: 10}]}>Settings</Text>
+        <Text style={[styles.header, { marginBottom: 10 }]}>Settings</Text>
       </View>
 
       {/* Profile Image + Info */}
       <View style={{ flexDirection: "row", paddingRight: 141 }}>
         <View style={{ position: "relative" }}>
           <Image
-            source={require("../assets/images/profile.png")}
+            source={pfpUrl ? { uri: pfpUrl } : require("../assets/images/profile.png")}
             style={{ width: IMAGE_SIZE, height: IMAGE_SIZE, borderRadius: IMAGE_SIZE / 2 }}
           />
           <Pressable
@@ -48,9 +89,21 @@ export default function ProfileSettings() {
           </Pressable>
         </View>
 
-        <View style={{ justifyContent: "center", paddingLeft: 18 }}>
-          <Text style={styles.nameText}>Haden Hicks</Text>
-          <Text style={styles.bioText}>{"life is so short :("}</Text>
+        <View style={{ flex: 2, paddingLeft: 18, justifyContent: "center" }}>
+          <AutoSizeText
+            mode={ResizeTextMode.max_lines}
+            numberOfLines={1}
+            style={{ color: "white", fontWeight: "500", fontSize: 18 }}
+          >
+            {username}
+          </AutoSizeText>
+          <AutoSizeText
+            mode={ResizeTextMode.max_lines}
+            numberOfLines={1}
+            style={{ color: "white", fontWeight: "500", width: "150%", fontSize: 25 }}
+          >
+            "{bio}"
+          </AutoSizeText>
         </View>
       </View>
 
@@ -78,7 +131,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
     width: "90%",
-    marginRight: 30
+    marginRight: 30,
   },
   backButton: {
     marginRight: 10,
@@ -88,18 +141,7 @@ const styles = StyleSheet.create({
     fontSize: 35,
     fontFamily: "Luxurious Roman",
     fontWeight: "600",
-    alignItems: "center"
-  },
-  nameText: {
-    fontSize: 20,
-    fontFamily: "Jacques Francois",
-    color: "#333C42",
-    fontWeight: "500",
-  },
-  bioText: {
-    fontSize: 14,
-    fontFamily: "Jacques Francois",
-    color: "#333C42",
+    alignItems: "center",
   },
   cameraButton: {
     position: "absolute",

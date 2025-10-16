@@ -1,10 +1,12 @@
-import { useLocalSearchParams } from 'expo-router';
-import GroupView from '../groups/groups';
-import GroupInfo from '../../components/groupInfo';
+import { useLocalSearchParams } from "expo-router";
+import GroupView from "../groups/groups";
+import GroupInfo from "../../components/groupInfo"; 
 
-export default function dGroup() {
+export default function DGroup() {
   const { moments: serialized } = useLocalSearchParams<{ moments?: string }>();
-  const gs: GroupInfo[] = serialized ? JSON.parse(serialized) : undefined;
+  const gs: GroupInfo[] | undefined = serialized
+    ? JSON.parse(serialized)
+    : undefined;
 
   return <GroupView data={gs} />;
 }
