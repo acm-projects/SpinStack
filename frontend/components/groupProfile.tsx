@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
   },
   image: {
     position: "absolute",
-    borderWidth: 2,
-    borderColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#333C42",
   },
 });

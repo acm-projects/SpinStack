@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, Image, StyleSheet, Alert, ImageBackground } from 'react-native';
+import { View, Text, Pressable, Image, StyleSheet, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
-import { router, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
+import * as Font from 'expo-font';
 import { useAuth } from '@/_context/AuthContext';
 import { supabase } from '@/constants/supabase';
 
-import * as Font from 'expo-font';
+import OpeningSplash from '../../assets/other/openingSplash.svg';
+import Bubble from '../../assets/other/bubble.svg';
+import Feather from '@expo/vector-icons/Feather';
+
 export default function ProfileImageScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const { user, setProfileComplete } = useAuth();
+  const router = useRouter();
+
   const loadFonts = async () => {
     await Font.loadAsync({
       'Luxurious Roman': require('@/fonts/LuxuriousRoman-Regular.ttf'),
@@ -22,22 +28,18 @@ export default function ProfileImageScreen() {
   useEffect(() => {
     loadFonts();
   }, []);
-  const { user, session, loading, signingUp, setSigningUp, pfpUrl, setPfpUrl, profileComplete, setProfileComplete } = useAuth();
-
 
   // Convert image to WebP and return new URI
   const convertToWebP = async (uri: string): Promise<string | null> => {
-    console.log(uri);
     try {
       const manipulatedImage = await ImageManipulator.manipulateAsync(
         uri,
-        [], // no transforms, just format conversion
+        [],
         {
-          compress: 0.8, // compression quality
+          compress: 0.8,
           format: ImageManipulator.SaveFormat.WEBP,
         }
       );
-
       return manipulatedImage.uri;
     } catch (err) {
       console.error('WebP conversion error:', err);
@@ -48,14 +50,12 @@ export default function ProfileImageScreen() {
 
   const pickImage = async (): Promise<void> => {
     try {
-      // Request permission
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permissionResult.granted) {
         Alert.alert('Permission required', 'Please allow access to your photo library.');
         return;
       }
 
-      // Launch picker
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -64,22 +64,14 @@ export default function ProfileImageScreen() {
       });
 
       if (result.canceled || !result.assets?.length) return;
-
       const image = result.assets[0];
-      const originalUri = image.uri;
-
-      // Convert to WebP
-      const webpUri = await convertToWebP(originalUri);
+      const webpUri = await convertToWebP(image.uri);
       if (!webpUri) return;
-
-      // Show converted image in UI
       setImageUri(webpUri);
 
-      // Prepare upload info
       const fileName = `user_${user?.id}_profile.webp`;
       const fileType = 'image/webp';
 
-      // Get presigned URL from backend
       const uploadUrlRes = await fetch(
         'https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/presigned-url',
         {
@@ -92,8 +84,7 @@ export default function ProfileImageScreen() {
       const text = await uploadUrlRes.text();
       let uploadURL: string | undefined;
       try {
-        const json = JSON.parse(text);
-        uploadURL = json.uploadURL;
+        uploadURL = JSON.parse(text).uploadURL;
       } catch {
         console.error('Server response was not JSON:', text);
         Alert.alert('Upload Error', 'Failed to get upload URL from server.');
@@ -105,11 +96,9 @@ export default function ProfileImageScreen() {
         return;
       }
 
-      // Read the file as a blob (works on all modern Expo SDKs)
       const fileData = await fetch(webpUri);
       const blob = await fileData.blob();
 
-      // Upload directly to S3 using fetch
       const s3Res = await fetch(uploadURL, {
         method: 'PUT',
         headers: { 'Content-Type': fileType },
@@ -122,7 +111,6 @@ export default function ProfileImageScreen() {
         return;
       }
 
-      // Update Supabase user profile record
       const { error } = await supabase
         .from('users')
         .update({ pfp_url: fileName })
@@ -141,28 +129,33 @@ export default function ProfileImageScreen() {
     }
   };
 
-
   const handleNext = () => {
     setProfileComplete(true);
     router.push("../signupProcess/spotifyConnect");
-
   };
 
   return (
-    <ImageBackground
-      source={require("../../assets/images/signUpBackground.png")} //
-      style={{ flex: 1 }}
-      resizeMode="cover"
-    >
+    <View style={[StyleSheet.absoluteFill, { flex: 1 }]}>
+      <View style={{
+        flex: 1,
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
+        backgroundColor: "#FFF0E2",
+      }}>
+        <OpeningSplash width="100%" height="100%" style={{ marginTop: -30 }} />
+      </View>
+
       <View style={{ marginBottom: 10, marginLeft: 10, paddingTop: 70 }}>
         <Pressable onPress={() => router.back()}>
-          <Image
-            source={require("../../assets/images/backBubble.png")}
-            style={{
-
-            }}
-          />
-
+          <View style={{ marginBottom: 60, marginLeft: 10 }}>
+            <View style={{ position: 'absolute', alignItems: 'center' }}>
+              <Bubble width={50} height={50} />
+              <View style={{ marginTop: -40 }}>
+                <Feather name="arrow-left" size={30} color="black" />
+              </View>
+            </View>
+          </View>
         </Pressable>
       </View>
 
@@ -177,14 +170,23 @@ export default function ProfileImageScreen() {
             </View>
           )}
         </Pressable>
-        <Pressable onPress={() => router.push("./spotifyConnect")}>
-          <View style={{ backgroundColor: "#333c42", width: 352, padding: 10, borderRadius: 8 }}>
-            <Text style={{ color: "white", fontFamily: "Jacques Francois", textAlign: "center", fontSize: 16 }}>Next</Text>
-
+        <Pressable onPress={handleNext}>
+          <View style={{
+            backgroundColor: "#333c42",
+            width: 352,
+            padding: 10,
+            borderRadius: 8
+          }}>
+            <Text style={{
+              color: "white",
+              fontFamily: "Jacques Francois",
+              textAlign: "center",
+              fontSize: 16
+            }}>Next</Text>
           </View>
         </Pressable>
       </View>
-    </ImageBackground>
+    </View>
   );
 }
 
@@ -199,22 +201,15 @@ const styles = StyleSheet.create({
     marginBottom: 75,
   },
   imageContainer: { marginBottom: 240, paddingTop: 85 },
-  placeholder: { width: 140, height: 140, borderRadius: 70, borderWidth: 3, borderColor: '#333C42', justifyContent: 'center', alignItems: 'center' },
+  placeholder: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 3,
+    borderColor: '#333C42',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
   plus: { color: '#333C42', fontSize: 48 },
   image: { width: 140, height: 140, borderRadius: 70 },
-  button: {
-    justifyContent: 'center',
-    backgroundColor: '#333C42',
-    borderColor: '#0BFFE3',
-    borderWidth: 2,
-    borderRadius: 10,
-    width: '90%',
-    height: '8%',
-  },
-  buttonText: {
-    color: '#ffffffff',
-    textAlign: 'center',
-    fontSize: 20,
-    fontWeight: '600',
-  },
 });

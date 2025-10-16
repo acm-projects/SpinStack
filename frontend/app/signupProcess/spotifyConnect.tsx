@@ -2,41 +2,46 @@ import React, { useState, useEffect } from "react";
 import { View, Image, Text, StyleSheet, Pressable, ImageBackground } from "react-native";
 import { router, useRouter } from 'expo-router';
 import { useAuth } from "@/_context/AuthContext";
-import * as Font from 'expo-font';
+
+import OpeningSplash from '../../assets/other/openingSplash.svg';
+import Bubble from '../../assets/other/bubble.svg';
+import Feather from '@expo/vector-icons/Feather';
+
 export default function SpotifyConnect() {
   const { signingUp, setSigningUp } = useAuth();
 
   const handleNext = () => {
-    setSigningUp(false);
-    router.push("../profile");
-
+    router.replace("../profile");
+    /*this will fix but not yet (needs some more work)*/
+    /*
+    setTimeout(() => {
+    router.dismissAll(); //dismiss all previous screens
+  }, 100);*/
   };
-  const [fontsLoaded, setFontsLoaded] = useState(false);
-  const loadFonts = async () => {
-    await Font.loadAsync({
-      'Luxurious Roman': require('@/fonts/LuxuriousRoman-Regular.ttf'),
-      'Jacques Francois': require('@/fonts/JacquesFrancois-Regular.ttf'),
-    });
-    setFontsLoaded(true);
-  };
-
-  useEffect(() => {
-    loadFonts();
-  }, []);
   return (
-    <ImageBackground
-      source={require("../../assets/images/signUpBackground.png")} //
-      style={{ flex: 1 }}
-      resizeMode="cover"
-    >
+    <View style = {[StyleSheet.absoluteFill, {flex: 1}]}>
+      <View
+        style={{
+          flex: 1,
+          position: 'absolute',
+          flexDirection: 'column',
+          width: '100%',
+          height: '100%',
+          backgroundColor: "#FFF0E2",
+        }}
+      >
+        <OpeningSplash width="100%" height="100%" style = {{marginTop: -30}}/>
+      </View>
       <View style={{ marginBottom: 10, marginLeft: 10, paddingTop: 70 }}>
         <Pressable onPress={() => router.back()}>
-          <Image
-            source={require("../../assets/images/backBubble.png")}
-            style={{
-
-            }}
-          />
+          <View style = {{marginBottom: 60, marginLeft: 10}}>
+              <View style = {{position: 'absolute', alignItems: 'center'}}>
+                <Bubble width = {50} height = {50}/>
+                <View style = {{marginTop: -40}}>
+                  <Feather name="arrow-left" size={30} color="black"/>
+                </View>
+              </View>
+            </View>
 
         </Pressable>
       </View>
@@ -46,14 +51,14 @@ export default function SpotifyConnect() {
         <Pressable style={styles.Sbutton} onPress={() => { /* future functionality */ }}>
           <Text style={styles.SbuttonText}>Connect with Spotify</Text>
         </Pressable>
-        <Pressable onPress={() => router.push("../profile")}>
+        <Pressable onPress={handleNext}>
           <View style={{ backgroundColor: "#333c42", width: 352, padding: 10, borderRadius: 8 }}>
             <Text style={{ color: "white", fontFamily: "Jacques Francois", textAlign: "center", fontSize: 16 }}>Next</Text>
 
           </View>
         </Pressable>
       </View>
-    </ImageBackground>
+    </View>
   );
 }
 
@@ -81,10 +86,10 @@ const styles = StyleSheet.create({
     marginBottom: 30
   },
   SbuttonText: {
-    color: "white",
+    color: "black",
     fontSize: 18,
     fontWeight: "500",
-    fontFamily: "Jacues Francois"
+    fontFamily: "Jacques Francois"
   },
   button: {
     justifyContent: 'center',
@@ -98,6 +103,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: "Jacues Francois"
+    fontFamily: "Jacques Francois"
   },
 });

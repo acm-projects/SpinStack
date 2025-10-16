@@ -1,35 +1,41 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, Button, StyleSheet, Pressable, Dimensions, FlatList } from "react-native";
-import { AutoSizeText, ResizeTextMode } from 'react-native-auto-size-text';
+import { View, Text, Image, Pressable, StyleSheet, Dimensions, FlatList } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { RelativePathString, useRouter } from "expo-router";
-import { RFValue } from "react-native-responsive-fontsize";
+import { supabase } from "@/constants/supabase";
 import { useAuth } from "@/_context/AuthContext";
 import * as Font from "expo-font";
-import { supabase } from "@/constants/supabase";
-
-
-
 
 export default function ProfileScreen() {
   const { width } = Dimensions.get("window");
   const IMAGE_SIZE = width * 0.2;
-  const { user, session, loading, pfpUrl, setPfpUrl } = useAuth();
+  const { user, pfpUrl, setPfpUrl, logout } = useAuth();
   const router = useRouter();
-  const { logout } = useAuth();
 
-  // State for user info
   const [username, setUsername] = useState<string>("Loading...");
   const [bio, setBio] = useState<string>("");
   const [numFriends, setNumFriends] = useState<number>(0);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
 
+  // Load fonts
+  const loadFonts = async () => {
+    await Font.loadAsync({
+      "Luxurious Roman": require("@/fonts/LuxuriousRoman-Regular.ttf"),
+      "Jacques Francois": require("@/fonts/JacquesFrancois-Regular.ttf"),
+    });
+    setFontsLoaded(true);
+  };
 
+  useEffect(() => {
+    loadFonts();
+  }, []);
+
+  // Fetch user info
   useEffect(() => {
     if (!user?.id) return;
 
     const fetchUserInfo = async () => {
       try {
-        // Fetch user info from Supabase
         const { data: userData, error: userError } = await supabase
           .from("users")
           .select("username, bio, pfp_url")
@@ -44,7 +50,7 @@ export default function ProfileScreen() {
         setUsername(userData?.username ?? "Unknown");
         setBio(userData?.bio ?? "");
 
-        // Fetch presigned URL if user has a profile image
+        // Fetch presigned profile image
         if (userData?.pfp_url) {
           try {
             const res = await fetch(
@@ -52,7 +58,7 @@ export default function ProfileScreen() {
             );
             if (res.ok) {
               const { downloadURL } = await res.json();
-              setPfpUrl(downloadURL); // Set global pfpUrl
+              setPfpUrl(downloadURL);
             } else {
               console.error("Failed to fetch presigned URL:", res.status);
             }
@@ -61,7 +67,7 @@ export default function ProfileScreen() {
           }
         }
 
-        // Fetch number of friends
+        // Count friends
         const { count, error: friendsError } = await supabase
           .from("friends")
           .select("*", { count: "exact", head: true })
@@ -79,25 +85,11 @@ export default function ProfileScreen() {
 
     fetchUserInfo();
   }, [user?.id]);
-  const [fontsLoaded, setFontsLoaded] = useState(false);
-
-  const loadFonts = async () => {
-    await Font.loadAsync({
-      "Luxurious Roman": require("@/fonts/LuxuriousRoman-Regular.ttf"),
-      "Jacques Francois": require("@/fonts/JacquesFrancois-Regular.ttf"),
-    });
-    setFontsLoaded(true);
-  };
-
-  useEffect(() => {
-    loadFonts();
-  }, []);
 
   const handleSignOut = async () => {
     logout();
-    router.replace('/signupProcess/signupPage' as RelativePathString);
+    router.replace("/signupProcess/signupPage" as RelativePathString);
   };
-
 
   const polaroids = [
     require("../../assets/images/polaroidFrame.png"),
@@ -107,6 +99,8 @@ export default function ProfileScreen() {
     require("../../assets/images/polaroidFrame.png"),
     require("../../assets/images/polaroidFrame.png"),
   ];
+
+  if (!fontsLoaded) return null;
 
   return (
     <View style={styles.container}>
@@ -150,30 +144,42 @@ export default function ProfileScreen() {
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            "{bio}"
+            "{bio || 'life is so short :('}"
           </Text>
         </View>
 
-        {/* Friends count */}
-        <Text
-          style={{
-            fontSize: 14,
-            color: "#333C42",
-            textDecorationLine: "underline",
-            fontFamily: "Luxurious Roman",
-            paddingRight: "auto"
-          }}
-        >
-          {numFriends} Friends
-        </Text>
-        <Pressable onPress={() => router.push("/profileSettings" as RelativePathString)} style={{ transform: [{ translateY: -60 }, { translateX: -10 }] }} > <Feather name="settings" size={30} color="#333C42" /> </Pressable>
+        {/* Friends count + Settings */}
+        <View style={{ alignItems: "flex-end" }}>
+          <Text
+            style={{
+              fontSize: 14,
+              color: "#333C42",
+              textDecorationLine: "underline",
+              fontFamily: "Luxurious Roman",
+              marginBottom: 8,
+            }}
+          >
+            {numFriends} Friends
+          </Text>
+          <Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
+            <Feather name="settings" size={30} color="#333C42" />
+          </Pressable>
+        </View>
       </View>
-
 
       {/* Content Section: Stacks */}
       <View style={styles.content}>
         {/* Header Row */}
-        <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8, width: "100%", justifyContent: "space-between", paddingHorizontal: 20 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingTop: 8,
+            width: "100%",
+            justifyContent: "space-between",
+            paddingHorizontal: 20,
+          }}
+        >
           <Pressable>
             <Feather name="plus-circle" size={28} color="#333C42" />
           </Pressable>

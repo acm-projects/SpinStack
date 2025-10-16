@@ -5,7 +5,7 @@ export default interface MomentInfo {
     user: User
 }
 
-interface Moment {
+export interface Moment {
     songName: string,
     artist: string,
     start: number,

@@ -7,9 +7,10 @@ import { useRouter } from 'expo-router';
 import Feather from 'react-native-vector-icons/Feather';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '../_context/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/constants/supabase';
 import { useFonts } from "expo-font";
-//export const unstable_settings = { initialRouteName: 'signupProcess/signupPage' }; causes error, idk why
+export const unstable_settings = {  initialRouteName: 'signupProcess/signupPage' };
 
 function RootStack() {
   const colorScheme = useColorScheme();
@@ -192,7 +193,7 @@ export default function RootLayout() {
     <AuthProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <RootStack />
-        <StatusBar style="auto" />
+        <StatusBar style="dark" />
       </ThemeProvider>
     </AuthProvider>
   );

@@ -1,16 +1,19 @@
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 import React, { useState, useEffect } from "react";
-import { Alert, Keyboard, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View, Button, ActivityIndicator, ImageBackground, Pressable } from "react-native";
+import { Alert, Keyboard, StyleSheet, Text, TextInput, ActivityIndicator, TouchableWithoutFeedback, View, Button, ImageBackground, Pressable, useWindowDimensions} from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { supabase } from "@/constants/supabase";
-import { useAuth } from "@/_context/AuthContext";import * as Font from 'expo-font';
+import { AuthProvider, useAuth } from "@/_context/AuthContext"; // Adjusted path, update as needed
+import * as Font from 'expo-font';
 import { useRouter } from 'expo-router';
+import OpeningSplash from '../../assets/other/openingSplash.svg';
 
 export default function SignUpPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const { signingUp, setSigningUp } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false); // Add this flag
 
@@ -117,60 +120,69 @@ export default function SignUpPage() {
       </View>
     );
   }
+  const { width, height} = useWindowDimensions();
 
   return (
-    <ImageBackground
-      source={require("../../assets/images/signUpBackground.png")} //
-      style={{ flex: 1 }}
-      resizeMode="cover"
-    >
-      <KeyboardAwareScrollView
-        style={{ flex: 1, }}
-        contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+    <View style = {[StyleSheet.absoluteFill, {flex: 1}]}>
+      <View
+        style={{
+          flex: 1,
+          position: 'absolute',
+          flexDirection: 'column',
+          width: '100%',
+          height: '100%',
+          backgroundColor: "#FFF0E2",
+        }}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.container}>
-            <Text style={styles.titleText}>SpinStack</Text>
-            <Text style={styles.baseText}>Getting Started</Text>
-            <View style={{ width: "70%", paddingTop: 30 }}>
-              <Text style={{ color: "#333C42", paddingBottom: 20, fontFamily: "Jacques Francois", fontSize: 16, textAlign: "center" }}>
-                Create a SpinStack account with a username and password
-              </Text>
+        <OpeningSplash width="100%" height="100%" style = {{marginTop: -30}}/>
+      </View>
+        <KeyboardAwareScrollView
+          style={{ flex: 1, }}
+          contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.container}>
+              <Text style={styles.titleText}>SpinStack</Text>
+              <Text style={styles.baseText}>Getting Started</Text>
+              <View style={{ width: "70%", paddingTop: 30 }}>
+                <Text style={{ color: "#333C42", paddingBottom: 20, fontFamily: "Jacques Francois", fontSize: 16, textAlign: "center" }}>
+                  Create a SpinStack account with a username and password
+                </Text>
+              </View>
+
+              <TextInput
+                style={[styles.input, { color: "#333C42", fontFamily: "Jacques Francois", backgroundColor: "#FFF0E2", borderWidth: 2, borderColor: "#333C42", marginTop: 0 }]}
+                placeholder="Enter email"
+                placeholderTextColor="#333C42"
+                value={email}
+                onChangeText={setEmail}
+              />
+              <TextInput
+                style={[styles.input, { color: "#", fontFamily: "Jacques Francois", backgroundColor: "#FFF0E2", borderWidth: 2, borderColor: "#333C42" }]}
+                placeholder="Enter password"
+                placeholderTextColor="#333C42"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+              <Pressable onPress={() => router.push("./profileSetup")}>
+                <View style={{ backgroundColor: "#333c42", width: 352, padding: 10, borderRadius: 8 }}>
+                  <Text style={{ flex: 1, color: "white", fontFamily: "Jacques Francois", textAlign: "center", fontSize: 15 }}>Sign Up</Text>
+
+                </View>
+              </Pressable>
+
+              <Pressable onPress={handleSignIn}>
+                <View style={{ backgroundColor: "#333c42", width: 352, padding: 10, borderRadius: 8, marginTop: 10 }}>
+                  <Text style={{ color: "white", fontFamily: "Jacques Francois", textAlign: "center", fontSize: 15 }}>Sign In</Text>
+
+                </View>
+              </Pressable>
+
             </View>
-
-            <TextInput
-              style={[styles.input, { color: "#333C42", fontFamily: "Jacques Francois", backgroundColor: "#FFF0E2", borderWidth: 2, borderColor: "#333C42", marginTop: 0 }]}
-              placeholder="Enter email"
-              placeholderTextColor="#333C42"
-              value={email}
-              onChangeText={setEmail}
-            />
-            <TextInput
-              style={[styles.input, { color: "#", fontFamily: "Jacques Francois", backgroundColor: "#FFF0E2", borderWidth: 2, borderColor: "#333C42" }]}
-              placeholder="Enter password"
-              placeholderTextColor="#333C42"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
-            <Pressable onPress={() => router.push("./profileSetup")}>
-              <View style={{ backgroundColor: "#333c42", width: 352, padding: 10, borderRadius: 8 }}>
-                <Text style={{ flex: 1, color: "white", fontFamily: "Jacques Francois", textAlign: "center", fontSize: 15 }}>Sign Up</Text>
-
-              </View>
-            </Pressable>
-
-            <Pressable onPress={handleSignIn}>
-              <View style={{ backgroundColor: "#333c42", width: 352, padding: 10, borderRadius: 8, marginTop: 10 }}>
-                <Text style={{ color: "white", fontFamily: "Jacques Francois", textAlign: "center", fontSize: 15 }}>Sign In</Text>
-
-              </View>
-            </Pressable>
-
-          </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAwareScrollView>
-    </ImageBackground>
+          </TouchableWithoutFeedback>
+        </KeyboardAwareScrollView>
+    </View>
   );
 }
 
