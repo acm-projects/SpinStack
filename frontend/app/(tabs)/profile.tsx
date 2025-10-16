@@ -1,4 +1,4 @@
-import React, { useEffect, useState }, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Image, Button, StyleSheet, Pressable, Dimensions, FlatList } from "react-native";
 import { AutoSizeText, ResizeTextMode } from 'react-native-auto-size-text';
 import Feather from "react-native-vector-icons/Feather";
@@ -6,6 +6,7 @@ import { RelativePathString, useRouter } from "expo-router";
 import { RFValue } from "react-native-responsive-fontsize";
 import { useAuth } from "@/_context/AuthContext";
 import * as Font from "expo-font";
+import { supabase } from "@/constants/supabase";
 
 
 
@@ -108,78 +109,83 @@ export default function ProfileScreen() {
   ];
 
   return (
-
     <View style={styles.container}>
-      <View style={{ flexDirection: "row", alignItems: "center", width: "100%", paddingHorizontal: 10 }}>
-        {/* Empty view to balance spacing on the left */}
-        <View style={{ width: 30 }} />
-
-        {/* Centered title */}
-        <Text style={[styles.header, { textAlign: "center", flex: 1 }]}>Profile</Text>
-
-      {/* --- Profile Header --- */}
-        {/* Settings icon on the right */}
-        <Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
-          <Feather name="settings" size={30} color="white" />
-        </Pressable>
+      {/* Header */}
+      <View style={{ width: "100%", alignItems: "center", paddingHorizontal: 10 }}>
+        <Text style={styles.header}>Profile</Text>
       </View>
 
-      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5, paddingLeft: 5 }}>
+      {/* Profile Row */}
+      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5, paddingHorizontal: 15 }}>
         {/* Profile Image */}
         <Image
-          source={pfpUrl ? { uri: pfpUrl } : require("../../assets/images/profile.png")} style={{
+          source={pfpUrl ? { uri: pfpUrl } : require("../../assets/images/profile.png")}
+          style={{
             width: IMAGE_SIZE,
             height: IMAGE_SIZE,
             borderRadius: IMAGE_SIZE / 2,
           }}
         />
-        <View style={{ justifyContent: "center", paddingLeft: 18 }}>
-          <Text style={{ fontSize: 20, fontFamily: "Jacques Francois", color: "#333C42", fontWeight: "500" }}>
-            Haden Hicks
+
+        {/* Name + Bio */}
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 }}>
+          <Text
+            style={{
+              fontSize: 20,
+              fontFamily: "Jacques Francois",
+              color: "#333C42",
+              fontWeight: "500",
+            }}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {username}
           </Text>
-          <Text style={{ fontSize: 14, fontFamily: "Jacques Francois", color: "#333C42" }}>
-            {"life is so short :("}
+          <Text
+            style={{
+              fontSize: 14,
+              fontFamily: "Jacques Francois",
+              color: "#333C42",
+            }}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            "{bio}"
           </Text>
         </View>
 
         {/* Friends count */}
-        <View style={{ justifyContent: "center", paddingHorizontal: 10 }}>
-          <Text
-            style={{
-              fontSize: 14,
-              color: "#333C42",
-              textDecorationLine: "underline",
-              fontFamily: "Luxurious Roman",
-            }}
-            numberOfLines={1}
-          >
-            {numFriends} Friends
-          </Text>
-        </View>
-        <Pressable
-          onPress={() => router.push("/profileSettings" as RelativePathString)}
-          style={{ transform: [{ translateY: -42 }, { translateX: 5 }] }}
+        <Text
+          style={{
+            fontSize: 14,
+            color: "#333C42",
+            textDecorationLine: "underline",
+            fontFamily: "Luxurious Roman",
+            paddingRight: "auto"
+          }}
         >
-          <Feather name="settings" size={30} color="#333C42" />
-        </Pressable>
+          {numFriends} Friends
+        </Text>
+        <Pressable onPress={() => router.push("/profileSettings" as RelativePathString)} style={{ transform: [{ translateY: -60 }, { translateX: -10 }] }} > <Feather name="settings" size={30} color="#333C42" /> </Pressable>
       </View>
 
-      {/* --- Content --- */}
+
+      {/* Content Section: Stacks */}
       <View style={styles.content}>
         {/* Header Row */}
-        <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8, width: "100%", justifyContent: "space-between", paddingHorizontal: 20 }}>
           <Pressable>
-            <Feather style={{ paddingRight: 107 }} name="plus-circle" size={28} color="#333C42" />
+            <Feather name="plus-circle" size={28} color="#333C42" />
           </Pressable>
           <Text style={{ fontSize: 24, color: "#333C42", fontWeight: "500", fontFamily: "Jacques Francois" }}>
             Stacks
           </Text>
           <Pressable>
-            <Feather style={{ paddingLeft: 107 }} name="filter" size={28} color="#333C42" />
+            <Feather name="filter" size={28} color="#333C42" />
           </Pressable>
         </View>
 
-        {/* --- Scrollable Polaroid Grid --- */}
+        {/* Scrollable Polaroid Grid */}
         <View style={{ flex: 1, width: "100%", paddingHorizontal: 10, paddingTop: 10 }}>
           <FlatList
             data={polaroids}
@@ -194,8 +200,6 @@ export default function ProfileScreen() {
             )}
           />
         </View>
-
-        
       </View>
     </View>
   );
@@ -204,7 +208,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
     paddingTop: 75,
     justifyContent: "flex-start",
     alignItems: "center",
@@ -222,7 +225,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     width: "97%",
     backgroundColor: "#8DD2CA",
-    alignItems: "center"
+    alignItems: "center",
   },
   polaroidContainer: {
     flex: 1,

@@ -1,7 +1,9 @@
 // app/TestSpotify.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react"
-import { View, Text, Button, Alert, StyleSheet, Image } from "react-native"
+import { View, Text, Button, Alert, StyleSheet, Image, Pressable } from "react-native"
 import * as Spotify from "@wwdrew/expo-spotify-sdk"
+import { router } from "expo-router"
+import Feather from "react-native-vector-icons/Feather"
 
 const TRACK_URI = "spotify:track:3NM41PVVUr0ceootKAtkAj"
 const API_BASE = "https://api.spotify.com/v1"
@@ -28,7 +30,7 @@ type PlaybackState = {
 export default function TestSpotify() {
   const [token, setToken] = useState<string | null>(null)
   const [playback, setPlayback] = useState<PlaybackState | null>(null)
-  const pollingRef = useRef<NodeJS.Timer | null>(null)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const title = playback?.item?.name ?? ""
   const artist = useMemo(
@@ -224,48 +226,49 @@ export default function TestSpotify() {
     }
   }
 
-    const [hasSong, setHasSong] = useState(null);
+  const [hasSong, setHasSong] = useState(null);
 
-    if (hasSong === null) {
-        return (
+  if (hasSong === null) {
+    return (
 
-            <View style={{
-                display: "flex",
-                alignItems: "center",
-                paddingTop: 110,
-                flex: 1,
+      <View style={{
+        display: "flex",
+        alignItems: "center",
+        paddingTop: 110,
+        flex: 1,
 
-            }}>
-                <Text style={{ color: "white", fontSize: 30, fontFamily: "Intern", fontWeight: 500 }}>
-                    Create Your Moment
-                </Text>
-                <View style={{
-                    alignItems: "center",
-                    paddingTop: 100,
-                }}>
-                    <Text style={{ color: "white", fontSize: 20, fontFamily: "Intern", fontWeight: 500 }}>
-                        Select a Song
-                    </Text>
-                </View>
+      }}>
+        <Text style={{ color: "white", fontSize: 30, fontFamily: "Intern", fontWeight: 500 }}>
+          Create Your Moment
+        </Text>
+        <View style={{
+          alignItems: "center",
+          paddingTop: 100,
+        }}>
+          <Text style={{ color: "white", fontSize: 20, fontFamily: "Intern", fontWeight: 500 }}>
+            Select a Song
+          </Text>
+        </View>
 
-                <View style={{ width: "48%", height: "29%", backgroundColor: "#272727", borderRadius: 30, marginTop: 30,
-                    justifyContent: "center", alignContent: "center", alignItems: "center"
-                 }}> 
-                <Pressable
-                          onPress={() => router.push("/createProcess/momentSelect")}
-                          style={{ }}
-                        >
-                          <Feather name="plus" size={120} color="white" />
-                        </Pressable>
+        <View style={{
+          width: "48%", height: "29%", backgroundColor: "#272727", borderRadius: 30, marginTop: 30,
+          justifyContent: "center", alignContent: "center", alignItems: "center"
+        }}>
+          <Pressable
+            onPress={() => router.push("/createProcess/momentSelect")}
+            style={{}}
+          >
+            <Feather name="plus" size={120} color="white" />
+          </Pressable>
 
-                </View>
-            </View>
+        </View>
+      </View>
 
 
 
 
-        )
-    }
+    )
+  }
 
 }
 const styles = StyleSheet.create({

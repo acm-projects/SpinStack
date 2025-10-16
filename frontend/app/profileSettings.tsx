@@ -1,6 +1,6 @@
 import { useAuth } from "@/_context/AuthContext";
 import { supabase } from "@/constants/supabase";
-import React, { useEffect, useState }, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image, Pressable, Dimensions } from "react-native";
 import { AutoSizeText, ResizeTextMode } from "react-native-auto-size-text";
 import Feather from "react-native-vector-icons/Feather";
@@ -113,16 +113,14 @@ export default function ProfileSettings() {
           <AutoSizeText
             mode={ResizeTextMode.max_lines}
             numberOfLines={1}
-            fontSize={18}
-            style={{ color: "white", fontWeight: "500" }}
+            style={{ color: "white", fontWeight: "500", fontSize: 18 }}
           >
             {username}
           </AutoSizeText>
           <AutoSizeText
             mode={ResizeTextMode.max_lines}
             numberOfLines={1}
-            fontSize={25}
-            style={{ color: "white", fontWeight: "500", width: "150%" }}
+            style={{ color: "white", fontWeight: "500", width: "150%", fontSize: 25 }}
           >
             "{bio}"
           </AutoSizeText>

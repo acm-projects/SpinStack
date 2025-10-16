@@ -65,9 +65,9 @@ export default function TabLayout() {
   }, [user?.id]);
   const createPic = require('../../assets/images/createPic.png');
 
-  
-  
-  
+
+
+
 
   return (
     <AuthProvider>
@@ -79,7 +79,7 @@ export default function TabLayout() {
           tabBarButton: HapticTab,
         }}
       >
-      >
+
         <Tabs.Screen
           name="momentEx"
           initialParams={{
