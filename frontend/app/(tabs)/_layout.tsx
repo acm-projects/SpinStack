@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
-import { AuthProvider } from '@/_context/AuthContext';
+import React, { useEffect } from 'react';
+import { AuthProvider, useAuth } from '@/_context/AuthContext';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
@@ -9,9 +9,10 @@ import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Stack from '@/assets/other/Stack.svg';
 import { RNSVGSvgIOS } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { Image, View, ActivityIndicator } from 'react-native';
+import { Dimensions, Image, View } from 'react-native';
 import { demoMoment, demoMoments, demoGroups } from '../../components/demoMoment';
 import { useFonts } from 'expo-font';
+import { supabase } from '@/constants/supabase';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -21,6 +22,52 @@ export default function TabLayout() {
   
   
   
+  const { user, session, loading, pfpUrl, setPfpUrl } = useAuth();
+  const { width } = Dimensions.get("window");
+  const IMAGE_SIZE = width * 0.2;
+
+
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchUserInfo = async () => {
+      try {
+        // Fetch user info from Supabase
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("pfp_url")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (userError) {
+          console.error("Error fetching user info:", userError);
+          return;
+        }
+
+        // Fetch presigned URL if user has a profile image
+        if (userData?.pfp_url) {
+          try {
+            const res = await fetch(
+              `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
+            );
+            if (res.ok) {
+              const { downloadURL } = await res.json();
+              setPfpUrl(downloadURL); // Set global pfpUrl
+            } else {
+              console.error("Failed to fetch presigned URL:", res.status);
+            }
+          } catch (err) {
+            console.error("Error fetching presigned URL:", err);
+          }
+        }
+      } catch (err) {
+        console.error("Unexpected error fetching user info:", err);
+      }
+    };
+
+    fetchUserInfo();
+  }, [user?.id]);
 
   return (
     <AuthProvider>
@@ -32,6 +79,7 @@ export default function TabLayout() {
           tabBarButton: HapticTab,
         }}
       >
+      
         <Tabs.Screen
           name="momentEx"
           initialParams={{ momentInfo: demoMoment }}

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ImageBackground } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Font from 'expo-font';
+import { supabase } from '@/constants/supabase';
+import { useAuth } from '@/_context/AuthContext';
 
 export default function ProfileInfo() {
   const router = useRouter();
@@ -9,6 +11,9 @@ export default function ProfileInfo() {
   const [lastName, setLastName] = useState('');
   const [handle, setHandle] = useState('');
   const [bio, setBio] = useState('');
+  const { user, session, loading, signingUp, setSigningUp} = useAuth();
+
+
   const handleNext = () => {
     console.log('User Info:', { firstName, lastName, handle, bio });
     router.push("../signupProcess/profileImage");

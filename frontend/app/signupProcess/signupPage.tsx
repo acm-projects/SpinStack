@@ -1,7 +1,7 @@
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 import React, { useState, useEffect } from "react";
-import { Alert, Keyboard, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View, Button, ImageBackground, Pressable } from "react-native";
+import { Alert, Keyboard, StyleSheet, Text, TextInput, ActivityIndicator, TouchableWithoutFeedback, View, Button, ImageBackground, Pressable } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { supabase } from "@/constants/supabase";
 import { AuthProvider, useAuth } from "@/_context/AuthContext"; // Adjusted path, update as needed
@@ -10,7 +10,6 @@ import { useRouter } from 'expo-router';
 
 export default function SignUpPage() {
   const router = useRouter();
-  const { user, setUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -27,37 +26,98 @@ export default function SignUpPage() {
     loadFonts();
   }, []);
 
+  const { signingUp, setSigningUp } = useAuth();
+  const [isSigningIn, setIsSigningIn] = useState(false); // Add this flag
 
-  // Redirect if already logged in
+  const { session, loading } = useAuth();
+
   useEffect(() => {
-    if (user) router.replace("../(tabs)/profile");
-  }, [user]);
+    if (loading) return;
+
+    // Only redirect if we're not actively signing in/up
+    if (session && !signingUp && !isSigningIn) {
+      router.replace("/(tabs)/profile");
+    }
+  }, [session, loading, signingUp, isSigningIn]);
 
   const handleSignUp = async () => {
     Keyboard.dismiss();
+
     const regexEmail = /^\S+@\S+\.\S+$/;
     const regexPass = /^(?=.*[0-9])(?=.*[A-Z]).{6,}$/;
 
-    if (!regexEmail.test(email)) return Alert.alert("Invalid Email");
-    if (!regexPass.test(password)) return Alert.alert("Invalid Password");
+    if (!regexEmail.test(email)) {
+      return Alert.alert("Invalid Email", "Please enter a valid email address.");
+    }
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) return Alert.alert("Signup Error", error.message);
+    if (!regexPass.test(password)) {
+      return Alert.alert(
+        "Invalid Password",
+        "Password must be at least 6 characters with 1 number and 1 uppercase letter."
+      );
+    }
 
-    if (data.user) setUser(data.user);
-    Alert.alert("Success", "Check your email to confirm your account.");
-    router.replace("../(tabs)/profile"); // redirect to home after signup
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        Alert.alert("Signup Error", error.message);
+        setSigningUp(false); // Only set to false on error
+        return;
+      }
+
+      setSigningUp(true);
+      Alert.alert("Success", "Account created! Welcome!");
+      router.push("/signupProcess/profileSetup");
+
+    } catch (error) {
+      console.error("Signup error:", error);
+      Alert.alert("Error", "Something went wrong. Please try again.");
+      setSigningUp(false);
+    }
   };
 
   const handleSignIn = async () => {
     Keyboard.dismiss();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return Alert.alert("Sign In Error", error.message);
+    setIsSigningIn(true); // Set flag before signing in
+    setSigningUp(false);
 
-    if (data.user) setUser(data.user);
-    Alert.alert("Welcome back!", `Signed in as ${data.user.email}`);
-    router.replace("../(tabs)/profile"); // redirect after login
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        Alert.alert("Sign In Error", error.message);
+        setIsSigningIn(false);
+        return;
+      }
+
+      console.log("Signed in");
+      Alert.alert("Welcome back!", `Signed in as ${data.user?.email}`);
+      // Let layout.tsx handle the redirect
+
+    } catch (error) {
+      console.error("Sign in error:", error);
+      Alert.alert("Error", "Something went wrong. Please try again.");
+      setIsSigningIn(false);
+      setSigningUp(true);
+    }
   };
+
+  // Show loading while checking if user is already logged in
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
+        <ActivityIndicator size="large" color="#0BFFE3" />
+      </View>
+    );
+  }
 
   return (
     <ImageBackground

@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useAuth } from "@/_context/AuthContext";
+import { supabase } from "@/constants/supabase";
 import { View, Text, StyleSheet, Image, Pressable, Dimensions } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import * as Font from "expo-font";
@@ -6,6 +8,10 @@ import { useRouter } from "expo-router";
 
 export default function ProfileSettings() {
   const { width } = Dimensions.get("window");
+  // State for user info
+  const [username, setUsername] = useState<string>("Loading...");
+  const [bio, setBio] = useState<string>("");
+  const { user, session, loading, pfpUrl, setPfpUrl } = useAuth();
   const IMAGE_SIZE = width * 0.2;
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const router = useRouter();

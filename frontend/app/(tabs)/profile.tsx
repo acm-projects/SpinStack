@@ -2,15 +2,78 @@ import React, { useState, useEffect } from "react";
 import { View, Text, Image, Button, StyleSheet, Pressable, Dimensions, FlatList } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { RelativePathString, useRouter } from "expo-router";
+import { supabase } from "@/constants/supabase";
 import { useAuth } from "@/_context/AuthContext";
 import * as Font from "expo-font";
 
 export default function ProfileScreen() {
   const { width } = Dimensions.get("window");
   const IMAGE_SIZE = width * 0.2;
-  const numFriends = 7;
-  const { setSession, setUser } = useAuth();
+  const { user, session, loading, pfpUrl, setPfpUrl } = useAuth();
   const router = useRouter();
+  const { logout } = useAuth();
+
+  // State for user info
+  const [username, setUsername] = useState<string>("Loading...");
+  const [bio, setBio] = useState<string>("");
+  const [numFriends, setNumFriends] = useState<number>(0);
+
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchUserInfo = async () => {
+      try {
+        // Fetch user info from Supabase
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("username, bio, pfp_url")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (userError) {
+          console.error("Error fetching user info:", userError);
+          return;
+        }
+
+        setUsername(userData?.username ?? "Unknown");
+        setBio(userData?.bio ?? "");
+
+        // Fetch presigned URL if user has a profile image
+        if (userData?.pfp_url) {
+          try {
+            const res = await fetch(
+              `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
+            );
+            if (res.ok) {
+              const { downloadURL } = await res.json();
+              setPfpUrl(downloadURL); // Set global pfpUrl
+            } else {
+              console.error("Failed to fetch presigned URL:", res.status);
+            }
+          } catch (err) {
+            console.error("Error fetching presigned URL:", err);
+          }
+        }
+
+        // Fetch number of friends
+        const { count, error: friendsError } = await supabase
+          .from("friends")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id);
+
+        if (friendsError) {
+          console.error("Error fetching friends count:", friendsError);
+        } else {
+          setNumFriends(count ?? 0);
+        }
+      } catch (err) {
+        console.error("Unexpected error fetching user info:", err);
+      }
+    };
+
+    fetchUserInfo();
+  }, [user?.id]);
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
   const loadFonts = async () => {
@@ -26,9 +89,8 @@ export default function ProfileScreen() {
   }, []);
 
   const handleSignOut = async () => {
-    setSession(null);
-    setUser(null);
-    router.replace("/signupProcess/signupPage" as RelativePathString);
+    logout();
+    router.replace('/signupProcess/signupPage' as RelativePathString);
   };
 
   const polaroids = [
@@ -41,15 +103,18 @@ export default function ProfileScreen() {
   ];
 
   return (
-    
+
     <View style={styles.container}>
-      <Text style={styles.header}>Profile</Text>
+      
+  
+
+        {/* Centered title */}
+        <Text style={[styles.header, { textAlign: "center" }]}>Profile</Text>
 
       {/* --- Profile Header --- */}
       <View style={{ flexDirection: "row", marginTop: 5 }}>
         <Image
-          source={require("../../assets/images/profile.png")}
-          style={{
+          source={pfpUrl ? { uri: pfpUrl } : require("../../assets/images/profile.png")} style={{
             width: IMAGE_SIZE,
             height: IMAGE_SIZE,
             borderRadius: IMAGE_SIZE / 2,
@@ -63,7 +128,9 @@ export default function ProfileScreen() {
             {"life is so short :("}
           </Text>
         </View>
-        <View style={{ justifyContent: "center", paddingLeft: 30 }}>
+
+        {/* Friends count */}
+        <View style={{ justifyContent: "center", paddingHorizontal: 10 }}>
           <Text
             style={{
               fontSize: 14,
@@ -71,6 +138,7 @@ export default function ProfileScreen() {
               textDecorationLine: "underline",
               fontFamily: "Luxurious Roman",
             }}
+            numberOfLines={1}
           >
             {numFriends} Friends
           </Text>
@@ -134,6 +202,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333C42",
     fontFamily: "Luxurious Roman",
+    
   },
   content: {
     flex: 1,

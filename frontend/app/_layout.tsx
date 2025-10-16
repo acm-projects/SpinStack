@@ -15,31 +15,32 @@ export const unstable_settings = {  initialRouteName: 'signupProcess/signupPage'
 function RootStack() {
   const colorScheme = useColorScheme();
   const router = useRouter();
-  const { user, isLoading, setUser } = useAuth();
-  const [isReady, setIsReady] = useState(false);
+  const { session, loading, profileComplete, checkingProfile } = useAuth(); // Added 'loading' from AuthContext
 
-  // --------------- FORCE SIGN-OUT FOR TESTING ---------------
-  useEffect(() => {
-    supabase.auth.signOut().then(() => {
-      setUser(null);    // ensure context is cleared
-      setIsReady(true); // mark ready after sign out
-    });
-  }, []);
-
-  // --------------- REDIRECT LOGIC ---------------
+  // --------------- FORCE SIGN-OUT FOR TESTING (Optional - comment out when done testing) ---------------
   /* useEffect(() => {
-    if (isReady && !isLoading) {
-      if (!user) {
-        router.replace('/signupProcess/signupPage'); // Not logged in → signup
-      } else {
-        router.replace('/(tabs)/home'); // Logged in → home
-      }
-    }
-  }, [isReady, isLoading, user]);
+    const forceLogout = async () => {
+      await logout();
+    };
+    forceLogout();
+  }, []); // Empty array means it only runs once on mount
   */
 
-  // --------------- LOADING SPINNER ---------------
-  if (!isReady || isLoading) {
+  // --------------- REDIRECT LOGIC ---------------
+  useEffect(() => {
+    if (loading || checkingProfile) return;
+
+    if (!session) {
+      router.replace('/signupProcess/signupPage');
+    } else if (!profileComplete) {
+      router.push('/signupProcess/profileSetup');
+    } else {
+      router.replace('/(tabs)/profile');
+    }
+  }, [loading, checkingProfile, session, profileComplete]);
+
+  //Loading spinner while AuthContext checks for existing session
+  if (loading || checkingProfile) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
         <ActivityIndicator size="large" color="white" />
@@ -55,6 +56,7 @@ function RootStack() {
         name="signupProcess/signupPage"
         options={{ headerShown: false }}
       />
+
       {/* Tabs */}
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 
@@ -81,6 +83,7 @@ function RootStack() {
           ),
         }}
       />
+
       <Stack.Screen
         name="signupProcess/profileSetup"
         options={{
@@ -100,6 +103,7 @@ function RootStack() {
           ),
         }}
       />
+
       <Stack.Screen
         name="signupProcess/profileImage"
         options={{
@@ -119,6 +123,7 @@ function RootStack() {
           ),
         }}
       />
+
       <Stack.Screen
         name="signupProcess/spotifyConnect"
         options={{
@@ -181,11 +186,6 @@ function RootStack() {
     </Stack>
   );
 }
-
- 
-
-
-
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
