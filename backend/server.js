@@ -16,6 +16,7 @@ const likesStacksRoutes = require('./routes/likes_stacks');
 const likesMomentsRoutes = require('./routes/likes_moments');
 const uploadRoutes = require('./routes/upload');
 const dotenv = require('dotenv');
+const spotifyRoutes = require('./routes/spotify');
 
 dotenv.config();
 

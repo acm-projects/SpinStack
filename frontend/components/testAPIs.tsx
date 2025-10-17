@@ -5,17 +5,9 @@ import { useEffect, useState } from "react";
 import { supabase } from '@/constants/supabase';
 import { Button, ScrollView, View, Text, StyleSheet, Keyboard, TextInput, TouchableWithoutFeedback, Alert } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-<<<<<<< HEAD:frontend/app/(tabs)/testAPIs.tsx
-import { useAuth } from '../../_context/AuthContext';
-<<<<<<< HEAD:frontend/app/(tabs)/testAPIs.tsx
-
-=======
-=======
 import { useAuth } from '../_context/AuthContext';
 import { NGROK_URL } from '@env';
->>>>>>> main:frontend/components/testAPIs.tsx
 
->>>>>>> main:frontend/components/testAPIs.tsx
 
 
 
