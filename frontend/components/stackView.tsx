@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FlatList, Dimensions, View, ViewToken, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
-import MomentView from "./moment";
+import MomentView from "./newMoment";
 import {demoMoments} from "./demoMoment"; 
 import * as Spotify from "@wwdrew/expo-spotify-sdk";
 import * as SecureStore from 'expo-secure-store';

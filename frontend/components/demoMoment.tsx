@@ -9,7 +9,7 @@ const mom = {
       artist: "Atura",
       start: 0.65,
       end: 0.87,
-      length: 6767,
+      length: 204,
       album: albumImg,
       vinyl: vinylImg,
       waveform: [3, 4, 7, 8, 10, 2, 11, 12, 13, 17, 18, 16, 15, 14, 11, 7, 6, 7, 8, 9, 4, 3, 2, 1, 1, 5, 4, 8, 9, 10, 12, 13, 15, 17, 16, 19, 20, 22, 24, 24, 23, 21, 19, 18, 15, 11, 10, 7, 6, 1],
@@ -118,44 +118,49 @@ const demoDaily = {
     moment: mom,
     date: 0,
     title: "Cozy Winter Night",
-    rating: 5,
+    rating: -1,
 }
 
 const demoDaily3 = {
     moment: mom,
-    date: 2,
+    date: 1,
     title: "Peaceful Sunrise",
+    rating: -1,
 }
 
 const demoDaily4 = {
     moment: mom,
-    date: 3,
+    date: 2,
     title: "Chair Throwing Rage",
+    rating: -1,
 }
 
 const demoDaily5 = {
     moment: mom,
-    date: 4,
-    title: "Rainy Walk down an empty street"
+    date: 3,
+    title: "Rainy Walk down an empty street",
+    rating: -1,
 }
 
 const demoDaily6 = {
     moment: mom,
-    date: 5,
-    title: "Floating in a blackhole"
+    date: 4,
+    title: "Floating in a blackhole",
+    rating: -1,
 }
 
 const demoDaily7 = {
     moment: mom,
-    date: 6,
-    title: "Music to Goon to 👅🍆💦💦💦💦"
+    date: 5,
+    title: "Music to Goon to 👅🍆💦💦💦💦",
+    rating: 5,
 }
 
 const demoDaily2 = {
     moment: mom,
-    date: 1,
+    date: 6,
     title: "Soul-crushing Heartbreak",
-    rating: 5,
+    rating: -1,
 }
 
 export const demoGroup = {

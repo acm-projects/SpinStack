@@ -2,6 +2,7 @@
 // run "node server.js" to start server before testing with postman (must run every time you change the code)
 // for each route, must add new import/require that points to file path 
 // AND must mount routes to paths/urls
+const AWS = require('aws-sdk');
 const express = require('express');
 const momentsRoutes = require('./routes/moments');
 const usersRoutes = require('./routes/users');
@@ -13,7 +14,12 @@ const groupMemRoutes = require('./routes/group_members');
 const dailiesRoutes = require('./routes/dailies');
 const likesStacksRoutes = require('./routes/likes_stacks');
 const likesMomentsRoutes = require('./routes/likes_moments');
-const spotifyRoutes = require('./routes/spotify');
+const uploadRoutes = require('./routes/upload');
+const dotenv = require('dotenv');
+
+dotenv.config();
+
+
 
 const app = express();
 
@@ -31,6 +37,7 @@ app.use('/api/group_members', groupMemRoutes);
 app.use('/api/dailies', dailiesRoutes);
 app.use('/api/likes_stacks', likesStacksRoutes);
 app.use('/api/likes_moments', likesMomentsRoutes);
+app.use('/api/upload', uploadRoutes);
 app.use('/api/spotify', spotifyRoutes);
 
 // Start the server
