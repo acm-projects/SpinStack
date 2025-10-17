@@ -164,8 +164,7 @@ export default function TabLayout() {
         />
 
         <Tabs.Screen
-          name="stack"
-          initialParams={{ momentInfo: demoMoments }}
+          name="search" 
           options={{
             title: ' ',
             tabBarIcon: ({ color }) => (
@@ -225,7 +224,12 @@ export default function TabLayout() {
             ),
           }}
         />
-
+        <Tabs.Screen
+          name="index"
+          options={{
+            href: null, // This hides it from the tab bar
+          }}
+        />
         <Tabs.Screen
           name="profile"
           options={{

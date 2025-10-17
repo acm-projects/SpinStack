@@ -19,9 +19,10 @@ import {
   Animated,
   useWindowDimensions,
 } from "react-native";
+import * as SecureStore from 'expo-secure-store';
 
-const TRACK_URI = "spotify:track:3NM41PVVUr0ceootKAtkAj";
-const API_BASE = "https://api.spotify.com/v1";
+const TRACK_URI = "spotify:track:3NM41PVVUr0ceootKAtkAj"
+const API_BASE = "https://api.spotify.com/v1"
 
 type Device = {
   id: string;
@@ -43,10 +44,9 @@ type PlaybackState = {
 };
 
 export default function TestSpotify() {
-  const [token, setToken] = useState<string | null>(null);
-  const [playback, setPlayback] = useState<PlaybackState | null>(null);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [hasSong, setHasSong] = useState<boolean | null>(null);
+  const [token, setToken] = useState<string | null>(null)
+  const [playback, setPlayback] = useState<PlaybackState | null>(null)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const title = playback?.item?.name ?? "";
   const artist = useMemo(
@@ -64,13 +64,18 @@ export default function TestSpotify() {
     try {
       const session = await Spotify.Authenticate.authenticateAsync({
         scopes: [
+          "user-read-currently-playing",
           "user-read-playback-state",
           "user-modify-playback-state",
           "app-remote-control",
         ],
-      });
-      setToken(session.accessToken);
-      Alert.alert("Spotify", "Authorized!");
+      })
+
+      console.log("Got session:", session)
+      if (!session?.accessToken) throw new Error("No access token")
+      setToken(session.accessToken)
+      await SecureStore.setItemAsync('spotifyToken', session.accessToken);
+      Alert.alert("Spotify", "Authorized!")
     } catch (e: any) {
       Alert.alert("Auth error", String(e?.message ?? e));
     }
