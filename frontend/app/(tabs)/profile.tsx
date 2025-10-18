@@ -1,5 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, Pressable, StyleSheet, Dimensions, FlatList } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  StyleSheet,
+  Dimensions,
+  FlatList,
+  ActivityIndicator,
+} from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { RelativePathString, useRouter } from "expo-router";
 import { supabase } from "@/constants/supabase";
@@ -16,6 +25,11 @@ export default function ProfileScreen() {
   const [bio, setBio] = useState<string>("");
   const [numFriends, setNumFriends] = useState<number>(0);
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [moments, setMoments] = useState<any[]>([]);
+  const [loadingMoments, setLoadingMoments] = useState(true);
+
+  const POLAROID_WIDTH = 150;
+  const POLAROID_HEIGHT = 200;
 
   // Load fonts
   const loadFonts = async () => {
@@ -50,7 +64,6 @@ export default function ProfileScreen() {
         setUsername(userData?.username ?? "Unknown");
         setBio(userData?.bio ?? "");
 
-        // Fetch presigned profile image
         if (userData?.pfp_url) {
           try {
             const res = await fetch(
@@ -86,19 +99,36 @@ export default function ProfileScreen() {
     fetchUserInfo();
   }, [user?.id]);
 
+  // Fetch moments
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchMoments = async () => {
+      try {
+        setLoadingMoments(true);
+        const { data, error } = await supabase
+          .from("moments")
+          .select("id, cover_url, title, description, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        setMoments(data || []);
+      } catch (err) {
+        console.error("Error fetching moments:", err);
+      } finally {
+        setLoadingMoments(false);
+      }
+    };
+
+    fetchMoments();
+  }, [user?.id]);
+
   const handleSignOut = async () => {
     logout();
     router.replace("/signupProcess/signupPage" as RelativePathString);
   };
-
-  const polaroids = [
-    require("../../assets/images/polaroidFrame.png"),
-    require("../../assets/images/polaroidFrame.png"),
-    require("../../assets/images/polaroidFrame.png"),
-    require("../../assets/images/polaroidFrame.png"),
-    require("../../assets/images/polaroidFrame.png"),
-    require("../../assets/images/polaroidFrame.png"),
-  ];
 
   if (!fontsLoaded) return null;
 
@@ -110,8 +140,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* Profile Row */}
-      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5, paddingHorizontal: 15 }}>
-        {/* Profile Image */}
+      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5, paddingHorizontal: 20 }}>
         <Image
           source={pfpUrl ? { uri: pfpUrl } : require("../../assets/images/profile.png")}
           style={{
@@ -120,8 +149,6 @@ export default function ProfileScreen() {
             borderRadius: IMAGE_SIZE / 2,
           }}
         />
-
-        {/* Name + Bio */}
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 }}>
           <Text
             style={{
@@ -147,8 +174,6 @@ export default function ProfileScreen() {
             "{bio || 'life is so short :('}"
           </Text>
         </View>
-
-        {/* Friends count + Settings */}
         <View style={{ alignItems: "flex-end" }}>
           <Text
             style={{
@@ -167,9 +192,8 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Content Section: Stacks */}
+      {/* Content Section */}
       <View style={styles.content}>
-        {/* Header Row */}
         <View
           style={{
             flexDirection: "row",
@@ -184,32 +208,64 @@ export default function ProfileScreen() {
             <Feather name="plus-circle" size={28} color="#333C42" />
           </Pressable>
           <Text style={{ fontSize: 24, color: "#333C42", fontWeight: "500", fontFamily: "Jacques Francois" }}>
-            Stacks
+            Moments
           </Text>
           <Pressable>
             <Feather name="filter" size={28} color="#333C42" />
           </Pressable>
         </View>
 
-        {/* Scrollable Polaroid Grid */}
-        <View style={{ flex: 1, width: "100%", paddingHorizontal: 10, paddingTop: 10 }}>
-          <FlatList
-            data={polaroids}
-            numColumns={2}
-            showsVerticalScrollIndicator={false}
-            keyExtractor={(_, index) => index.toString()}
-            contentContainerStyle={{ paddingVertical: 0 }}
-            renderItem={({ item }) => (
-              <View style={styles.polaroidContainer}>
-                <Image source={item} style={styles.polaroidImage} />
-              </View>
-            )}
-          />
+        <View style={{ flex: 1, width: "100%", paddingHorizontal: 20, paddingTop: 10 }}>
+          {loadingMoments ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#333C42" />
+            </View>
+          ) : moments.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <Text style={{ color: "#333C42", fontFamily: "Jacques Francois" }}>No moments yet 😢</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={moments}
+              numColumns={2}
+              showsVerticalScrollIndicator={false}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.momentContainer}>
+                  {/* Cover Image */}
+                  <Image
+                    source={{ uri: item.cover_url }}
+                    style={styles.coverImage}
+                    resizeMode="cover"
+                  />
+
+                  {/* Polaroid Frame */}
+                  <Image
+                    source={require("../../assets/images/polaroidFrame.png")}
+                    style={styles.polaroid}
+                  />
+
+                  {/* Text on top of both cover and polaroid, at the bottom */}
+                  <View style={[styles.textOnTop, { bottom: 10 }]}>
+                    <Text style={styles.titleText} numberOfLines={1} ellipsizeMode="tail">
+                      {item.title}
+                    </Text>
+                    <Text style={styles.captionText} numberOfLines={1} ellipsizeMode="tail">
+                      {item.description}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            />
+          )}
         </View>
       </View>
     </View>
   );
 }
+
+const POLAROID_WIDTH = 150;
+const POLAROID_HEIGHT = 200;
 
 const styles = StyleSheet.create({
   container: {
@@ -233,15 +289,52 @@ const styles = StyleSheet.create({
     backgroundColor: "#8DD2CA",
     alignItems: "center",
   },
-  polaroidContainer: {
+  momentContainer: {
+    width: POLAROID_WIDTH,
+    height: POLAROID_HEIGHT,
+    position: "relative",
+    margin: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+
+  },
+  coverImage: {
+    width: "88%",
+    height: "88%",
+  },
+  polaroid: {
+    width: "100%",
+    height: "100%",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    resizeMode: "contain",
+  },
+  textOnTop: {
+    position: "absolute",
+    width: "90%",
+    alignItems: "center",
+
+  },
+  titleText: {
+    color: "#030303ff",
+    fontWeight: "700",
+    fontSize: 14,
+    textAlign: "center",
+    fontFamily: "Jacques Francois",
+
+  },
+  captionText: {
+    color: "#333C42",
+    fontSize: 12,
+    textAlign: "center",
+    fontFamily: "LuxuriousRoman",
+    fontWeight: "light"
+  },
+  loadingContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 20,
-  },
-  polaroidImage: {
-    width: 150,
-    height: 180,
-    resizeMode: "contain",
   },
 });
