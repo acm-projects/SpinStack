@@ -203,6 +203,7 @@ export default function TabLayout() {
                   width: 55,
                   height: 55,
                   borderRadius: 50,
+                  marginLeft: 10,
                   overflow: 'hidden',
                 }}
               />
@@ -235,16 +236,26 @@ export default function TabLayout() {
           options={{
             title: ' ',
             tabBarIcon: ({ color }) => (
-              <Image
-                source={pfpUrl ? { uri: pfpUrl } : require("../../assets/images/profile.png")}
+              <View
                 style={{
-                  width: 35,
-                  height: 35,
-                  borderRadius: 50,
-                  borderWidth: 1,
-                  borderColor: 'white',
+                  width: 0,   // fixed width for the tab icon
+                  height: 35,  // fixed height
+                  marginLeft: 0,
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
-              />
+              >
+                <Image
+                  source={pfpUrl ? { uri: pfpUrl } : require("../../assets/images/profile.png")}
+                  style={{
+                    width: 35,
+                    height: 35,
+                    borderRadius: 50,
+                    borderWidth: 1,
+                    borderColor: 'white',
+                  }}
+                />
+              </View>
             ),
           }}
         />
