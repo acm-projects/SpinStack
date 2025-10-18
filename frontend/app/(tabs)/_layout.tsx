@@ -17,7 +17,7 @@ import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const profilePic = require('../../assets/images/profile.png');
-  const createPic = require('../../assets/images/createPic.png');
+  const createPic = require('../../assets/images/stack.png');
   const { width } = Dimensions.get('window');
   const IMAGE_SIZE = width * 0.2;
 
@@ -164,7 +164,7 @@ export default function TabLayout() {
         />
 
         <Tabs.Screen
-          name="stack"
+          name="home2"
           initialParams={{ momentInfo: demoMoments }}
           options={{
             title: ' ',
@@ -204,7 +204,7 @@ export default function TabLayout() {
                   width: 55,
                   height: 55,
                   borderRadius: 50,
-                  overflow: 'hidden',
+                  
                 }}
               />
             ),

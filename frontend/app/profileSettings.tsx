@@ -75,7 +75,7 @@ export default function ProfileSettings() {
       </View>
 
       {/* Profile Image + Info */}
-      <View style={{ flexDirection: "row", paddingRight: 141 }}>
+      <View style={{ flexDirection: "row", paddingRight: 37 }}>
         <View style={{ position: "relative" }}>
           <Image
             source={pfpUrl ? { uri: pfpUrl } : require("../assets/images/profile.png")}
@@ -89,21 +89,17 @@ export default function ProfileSettings() {
           </Pressable>
         </View>
 
-        <View style={{ flex: 2, paddingLeft: 18, justifyContent: "center" }}>
-          <AutoSizeText
-            mode={ResizeTextMode.max_lines}
-            numberOfLines={1}
-            style={{ color: "white", fontWeight: "500", fontSize: 18 }}
+        <View style={{ flexDirection: "column", paddingLeft: 18, justifyContent: "center" }}>
+          <Text
+            style={{ color: "#333C42", fontWeight: "500", fontSize: 20, fontFamily: "Jacques Francois", }}
           >
             {username}
-          </AutoSizeText>
-          <AutoSizeText
-            mode={ResizeTextMode.max_lines}
-            numberOfLines={1}
-            style={{ color: "white", fontWeight: "500", width: "150%", fontSize: 25 }}
+          </Text>
+          <Text
+            style={{ color: "#333C42", fontWeight: "500", width: "150%", fontSize: 14, fontFamily: "Jacques Francois", }}
           >
-            "{bio}"
-          </AutoSizeText>
+            Bio: {bio}
+          </Text>
         </View>
       </View>
 
@@ -131,17 +127,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
     width: "90%",
-    marginRight: 30,
+    marginRight: 128,
+    justifyContent: "center"
   },
   backButton: {
-    marginRight: 10,
+    paddingRight: 60,
   },
   header: {
     color: "#333C42",
     fontSize: 35,
     fontFamily: "Luxurious Roman",
     fontWeight: "600",
-    alignItems: "center",
+    justifyContent: "center",
   },
   cameraButton: {
     position: "absolute",
@@ -164,6 +161,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#8DD2CA",
     justifyContent: "flex-start",
     alignItems: "flex-start",
+    
   },
   optionText: {
     fontSize: 18,

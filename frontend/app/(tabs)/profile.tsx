@@ -105,8 +105,16 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={{ width: "100%", alignItems: "center", paddingHorizontal: 10 }}>
+      <View style={{ flexDirection: "row", width: "100%", justifyContent: "center", alignItems: "center", paddingLeft: 115 }}>
         <Text style={styles.header}>Profile</Text>
+
+    <View style={{ marginLeft: 85 }}>
+<Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
+            <Feather name="settings" size={30} color="#333C42" />
+          </Pressable>
+
+    </View>
+         
       </View>
 
       {/* Profile Row */}
@@ -122,7 +130,7 @@ export default function ProfileScreen() {
         />
 
         {/* Name + Bio */}
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 }}>
+        <View style={{ width: 200, alignItems: "flex-start", justifyContent: "center", paddingHorizontal: 10 }}>
           <Text
             style={{
               fontSize: 20,
@@ -150,20 +158,23 @@ export default function ProfileScreen() {
 
         {/* Friends count + Settings */}
         <View style={{ alignItems: "flex-end" }}>
-          <Text
+          
+          <View style={{ flexDirection: "column", justifyContent: "center", marginTop: 0}}>
+            
+              <Text
             style={{
               fontSize: 14,
               color: "#333C42",
               textDecorationLine: "underline",
               fontFamily: "Luxurious Roman",
-              marginBottom: 8,
+              marginBottom: 0,
             }}
           >
             {numFriends} Friends
           </Text>
-          <Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
-            <Feather name="settings" size={30} color="#333C42" />
-          </Pressable>
+          </View>
+        
+          
         </View>
       </View>
 
