@@ -15,6 +15,7 @@ import {
     Keyboard,
     TouchableWithoutFeedback,
 } from "react-native";
+import React from "react";
 
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 

@@ -10,7 +10,8 @@ import { AuthProvider, useAuth } from '../_context/AuthContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/constants/supabase';
 import { useFonts } from "expo-font";
-export const unstable_settings = {  initialRouteName: 'signupProcess/signupPage' };
+import React from 'react';
+export const unstable_settings = { initialRouteName: 'signupProcess/signupPage' };
 
 function RootStack() {
   const colorScheme = useColorScheme();
@@ -49,7 +50,7 @@ function RootStack() {
   }
 
   return (
-    
+
     <Stack screenOptions={{ headerShown: false }}>
       {/* Signup Page */}
       <Stack.Screen
@@ -145,7 +146,7 @@ function RootStack() {
       />
 
 
-        <Stack.Screen
+      <Stack.Screen
         name="createProcess/momentSelect"
         options={{
           title: '',
