@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/constants/supabase";
 import {
     View,
@@ -19,7 +19,7 @@ import React from "react";
 
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
-type SearchType = "track" | "album" | "artist" | "playlist";
+type SearchType = "song" | "stack" | "user";
 
 interface SpotifyTrack {
     id: string;
@@ -34,47 +34,157 @@ interface SpotifyTrack {
     preview_url?: string;
 }
 
-interface SpotifyAlbum {
+interface Stack {
     id: string;
-    name: string;
-    artists: { name: string }[];
-    images: { url: string }[];
-    release_date: string;
-    total_tracks: number;
-    uri: string;
-}
-
-interface SpotifyArtist {
-    id: string;
-    name: string;
-    images: { url: string }[];
-    genres: string[];
-    followers: { total: number };
-    uri: string;
-}
-
-interface SpotifyPlaylist {
-    id: string;
-    name: string;
+    title: string;
     description: string;
-    images: { url: string }[];
-    owner: { display_name: string };
-    tracks: { total: number };
-    uri: string;
+    cover_url: string;
+    visibility: boolean;
+    created_at: string;
+    user_id: string;
+    users?: {
+        username: string;
+        pfp_url: string;
+    };
 }
 
-type SearchResult = SpotifyTrack | SpotifyAlbum | SpotifyArtist | SpotifyPlaylist;
+interface User {
+    id: string;
+    username: string;
+    email: string;
+    pfp_url: string;
+    bio: string;
+    first_name: string;
+    last_name: string;
+}
+
+interface TopHitTrack extends SpotifyTrack {
+    momentCount: number;
+}
+
+type SearchResult = SpotifyTrack | Stack | User;
 
 export default function SearchScreen() {
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<{
         tracks?: SpotifyTrack[];
-        albums?: SpotifyAlbum[];
-        artists?: SpotifyArtist[];
-        playlists?: SpotifyPlaylist[];
+        stacks?: Stack[];
+        users?: User[];
     }>({});
+    const [topHits, setTopHits] = useState<TopHitTrack[]>([]);
     const [loading, setLoading] = useState(false);
-    const [selectedTab, setSelectedTab] = useState<SearchType>("track");
+    const [loadingTopHits, setLoadingTopHits] = useState(true);
+    const [selectedTab, setSelectedTab] = useState<SearchType>("song");
+
+    // Helper function to extract Spotify track ID from various formats
+    const extractTrackId = (songUrl: string): string | null => {
+        if (!songUrl) return null;
+
+        if (songUrl.includes("spotify:track:")) {
+            return songUrl.split("spotify:track:")[1]?.split("?")[0] || null;
+        }
+
+        if (songUrl.includes("open.spotify.com/track/")) {
+            const match = songUrl.match(/track\/([a-zA-Z0-9]+)/);
+            return match ? match[1] : null;
+        }
+
+        if (/^[a-zA-Z0-9]+$/.test(songUrl)) {
+            return songUrl;
+        }
+
+        return null;
+    };
+
+    useEffect(() => {
+        fetchTopHits();
+    }, []);
+
+    const fetchTopHits = async () => {
+        try {
+            setLoadingTopHits(true);
+
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+            const { data: moments, error } = await supabase
+                .from("moments")
+                .select("song_url")
+                .gte("created_at", sevenDaysAgo.toISOString());
+
+            if (error) {
+                console.error("Error fetching moments:", error);
+                setLoadingTopHits(false);
+                return;
+            }
+
+            if (!moments || moments.length === 0) {
+                setTopHits([]);
+                setLoadingTopHits(false);
+                return;
+            }
+
+            const songCounts: { [key: string]: number } = {};
+            moments?.forEach((moment) => {
+                if (moment.song_url) {
+                    const trackId = extractTrackId(moment.song_url);
+                    if (trackId) {
+                        songCounts[trackId] = (songCounts[trackId] || 0) + 1;
+                    }
+                }
+            });
+
+            const topTrackIds = Object.entries(songCounts)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 10)
+                .map(([id, count]) => ({ id, count }));
+
+            if (topTrackIds.length === 0) {
+                setTopHits([]);
+                setLoadingTopHits(false);
+                return;
+            }
+
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+
+            if (!token) {
+                setLoadingTopHits(false);
+                return;
+            }
+
+            const trackPromises = topTrackIds.map(async ({ id, count }) => {
+                try {
+                    const response = await fetch(`${nUrl}/api/spotify/track/${id}`, {
+                        method: "GET",
+                        headers: {
+                            "Authorization": `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    });
+
+                    if (!response.ok) {
+                        return null;
+                    }
+
+                    const trackData = await response.json();
+                    return { ...trackData, momentCount: count } as TopHitTrack;
+                } catch (err) {
+                    return null;
+                }
+            });
+
+            const tracks = (await Promise.all(trackPromises)).filter(
+                (track): track is TopHitTrack => track !== null
+            );
+
+            setTopHits(tracks);
+        } catch (err) {
+            console.error("Error fetching top hits:", err);
+        } finally {
+            setLoadingTopHits(false);
+        }
+    };
 
     const handleSearch = async () => {
         if (!query.trim()) {
@@ -92,73 +202,86 @@ export default function SearchScreen() {
 
             setLoading(true);
 
-            const url = `${nUrl}/api/spotify/search?q=${encodeURIComponent(query)}&type=track,album,artist,playlist&limit=20`;
-            console.log("Fetching:", url);
+            if (selectedTab === "song") {
+                // Search Spotify for songs
+                const url = `${nUrl}/api/spotify/search?q=${encodeURIComponent(query)}&type=track&limit=20`;
 
-            const response = await fetch(url, {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
+                const response = await fetch(url, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                });
 
-            console.log("Response status:", response.status);
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (parseError) {
+                    Alert.alert("Connection Error", "Cannot reach backend server");
+                    return;
+                }
 
-            const text = await response.text();
-            console.log("Response text (first 200 chars):", text.substring(0, 200));
+                if (!response.ok) {
+                    Alert.alert("Error", data.error || "Failed to search");
+                    return;
+                }
 
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (parseError) {
-                console.error("JSON parse error:", parseError);
-                console.error("Response was HTML/text, not JSON. This usually means:");
-                console.error("1. Backend server is not running");
-                console.error("2. ngrok tunnel is offline");
-                console.error("3. Wrong URL in EXPO_PUBLIC_NGROK_URL");
-                Alert.alert(
-                    "Connection Error", 
-                    "Cannot reach backend server. Make sure:\n\n1. Backend server is running (node server.js)\n2. ngrok is running (ngrok http 5000)\n3. EXPO_PUBLIC_NGROK_URL is updated"
-                );
-                return;
+                setResults({
+                    tracks: data.tracks?.items || [],
+                });
+            } else if (selectedTab === "stack") {
+                // Search Supabase for stacks
+                const { data: stacks, error } = await supabase
+                    .from("stacks")
+                    .select(`
+                        *,
+                        users (
+                            username,
+                            pfp_url
+                        )
+                    `)
+                    .eq("visibility", true)
+                    .ilike("title", `%${query}%`)
+                    .limit(20);
+
+                if (error) {
+                    Alert.alert("Error", "Failed to search stacks");
+                    console.error(error);
+                    return;
+                }
+
+                setResults({
+                    stacks: stacks || [],
+                });
+            } else if (selectedTab === "user") {
+                // Search Supabase for users
+                const { data: users, error } = await supabase
+                    .from("users")
+                    .select("*")
+                    .or(`username.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
+                    .limit(20);
+
+                if (error) {
+                    Alert.alert("Error", "Failed to search users");
+                    console.error(error);
+                    return;
+                }
+
+                setResults({
+                    users: users || [],
+                });
             }
-
-            if (!response.ok) {
-                Alert.alert("Error", data.error || "Failed to search");
-                return;
-            }
-
-            setResults({
-                tracks: data.tracks?.items || [],
-                albums: data.albums?.items || [],
-                artists: data.artists?.items || [],
-                playlists: data.playlists?.items || [],
-            });
-
-            console.log("Search results:", {
-                tracks: data.tracks?.items?.length || 0,
-                albums: data.albums?.items?.length || 0,
-                artists: data.artists?.items?.length || 0,
-                playlists: data.playlists?.items?.length || 0,
-            });
-
         } catch (err) {
             console.error("Search error:", err);
-            const errorMessage = err instanceof Error ? err.message : "Failed to search";
-            Alert.alert("Error", errorMessage);
+            Alert.alert("Error", "Failed to search");
         } finally {
             setLoading(false);
         }
     };
 
-    const formatDuration = (ms: number) => {
-        const minutes = Math.floor(ms / 60000);
-        const seconds = ((ms % 60000) / 1000).toFixed(0);
-        return `${minutes}:${Number(seconds) < 10 ? "0" : ""}${seconds}`;
-    };
-
-    const renderTrack = ({ item }: { item: SpotifyTrack }) => (
+    const renderTrack = ({ item, index, isTopHit }: { item: SpotifyTrack | TopHitTrack; index: number; isTopHit?: boolean }) => (
         <TouchableOpacity
             style={styles.resultItem}
             onPress={() => {
@@ -168,6 +291,7 @@ export default function SearchScreen() {
                 );
             }}
         >
+            <Text style={styles.rank}>{index + 1}</Text>
             {item.album.images[0]?.url && (
                 <Image
                     source={{ uri: item.album.images[0].url }}
@@ -181,131 +305,133 @@ export default function SearchScreen() {
                 <Text style={styles.resultSubtitle} numberOfLines={1}>
                     {item.artists.map((a) => a.name).join(", ")}
                 </Text>
-                <Text style={styles.resultDetail}>
-                    {item.album.name} • {formatDuration(item.duration_ms)}
-                </Text>
+                {isTopHit && 'momentCount' in item && (
+                    <Text style={styles.momentCount}>
+                        {item.momentCount} moment{item.momentCount !== 1 ? 's' : ''} created
+                    </Text>
+                )}
             </View>
         </TouchableOpacity>
     );
 
-    const renderAlbum = ({ item }: { item: SpotifyAlbum }) => (
+    const renderStack = ({ item }: { item: Stack }) => (
         <TouchableOpacity
             style={styles.resultItem}
             onPress={() => {
-                Alert.alert("Album Selected", `${item.name}\nby ${item.artists.map((a) => a.name).join(", ")}`);
+                Alert.alert("Stack Selected", item.title);
             }}
         >
-            {item.images[0]?.url && (
+            {item.cover_url ? (
                 <Image
-                    source={{ uri: item.images[0].url }}
+                    source={{ uri: item.cover_url }}
                     style={styles.thumbnail}
                 />
+            ) : (
+                <View style={[styles.thumbnail, styles.placeholderThumbnail]}>
+                    <Text style={styles.placeholderText}>🎵</Text>
+                </View>
             )}
             <View style={styles.resultInfo}>
                 <Text style={styles.resultTitle} numberOfLines={1}>
-                    {item.name}
+                    {item.title}
                 </Text>
                 <Text style={styles.resultSubtitle} numberOfLines={1}>
-                    {item.artists.map((a) => a.name).join(", ")}
+                    By {item.users?.username || 'Unknown'}
                 </Text>
-                <Text style={styles.resultDetail}>
-                    {item.release_date.split("-")[0]} • {item.total_tracks} tracks
-                </Text>
+                {item.description && (
+                    <Text style={styles.resultDetail} numberOfLines={1}>
+                        {item.description}
+                    </Text>
+                )}
             </View>
         </TouchableOpacity>
     );
 
-    const renderArtist = ({ item }: { item: SpotifyArtist }) => (
-        <TouchableOpacity
-            style={styles.resultItem}
-            onPress={() => {
-                Alert.alert("Artist Selected", item.name);
-            }}
-        >
-            {item.images[0]?.url && (
-                <Image
-                    source={{ uri: item.images[0].url }}
-                    style={[styles.thumbnail, styles.roundThumbnail]}
-                />
-            )}
-            <View style={styles.resultInfo}>
-                <Text style={styles.resultTitle} numberOfLines={1}>
-                    {item.name}
-                </Text>
-                <Text style={styles.resultSubtitle} numberOfLines={1}>
-                    {item.genres.slice(0, 2).join(", ") || "Artist"}
-                </Text>
-                <Text style={styles.resultDetail}>
-                    {item.followers.total.toLocaleString()} followers
-                </Text>
-            </View>
-        </TouchableOpacity>
-    );
+    const renderUser = ({ item }: { item: User }) => {
+        const displayName = item.first_name && item.last_name 
+            ? `${item.first_name} ${item.last_name}`
+            : item.username;
 
-    const renderPlaylist = ({ item }: { item: SpotifyPlaylist }) => (
-        <TouchableOpacity
-            style={styles.resultItem}
-            onPress={() => {
-                Alert.alert("Playlist Selected", item.name);
-            }}
-        >
-            {item.images[0]?.url && (
-                <Image
-                    source={{ uri: item.images[0].url }}
-                    style={styles.thumbnail}
-                />
-            )}
-            <View style={styles.resultInfo}>
-                <Text style={styles.resultTitle} numberOfLines={1}>
-                    {item.name}
-                </Text>
-                <Text style={styles.resultSubtitle} numberOfLines={1}>
-                    By {item.owner.display_name}
-                </Text>
-                <Text style={styles.resultDetail}>{item.tracks.total} tracks</Text>
-            </View>
-        </TouchableOpacity>
-    );
+        return (
+            <TouchableOpacity
+                style={styles.resultItem}
+                onPress={() => {
+                    Alert.alert("User Selected", displayName);
+                }}
+            >
+                {item.pfp_url ? (
+                    <Image
+                        source={{ uri: item.pfp_url }}
+                        style={[styles.thumbnail, styles.roundThumbnail]}
+                    />
+                ) : (
+                    <View style={[styles.thumbnail, styles.roundThumbnail, styles.placeholderThumbnail]}>
+                        <Text style={styles.placeholderText}>
+                            {item.username.charAt(0).toUpperCase()}
+                        </Text>
+                    </View>
+                )}
+                <View style={styles.resultInfo}>
+                    <Text style={styles.resultTitle} numberOfLines={1}>
+                        {displayName}
+                    </Text>
+                    <Text style={styles.resultSubtitle} numberOfLines={1}>
+                        @{item.username}
+                    </Text>
+                    {item.bio && (
+                        <Text style={styles.resultDetail} numberOfLines={1}>
+                            {item.bio}
+                        </Text>
+                    )}
+                </View>
+            </TouchableOpacity>
+        );
+    };
 
     const getCurrentResults = () => {
         switch (selectedTab) {
-            case "track":
+            case "song":
                 return results.tracks || [];
-            case "album":
-                return results.albums || [];
-            case "artist":
-                return results.artists || [];
-            case "playlist":
-                return results.playlists || [];
+            case "stack":
+                return results.stacks || [];
+            case "user":
+                return results.users || [];
             default:
                 return [];
         }
     };
 
-    const renderResult = ({ item }: { item: SearchResult }) => {
+    const renderResult = ({ item, index }: { item: SearchResult; index: number }) => {
         switch (selectedTab) {
-            case "track":
-                return renderTrack({ item: item as SpotifyTrack });
-            case "album":
-                return renderAlbum({ item: item as SpotifyAlbum });
-            case "artist":
-                return renderArtist({ item: item as SpotifyArtist });
-            case "playlist":
-                return renderPlaylist({ item: item as SpotifyPlaylist });
+            case "song":
+                return renderTrack({ item: item as SpotifyTrack, index, isTopHit: false });
+            case "stack":
+                return renderStack({ item: item as Stack });
+            case "user":
+                return renderUser({ item: item as User });
             default:
                 return null;
         }
     };
 
+    const showTopHits = !query.trim() && topHits.length > 0 && selectedTab === "song";
+    const showSearchResults = query.trim() && getCurrentResults().length > 0;
+
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={styles.container}>
-                <Text style={styles.title}>Search Spotify</Text>
+                <Text style={styles.title}>Search</Text>
 
                 <View style={styles.searchContainer}>
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Search for songs, albums, artists..."
+                        placeholder={
+                            selectedTab === "song" 
+                                ? "Search for songs..." 
+                                : selectedTab === "stack"
+                                ? "Search for stacks..."
+                                : "Search for users..."
+                        }
                         placeholderTextColor="#999"
                         value={query}
                         onChangeText={setQuery}
@@ -324,11 +450,14 @@ export default function SearchScreen() {
                 </View>
 
                 <View style={styles.tabContainer}>
-                    {(["track", "album", "artist", "playlist"] as SearchType[]).map((type) => (
+                    {(["song", "stack", "user"] as SearchType[]).map((type) => (
                         <TouchableOpacity
                             key={type}
                             style={[styles.tab, selectedTab === type && styles.activeTab]}
-                            onPress={() => setSelectedTab(type)}
+                            onPress={() => {
+                                setSelectedTab(type);
+                                setResults({});
+                            }}
                         >
                             <Text
                                 style={[
@@ -336,15 +465,29 @@ export default function SearchScreen() {
                                     selectedTab === type && styles.activeTabText,
                                 ]}
                             >
-                                {type.charAt(0).toUpperCase() + type.slice(1)}s
+                                {type === "song" ? "Songs" : type === "stack" ? "Stacks" : "Users"}
                             </Text>
                         </TouchableOpacity>
                     ))}
                 </View>
 
-                {loading ? (
+                {loadingTopHits && !query.trim() && selectedTab === "song" ? (
                     <ActivityIndicator size="large" color="#0BFFE3" style={styles.loader} />
-                ) : (
+                ) : showTopHits ? (
+                    <>
+                        <Text style={styles.sectionTitle}>Top Hits This Week</Text>
+                        <FlatList
+                            data={topHits}
+                            renderItem={({ item, index }) => renderTrack({ item, index, isTopHit: true })}
+                            keyExtractor={(item) => item.id}
+                            style={styles.resultsList}
+                            contentContainerStyle={styles.resultsContent}
+                            keyboardShouldPersistTaps="handled"
+                        />
+                    </>
+                ) : loading ? (
+                    <ActivityIndicator size="large" color="#0BFFE3" style={styles.loader} />
+                ) : showSearchResults ? (
                     <FlatList
                         data={getCurrentResults()}
                         renderItem={renderResult}
@@ -352,12 +495,14 @@ export default function SearchScreen() {
                         style={styles.resultsList}
                         contentContainerStyle={styles.resultsContent}
                         ListEmptyComponent={
-                            <Text style={styles.emptyText}>
-                                {query ? "No results found" : "Search for music to get started"}
-                            </Text>
+                            <Text style={styles.emptyText}>No results found</Text>
                         }
                         keyboardShouldPersistTaps="handled"
                     />
+                ) : (
+                    <Text style={styles.emptyText}>
+                        {query ? "No results found" : `Search for ${selectedTab}s to get started`}
+                    </Text>
                 )}
             </View>
         </TouchableWithoutFeedback>
@@ -423,6 +568,12 @@ const styles = StyleSheet.create({
     activeTabText: {
         color: "#121212",
     },
+    sectionTitle: {
+        fontSize: 20,
+        fontWeight: "600",
+        color: "#C0FDFB",
+        marginBottom: 12,
+    },
     loader: {
         marginTop: 40,
     },
@@ -438,19 +589,37 @@ const styles = StyleSheet.create({
         backgroundColor: "#282828",
         borderRadius: 8,
         marginBottom: 8,
+        alignItems: "center",
+    },
+    rank: {
+        color: "white",
+        fontSize: 18,
+        fontWeight: "600",
+        width: 30,
+        textAlign: "center",
+        marginRight: 8,
     },
     thumbnail: {
         width: 60,
         height: 60,
         borderRadius: 4,
         backgroundColor: "#1a1a1a",
+        marginRight: 12,
     },
     roundThumbnail: {
         borderRadius: 30,
     },
+    placeholderThumbnail: {
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#333",
+    },
+    placeholderText: {
+        fontSize: 24,
+        color: "#666",
+    },
     resultInfo: {
         flex: 1,
-        marginLeft: 12,
         justifyContent: "center",
     },
     resultTitle: {
@@ -467,6 +636,12 @@ const styles = StyleSheet.create({
     resultDetail: {
         color: "#666",
         fontSize: 12,
+    },
+    momentCount: {
+        color: "#0BFFE3",
+        fontSize: 12,
+        marginTop: 2,
+        fontWeight: "500",
     },
     emptyText: {
         color: "#666",
