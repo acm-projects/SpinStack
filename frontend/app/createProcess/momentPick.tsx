@@ -275,7 +275,7 @@ export default function MomentPickView({ moment, scrollFunc}: { moment: Moment, 
             marginTop: 10,
             width: '60%',
           }}
-          onPress={() => scrollFunc(1)}>
+          onPress={() => !((end - start) * moment.length > momentLength) && scrollFunc(1)}>
             <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10}}>Select</Text>
         </TouchableOpacity>
       </SafeAreaView>

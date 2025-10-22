@@ -12,7 +12,13 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.mohammadmehrab.SpinStack",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "lsApplicationQueriesSchemes": [
+          "spotify",
+          "spotify-action",
+          "spotify-api",
+          "spotify-remote"
+        ]
       }
     },
     "android": {

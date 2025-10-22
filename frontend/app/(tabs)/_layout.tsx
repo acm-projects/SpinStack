@@ -95,9 +95,9 @@ export default function TabLayout() {
             flexDirection: 'row',
             justifyContent: 'space-around',
             alignItems: 'flex-end',
-            gap: 20,
+            gap: 30,
             width: '100%',
-            marginLeft: 20,
+            marginLeft: 47,
             marginBottom: 20,
           }}
         >
@@ -151,16 +151,15 @@ export default function TabLayout() {
       >
         <Tabs.Screen
           name="stack"
-          initialParams={{ momentInfo: demoMoments }}
+          initialParams={{ momentInfo: demoMoment }}
           options={{
-            title: ' ',
+            title: 'Home',
             tabBarIcon: ({ color }) => (
-              <FontAwesome6
-                name="house"
-                size={27}
-                color="hsla(0, 0%, 67%, 1.00)"
-                style={{ marginLeft: 6, marginTop: -32}}
-              />
+
+                <View style = {{marginLeft: -15, width: 50}}>
+                <FontAwesome6 name="house" size={30} color="hsla(0, 0%, 67%, 1.00)" />
+              </View>              
+              
             ),
           }}
         />
@@ -183,16 +182,8 @@ export default function TabLayout() {
           name="create"
           options={{
             title: ' ',
-            tabBarIcon: () => (
-              <Image
-                source={createPic}
-                style={{
-                  width: 55,
-                  height: 55,
-                  borderRadius: 50,
-                  overflow: 'hidden',
-                }}
-              />
+            tabBarIcon: ({ color }) => (
+              <Image source={createPic} style={{ width: 55, height: 55, borderRadius: 50, overflow: 'hidden' }} />
             ),
           }}
         />
@@ -203,30 +194,48 @@ export default function TabLayout() {
           options={{
             title: ' ',
             tabBarIcon: ({ color }) => (
-              <Ionicons
+              <View style = {{marginRight: -10}}>
+                <Ionicons
                 name="people-sharp"
-                size={30}
+                size={35}
                 color="hsla(0, 0%, 67%, 1.00)"
               />
+              </View>
+              
             ),
           }}
         />
-
+        <Tabs.Screen
+          name="index"
+          options={{
+            href: null, // This hides it from the tab bar
+          }}
+        />
         <Tabs.Screen
           name="profile"
           options={{
             title: ' ',
             tabBarIcon: ({ color }) => (
-              <Image
-                source={pfpUrl ? { uri: pfpUrl } : require("../../assets/images/profile.png")}
+              <View
                 style={{
-                  width: 35,
-                  height: 35,
-                  borderRadius: 50,
-                  borderWidth: 1,
-                  borderColor: 'white',
+                  width: 0,   // fixed width for the tab icon
+                  height: 35,  // fixed height
+                  marginLeft: 0,
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
-              />
+              >
+                <Image
+                  source={pfpUrl ? { uri: pfpUrl } : require("../../assets/images/profile.png")}
+                  style={{
+                    width: 35,
+                    height: 35,
+                    borderRadius: 50,
+                    borderWidth: 1,
+                    borderColor: 'white',
+                  }}
+                />
+              </View>
             ),
           }}
         />

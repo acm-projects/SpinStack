@@ -1,3 +1,4 @@
+import React from 'react';
 import BottomL from '../../assets/other/Bottom_L.svg';
 import TopL from '../../assets/other/Top_L.svg';
 import BottomM from '../../assets/other/Bottom_M.svg';

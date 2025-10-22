@@ -1,3 +1,4 @@
+import React from 'react'
 import { StyleSheet, Text, View, Image, Easing, Animated} from 'react-native';
 import {useRef, useEffect} from 'react';
 import {SafeAreaView} from "react-native-safe-area-context";

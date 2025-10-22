@@ -1,3 +1,4 @@
+import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, FlatList, Animated, TextInput, Easing } from 'react-native';
 import {useState, useRef, useEffect} from 'react';
 import { Layout, FadeInDown, FadeOutUp } from 'react-native-reanimated';
