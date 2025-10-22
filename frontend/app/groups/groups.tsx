@@ -1,3 +1,4 @@
+import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, FlatList, Animated, TextInput, Easing } from 'react-native';
 import {useState, useRef, useEffect} from 'react';
 import { Layout, FadeInDown, FadeOutUp } from 'react-native-reanimated';
@@ -7,8 +8,6 @@ import GroupInfo from '../../components/groupInfo';
 import {demoGroups} from '../../components/demoMoment'
 import GroupProfile from '../../components/groupProfile';
 import Feather from '@expo/vector-icons/Feather';
-
-
 
 function ClickableTab({ label, isActive, onPress }: { 
   label: string; 
@@ -163,7 +162,6 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
                     onLayout={({ nativeEvent }) => {
                         const { width } = nativeEvent.layout;
                         setTabWidth(width);
-                        console.log('Height of the View:', width);
                     }}
                     >
                     {buttons.map((label, i) => (

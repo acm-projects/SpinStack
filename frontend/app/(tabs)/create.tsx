@@ -4,6 +4,10 @@ import { View, Text, Button, Alert, StyleSheet, Image, Pressable } from "react-n
 import * as Spotify from "@wwdrew/expo-spotify-sdk";
 import { router } from "expo-router";
 import Feather from "react-native-vector-icons/Feather";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { TextInput, FlatList,} from "react-native";
+import {moments} from '../../components/demoMoment'
+import { useMomentStore } from "../stores/useMomentStore";
 
 import BottomL from "../../assets/other/Bottom_L.svg";
 import TopL from "../../assets/other/Top_L.svg";
@@ -224,82 +228,178 @@ export default function TestSpotify() {
     }
   };
 
-  if (hasSong === null) {
+  //should be if(hasSong == null) but sometihng changed in merge and hasSong doesn't exist so i changed it to always be true
+  if (true) {
     return (
-      <View
+      <SafeAreaView
         style={{
           display: "flex",
           alignItems: "center",
-          paddingTop: 110,
           flex: 1,
+          backgroundColor: '#FFF0E2'
         }}
       >
-        <Text style={{ color: "white", fontSize: 30, fontWeight: "500" }}>
+        <Text style={{ color: "black", fontSize: 30, fontWeight: "500", fontFamily: 'luxurious roman'}}>
           Create Your Moment
         </Text>
-        <View style={{ alignItems: "center", paddingTop: 100 }}>
-          <Text style={{ color: "white", fontSize: 20, fontWeight: "500" }}>
-            Select a Song
-          </Text>
-        </View>
 
-        <View
-          style={{
-            width: "48%",
-            height: "29%",
-            backgroundColor: "#272727",
-            borderRadius: 30,
-            marginTop: 30,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Pressable onPress={() => router.push("/createProcess/momentSelect")}>
-            <Feather name="plus" size={120} color="white" />
-          </Pressable>
+        <View style = {{width: '100%', flex: 1}}>
+          <SearchPage/>
         </View>
-      </View>
+        
+      </SafeAreaView>
     );
   }
 
   return <View style={{ flex: 1, backgroundColor: "black" }} />;
 }
 
-const styles = StyleSheet.create({
+function SearchPage() {
+  const [activeFilter, setActiveFilter] = useState("Songs");
+  const setSelectedMoment = useMomentStore((s) => s.setSelectedMoment);
+  const [search, setSearch] = useState("");
+
+  const filteredData = moments.filter(item => {
+      if (!search.trim()) return true;//show all if empty
+      const lowerQuery = search.toLowerCase();
+      return (
+          item.title.toLowerCase().includes(lowerQuery)
+      );
+  });
+
+  return (
+    <SafeAreaView style={styles2.container} edges = {['top']}>
+      {/* Search Bar */}
+      <View style={styles2.searchContainer}>
+        <TextInput
+          style={styles2.searchInput}
+          placeholder="Search..."
+          placeholderTextColor="#333c42"
+          value={search}
+          onChangeText={setSearch}
+        />
+      </View>
+
+      {/* Section Title */}
+      <Text style={styles2.sectionTitle}>Select a Song</Text>
+
+      {/* Song List */}
+      <FlatList
+        data={filteredData}
+        contentContainerStyle={{ backgroundColor: '#B7FFF7', borderRadius: 15, paddingVertical: 5 }}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item, index }) => (
+          <Pressable onPress={() => {
+            setSelectedMoment(item); 
+            router.push({pathname: "/createProcess/momentProcess"})}}>
+            <View style={styles2.songRow}>
+            <Text style={styles2.rank}>{index + 1}</Text>
+            <View style={styles2.songInfo}>
+              <Text style={styles2.songTitle}>{item.title}</Text>
+              <Text style={styles2.songArtist}>{item.artist}</Text>
+            </View>
+            <Image source={item.album} style={styles2.albumArt} />
+          </View>
+          </Pressable>
+        )}
+        ListEmptyComponent={
+                        <View style={{ alignItems: 'center', marginTop: 20 }}>
+                        <Text style={{ fontSize: 16, color: '#333C42' }}>No moments found.</Text>
+                        </View>
+                    }
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles2 = StyleSheet.create({
   container: {
-    flex: 1,
-    gap: 12,
-    alignItems: "center",
+    flex: 0.925,
+    backgroundColor: "#FFF0E2",
+    paddingHorizontal: 16,
+    paddingTop: 0,
+  },
+  searchContainer: {
+    backgroundColor: "#f9f2ebff",
+    borderRadius: 25,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderWidth: 1
+  },
+  searchInput: {
+    color: "black",
+    fontFamily: 'luxurious roman',
+    fontSize: 16,
+  },
+  filterRow: {
+    flexDirection: "row",
     justifyContent: "center",
-    padding: 24,
+    marginTop: 0,
   },
-  title: { fontSize: 18, fontWeight: "600" },
-  nowPlaying: {
-    marginTop: 16,
-    width: "100%",
-    maxWidth: 520,
+  filterButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    marginHorizontal: 5,
+    backgroundColor: "#333c42",
+    borderColor: '#0BFFE3',
+    borderWidth: 2,
+  },
+  filterButtonActive: {
+    backgroundColor: "#0BFFE3",
+    borderColor: '#8DD2CA',
+    borderWidth: 2,
+  },
+  filterText: {
+    color: "#333c42",
+    fontSize: 14,
+  },
+  filterTextActive: {
+    color: "#333c42",
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333c42",
+    marginTop: 15,
+    marginBottom: 15,
+    textAlign: "center",
+    fontFamily: 'luxurious roman',
+  },
+  songRow: {
     flexDirection: "row",
-    gap: 12,
     alignItems: "center",
+    paddingVertical: 13,
+    paddingHorizontal: 15,
+    width: '100%',
+    borderRadius: 15
   },
-  art: { width: 80, height: 80, borderRadius: 6, backgroundColor: "#222" },
-  track: { fontSize: 16, fontWeight: "700", color: "white" },
-  artist: { fontSize: 14, opacity: 0.8, marginTop: 2, color: "white" },
-  barBg: {
-    marginTop: 8,
-    height: 4,
-    width: "100%",
-    backgroundColor: "#ddd",
-    borderRadius: 2,
-    flexDirection: "row",
-    overflow: "hidden",
+  rank: {
+    color: "#333c42",
+    fontSize: 20,
+    fontFamily: 'luxurious roman',
+    width: 25,
+    textAlign: 'center'
   },
-  barFill: { backgroundColor: "#1DB954" },
-  timeRow: {
-    marginTop: 6,
-    flexDirection: "row",
-    justifyContent: "space-between",
+  songInfo: {
+    flex: 1,
+    marginLeft: 10,
   },
-  time: { fontSize: 12, opacity: 0.7, color: "white" },
-  playState: { marginTop: 4, fontSize: 12, opacity: 0.7 },
+  songTitle: {
+    color: "#333c42",
+    fontFamily: 'jacques francois',
+    fontSize: 16,
+  },
+  songArtist: {
+    color: "#797979ff",
+    fontFamily: 'luxurious roman',
+    fontSize: 13,
+  },
+  albumArt: {
+    width: 40,
+    height: 40,
+    borderRadius: 5,
+  },
 });
+
+

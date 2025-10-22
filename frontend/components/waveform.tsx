@@ -48,7 +48,7 @@ const Waveform = ({ data, height, start, end, baseColor='#ffffff', selectedColor
 
                 const pIndex = Math.trunc((start + (end - start) * progress) * data.length);
                 let color = (i >= sIndex && i <= fIndex) ? (selectedColor) : (baseColor);
-                if(anim) {
+                if(anim && (i >= sIndex && i <= fIndex)) {
                     color = (i < pIndex) ? ('#84DA7F') : (selectedColor);
                 }
                 return (
