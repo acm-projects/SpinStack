@@ -30,16 +30,12 @@ function RootStack() {
   // --------------- REDIRECT LOGIC ---------------
   useEffect(() => {
     if (loading || checkingProfile) return;
-    if(true) {
+    if (!session) {
+      router.replace('/signupProcess/signupPage');
+    } else if (!profileComplete) {
+      router.push('/signupProcess/profileSetup');
+    } else {
       router.replace('/(tabs)/profile');
-    }else {
-      if (!session) {
-        router.replace('/signupProcess/signupPage');
-      } else if (!profileComplete) {
-        router.push('/signupProcess/profileSetup');
-      } else {
-        router.replace('/(tabs)/profile');
-      }
     }
     
   }, [loading, checkingProfile, session, profileComplete]);
