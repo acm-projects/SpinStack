@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
     View,
     Text,
@@ -9,131 +9,193 @@ import {
     FlatList,
     ActivityIndicator,
     Modal,
+    Alert,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { useRouter, useLocalSearchParams, RelativePathString } from "expo-router";
+import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from "@/constants/supabase";
 
 const POLAROID_WIDTH = 150;
 const POLAROID_HEIGHT = 200;
+const POLAROID_URL = require("@/assets/images/polaroidFrame.webp");
+const NGROK_URL = "https://cayson-mouthiest-kieran.ngrok-free.dev";
+
+interface Profile {
+    id: string;
+    username: string;
+    bio: string;
+    pfp_url: string | null;
+}
+
+interface ContentItem {
+    id: string;
+    cover_url: string;
+    title: string;
+    description: string;
+    created_at: string;
+}
 
 export default function FriendProfile() {
     const router = useRouter();
     const { width } = Dimensions.get("window");
     const IMAGE_SIZE = width * 0.2;
 
-    const [profile, setProfile] = useState<any>(null);
-    const [moments, setMoments] = useState<any[]>([]);
-    const [stacks, setStacks] = useState<any[]>([]);
+    const { id, fromProfile, originId } = useLocalSearchParams<{ id: string; fromProfile?: string; originId?: string }>();
+    const cameFromProfile = fromProfile === 'true';
+    // Track the original profile we started from
+    const originalProfileId = originId || (cameFromProfile ? 'main' : null);
+
+    const [profile, setProfile] = useState<Profile | null>(null);
+    const [moments, setMoments] = useState<ContentItem[]>([]);
+    const [stacks, setStacks] = useState<ContentItem[]>([]);
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [loadingMoments, setLoadingMoments] = useState(true);
     const [loadingStacks, setLoadingStacks] = useState(true);
     const [viewMode, setViewMode] = useState<"moments" | "stacks">("moments");
-    const { id, fromProfile } = useLocalSearchParams<{ id: string; fromProfile?: string }>();
-    const cameFromProfile = fromProfile === 'true'; // convert back to boolean
-
-
-    const POLAROID_URL = require("@/assets/images/polaroidFrame.webp");
-
 
     const [friendsModalVisible, setFriendsModalVisible] = useState(false);
-    const [friendsList, setFriendsList] = useState<any[]>([]);
+    const [friendsList, setFriendsList] = useState<Profile[]>([]);
     const [loadingFriends, setLoadingFriends] = useState(false);
     const [numFriends, setNumFriends] = useState(0);
+    const [isFriend, setIsFriend] = useState(false);
 
-    useEffect(() => {
-        const fetchProfile = async () => {
-            if (!id) return;
-            try {
-                setLoadingProfile(true);
-                const { data, error } = await supabase
-                    .from("users")
-                    .select("id, username, bio, pfp_url")
-                    .eq("id", id)
-                    .single();
-                if (error) throw error;
+    const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
-                let pfp = null;
-                if (data.pfp_url) {
-                    const res = await fetch(
-                        `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${data.pfp_url}`
-                    );
-                    if (res.ok) {
-                        const { downloadURL } = await res.json();
-                        pfp = downloadURL;
-                    }
-                }
+    // Helper function to fetch profile picture URL
+    const fetchProfilePictureUrl = async (pfpPath: string | null): Promise<string | null> => {
+        if (!pfpPath) return null;
 
-                setProfile({ ...data, pfp_url: pfp });
-            } catch (err) {
-                console.error("Failed to load profile", err);
-            } finally {
-                setLoadingProfile(false);
-            }
-        };
-
-        fetchProfile();
-    }, [id]);
-
-    useEffect(() => {
-        if (!id) return;
-
-        const fetchMoments = async () => {
-            try {
-                setLoadingMoments(true);
-                const { data, error } = await supabase
-                    .from("moments")
-                    .select("id, cover_url, title, description, created_at")
-                    .eq("user_id", id)
-                    .order("created_at", { ascending: false });
-                if (error) throw error;
-                setMoments(data || []);
-            } catch (err) {
-                console.error("Error fetching moments:", err);
-            } finally {
-                setLoadingMoments(false);
-            }
-        };
-
-        fetchMoments();
-    }, [id]);
-
-    useEffect(() => {
-        if (!id) return;
-
-        const fetchStacks = async () => {
-            try {
-                setLoadingStacks(true);
-                const { data, error } = await supabase
-                    .from("stacks")
-                    .select("id, cover_url, title, description, created_at")
-                    .eq("user_id", id)
-                    .order("created_at", { ascending: false });
-                if (error) throw error;
-                setStacks(data || []);
-            } catch (err) {
-                console.error("Error fetching stacks:", err);
-            } finally {
-                setLoadingStacks(false);
-            }
-        };
-
-        fetchStacks();
-    }, [id]);
-
-    const fetchFriendsList = async () => {
-        if (!id) return;
         try {
-            setLoadingFriends(true);
+            const res = await fetch(`${NGROK_URL}/api/upload/download-url/${pfpPath}`);
+            if (res.ok) {
+                const { downloadURL } = await res.json();
+                return downloadURL;
+            }
+        } catch (err) {
+            console.error("Failed to fetch profile picture URL:", err);
+        }
+        return null;
+    };
+
+    // Fetch profile data
+    const fetchProfile = async () => {
+        if (!id) return;
+
+        try {
+            setLoadingProfile(true);
             const { data, error } = await supabase
-                .from("friends")
-                .select("friend_id(id, username, bio, pfp_url)")
-                .eq("user_id", id);
+                .from("users")
+                .select("id, username, bio, pfp_url")
+                .eq("id", id)
+                .single();
+
             if (error) throw error;
 
-            const friends = data?.map((f: any) => f.friend_id) || [];
+            const pfp = await fetchProfilePictureUrl(data.pfp_url);
+            setProfile({ ...data, pfp_url: pfp });
+        } catch (err) {
+            console.error("Failed to load profile", err);
+        } finally {
+            setLoadingProfile(false);
+        }
+    };
+
+    // Fetch moments
+    const fetchMoments = async () => {
+        if (!id) return;
+
+        try {
+            setLoadingMoments(true);
+            const { data, error } = await supabase
+                .from("moments")
+                .select("id, cover_url, title, description, created_at")
+                .eq("user_id", id)
+                .order("created_at", { ascending: false });
+
+            if (error) throw error;
+            setMoments(data || []);
+        } catch (err) {
+            console.error("Error fetching moments:", err);
+        } finally {
+            setLoadingMoments(false);
+        }
+    };
+
+    // Fetch stacks
+    const fetchStacks = async () => {
+        if (!id) return;
+
+        try {
+            setLoadingStacks(true);
+            const { data, error } = await supabase
+                .from("stacks")
+                .select("id, cover_url, title, description, created_at")
+                .eq("user_id", id)
+                .order("created_at", { ascending: false });
+
+            if (error) throw error;
+            setStacks(data || []);
+        } catch (err) {
+            console.error("Error fetching stacks:", err);
+        } finally {
+            setLoadingStacks(false);
+        }
+    };
+
+    // Fetch friends list with profile pictures
+    const fetchFriendsList = async () => {
+        if (!id) return;
+
+        try {
+            setLoadingFriends(true);
+
+            // Get friendships in both directions
+            const { data: friendRows, error: friendError } = await supabase
+                .from("friends")
+                .select("user_id, friend_id")
+                .or(`user_id.eq.${id},friend_id.eq.${id}`);
+
+            if (friendError) throw friendError;
+
+            // Extract friend IDs (excluding the viewed profile's own ID)
+            const friendIds = friendRows
+                ?.map(row => row.user_id === id ? row.friend_id : row.user_id)
+                .filter(friendId => friendId !== id) || [];
+
+            // Fetch user info for friend IDs
+            let friends: Profile[] = [];
+            if (friendIds.length > 0) {
+                const { data: userData, error: userError } = await supabase
+                    .from("users")
+                    .select("id, username, bio, pfp_url")
+                    .in("id", friendIds);
+
+                if (userError) throw userError;
+
+                // Fetch download URLs for profile pictures
+                if (userData) {
+                    friends = await Promise.all(
+                        userData.map(async (user) => {
+                            const pfp = await fetchProfilePictureUrl(user.pfp_url);
+                            return { ...user, pfp_url: pfp };
+                        })
+                    );
+                }
+            }
+
             setFriendsList(friends);
             setNumFriends(friends.length);
+
+            // Check if current user is already friends with this profile
+            const { data: currentUserData } = await supabase.auth.getUser();
+            const currentUserId = currentUserData?.user?.id;
+
+            if (currentUserId && currentUserId !== id) {
+                setIsFriend(friendIds.includes(currentUserId));
+            } else if (currentUserId === id) {
+                setIsFriend(true);
+            }
         } catch (err) {
             console.error("Failed to fetch friends list", err);
         } finally {
@@ -141,6 +203,88 @@ export default function FriendProfile() {
         }
     };
 
+    // Add friend functionality
+    const addFriend = async () => {
+        try {
+            const sessionData = await supabase.auth.getSession();
+            const currentUser = sessionData?.data?.session?.user;
+            const accessToken = sessionData?.data?.session?.access_token;
+
+            if (!currentUser || !accessToken) return;
+
+            const response = await fetch(`${nUrl}/api/friends`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({
+                    user_id: currentUser.id,
+                    friend_id: id,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Failed to add friend:", errorData);
+                return;
+            }
+
+            Alert.alert("Friend added!");
+            setIsFriend(true);
+            // Refetch friends list to update count
+            fetchFriendsList();
+        } catch (err) {
+            console.error("Error adding friend:", err);
+        }
+    };
+
+    // Handle back button navigation
+    const handleBackPress = () => {
+        if (originalProfileId === 'main') {
+            // Go back to user's own profile
+            router.push('/profile');
+        } else if (originalProfileId) {
+            // Go back to the original friend profile we started from
+            router.push(`/profile/${originalProfileId}` as RelativePathString);
+        } else {
+            // Default behavior - try to go back or go home
+            if (router.canGoBack()) {
+                router.back();
+            } else {
+                router.push('/');
+            }
+        }
+    };
+
+    // Handle friend profile navigation
+    const handleFriendPress = (friendId: string) => {
+        setFriendsModalVisible(false);
+        // Pass along the origin so we can navigate back properly
+        const origin = originalProfileId || id;
+        router.push({
+            pathname: `/profile/${friendId}` as RelativePathString,
+            params: { originId: origin }
+        });
+    };
+
+    // Initial data fetch
+    useEffect(() => {
+        fetchProfile();
+        fetchMoments();
+        fetchStacks();
+    }, [id]);
+
+    // Refetch friends list when screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            if (id) {
+                fetchFriendsList();
+            }
+        }, [id])
+    );
+
+    // Render loading state
     if (loadingProfile || !profile) {
         return (
             <View style={styles.centered}>
@@ -151,17 +295,82 @@ export default function FriendProfile() {
 
     const { username, bio, pfp_url } = profile;
 
+    // Render moment item
+    const renderMoment = ({ item }: { item: ContentItem }) => (
+        <View style={{ flex: 1, margin: 6, alignItems: "center" }}>
+            <Image
+                source={{ uri: item.cover_url }}
+                style={{
+                    width: Dimensions.get("window").width / 2 - 24,
+                    height: Dimensions.get("window").width / 2 - 24,
+                    borderRadius: 20,
+                    backgroundColor: "#eaeaea",
+                }}
+                resizeMode="cover"
+            />
+            <View style={{ width: Dimensions.get("window").width / 2 - 24, marginTop: 6 }}>
+                <Text style={{ fontFamily: "Jacques Francois", fontSize: 15, color: "#333C42" }} numberOfLines={1}>
+                    {item.title}
+                </Text>
+                <Text style={{ fontFamily: "Jacques Francois", fontSize: 13, color: "#555" }} numberOfLines={1}>
+                    {item.description}
+                </Text>
+            </View>
+        </View>
+    );
+
+    // Render stack item
+    const renderStack = ({ item }: { item: ContentItem }) => (
+        <View style={styles.momentContainer}>
+            <Image
+                source={{ uri: item.cover_url }}
+                style={styles.coverImage}
+                resizeMode="cover"
+            />
+            <Image
+                source={POLAROID_URL}
+                style={{
+                    width: POLAROID_WIDTH * 1,
+                    height: POLAROID_HEIGHT * 1.5,
+                    position: "absolute",
+                    resizeMode: "contain",
+                }}
+            />
+            <View style={[styles.textOnTop, { bottom: 10 }]}>
+                <Text style={styles.titleText} numberOfLines={1}>
+                    {item.title}
+                </Text>
+                <Text style={styles.captionText} numberOfLines={1}>
+                    {item.description}
+                </Text>
+            </View>
+        </View>
+    );
+
+    // Render friend item
+    const renderFriend = ({ item }: { item: Profile }) => (
+        <Pressable
+            style={styles.friendRow}
+            onPress={() => handleFriendPress(item.id)}
+        >
+            <Image
+                source={item.pfp_url ? { uri: item.pfp_url } : require("@/assets/images/profile.png")}
+                style={styles.friendAvatar}
+            />
+            <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={styles.friendName}>{item.username}</Text>
+                <Text style={styles.friendBio} numberOfLines={1}>
+                    "{String(item.bio || "No bio")}"
+                </Text>
+            </View>
+        </Pressable>
+    );
+
     return (
         <View style={styles.container}>
             {/* Profile Row */}
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5, paddingHorizontal: 20 }}>
-                <Pressable onPress={() => {
-                    if (cameFromProfile) {
-                        router.push('/profile'); // main user profile
-                    } else {
-                        router.back();
-                    }
-                }}>
+                <Pressable onPress={handleBackPress}>
                     <Feather name="arrow-left" size={28} color="#333C42" />
                 </Pressable>
                 <Image
@@ -184,12 +393,7 @@ export default function FriendProfile() {
                     </Text>
                 </View>
                 <View style={{ alignItems: "flex-end" }}>
-                    <Pressable
-                        onPress={async () => {
-                            await fetchFriendsList();
-                            setFriendsModalVisible(true);
-                        }}
-                    >
+                    <Pressable onPress={() => setFriendsModalVisible(true)}>
                         <Text style={{
                             fontSize: 14,
                             color: "#333C42",
@@ -200,6 +404,20 @@ export default function FriendProfile() {
                             {numFriends} Friends
                         </Text>
                     </Pressable>
+                    {!isFriend && (
+                        <Pressable
+                            onPress={addFriend}
+                            style={{
+                                backgroundColor: "#39868F",
+                                paddingVertical: 4,
+                                paddingHorizontal: 8,
+                                borderRadius: 8,
+                                marginTop: 4,
+                            }}
+                        >
+                            <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois" }}>Add Friend</Text>
+                        </Pressable>
+                    )}
                 </View>
             </View>
 
@@ -234,28 +452,7 @@ export default function FriendProfile() {
                                 showsVerticalScrollIndicator={false}
                                 keyExtractor={(item) => item.id.toString()}
                                 contentContainerStyle={{ paddingBottom: 100 }}
-                                renderItem={({ item }) => (
-                                    <View style={{ flex: 1, margin: 6, alignItems: "center" }}>
-                                        <Image
-                                            source={{ uri: item.cover_url }}
-                                            style={{
-                                                width: Dimensions.get("window").width / 2 - 24,
-                                                height: Dimensions.get("window").width / 2 - 24,
-                                                borderRadius: 20,
-                                                backgroundColor: "#eaeaea",
-                                            }}
-                                            resizeMode="cover"
-                                        />
-                                        <View style={{ width: Dimensions.get("window").width / 2 - 24, marginTop: 6 }}>
-                                            <Text style={{ fontFamily: "Jacques Francois", fontSize: 15, color: "#333C42" }} numberOfLines={1}>
-                                                {item.title}
-                                            </Text>
-                                            <Text style={{ fontFamily: "Jacques Francois", fontSize: 13, color: "#555" }} numberOfLines={1}>
-                                                {item.description}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                )}
+                                renderItem={renderMoment}
                             />
                         )}
                     </View>
@@ -277,34 +474,8 @@ export default function FriendProfile() {
                                 showsVerticalScrollIndicator={false}
                                 keyExtractor={(item) => item.id.toString()}
                                 contentContainerStyle={{ paddingBottom: 100 }}
-                                renderItem={({ item }) => (
-                                    <View style={styles.momentContainer}>
-                                        <Image
-                                            source={{ uri: item.cover_url }}
-                                            style={styles.coverImage}
-                                            resizeMode="cover"
-                                        />
-                                        <Image
-                                            source={POLAROID_URL} // same polaroid overlay as main profile
-                                            style={{
-                                                width: POLAROID_WIDTH * 1,
-                                                height: POLAROID_HEIGHT * 1.5,
-                                                position: "absolute",
-                                                resizeMode: "contain",
-                                            }}
-                                        />
-                                        <View style={[styles.textOnTop, { bottom: 10 }]}>
-                                            <Text style={styles.titleText} numberOfLines={1}>
-                                                {item.title}
-                                            </Text>
-                                            <Text style={styles.captionText} numberOfLines={1}>
-                                                {item.description}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                )}
+                                renderItem={renderStack}
                             />
-
                         )}
                     </View>
                 </View>
@@ -339,26 +510,7 @@ export default function FriendProfile() {
                                 data={friendsList}
                                 keyExtractor={(item) => item.id.toString()}
                                 showsVerticalScrollIndicator={false}
-                                renderItem={({ item }) => (
-                                    <Pressable
-                                        style={styles.friendRow}
-                                        onPress={() => {
-                                            setFriendsModalVisible(false);
-                                            router.push(`/profile/${item.id}` as RelativePathString);
-                                        }}
-                                    >
-                                        <Image
-                                            source={item.pfp_url ? { uri: item.pfp_url } : require("@/assets/images/profile.png")}
-                                            style={styles.friendAvatar}
-                                        />
-                                        <View style={{ flex: 1, marginLeft: 10 }}>
-                                            <Text style={styles.friendName}>{item.username}</Text>
-                                            <Text style={styles.friendBio} numberOfLines={1}>
-                                                "{String(item.bio || "No bio")}"
-                                            </Text>
-                                        </View>
-                                    </Pressable>
-                                )}
+                                renderItem={renderFriend}
                             />
                         )}
                     </View>
