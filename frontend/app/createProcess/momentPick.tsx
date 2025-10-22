@@ -2,18 +2,13 @@ import React, { useState, useRef, useEffect} from 'react';
 import { StyleSheet, View, Image, Text, Animated, PanResponder,Easing, useWindowDimensions, TouchableOpacity} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Waveform from '../../components/waveform';
-import { demoMoment } from '../../components/demoMoment';
-import BottomL from '../assets/other/Bottom_L.svg';
-import TopL from '../assets/other/Top_L.svg';
-import { RNSVGSvgIOS } from 'react-native-svg';
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import {Moment} from '../../components/momentInfo'
 import Feather from '@expo/vector-icons/Feather';
 
 // seconds
 const momentLength = 30;
 
-export default function MomentPickView({ moment = demoMoment.moment, scrollFunc}: { moment?: typeof demoMoment.moment, scrollFunc: (page: number) => void}) {
+export default function MomentPickView({ moment, scrollFunc}: { moment: Moment, scrollFunc: (page: number) => void}) {
   const src = require('../../assets/images/stack.png');
    const { width } = useWindowDimensions();
   const [waveWidth, setWaveWidth] = useState(0);
@@ -133,7 +128,7 @@ export default function MomentPickView({ moment = demoMoment.moment, scrollFunc}
   return (
     <View style={{ width, justifyContent: 'center', alignItems: 'center' }}>
       <SafeAreaView
-        style={[StyleSheet.absoluteFill, { justifyContent: 'flex-start', alignItems: 'center', marginTop: 120, gap: 50}]}
+        style={[StyleSheet.absoluteFill, { justifyContent: 'flex-start', alignItems: 'center', marginTop: 90, gap: 50}]}
         edges={['top', 'left', 'right']}
       >
         <View style={{ justifyContent: 'center', alignItems: 'center'}}>
@@ -142,9 +137,9 @@ export default function MomentPickView({ moment = demoMoment.moment, scrollFunc}
 
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-            <View style={{ marginLeft: 10, marginBottom: 30 }}>
+            <View style={{ marginLeft: 10, marginTop: -20, marginBottom: 30 }}>
               <Text style={{ fontSize: 30, fontFamily: 'Jacques Francois'}}>
-                {moment.songName} - {moment.artist}
+                {moment.title} - {moment.artist}
               </Text>
             </View>
             <View style={{ alignItems: 'center', width: '100%'}}>
@@ -220,7 +215,6 @@ export default function MomentPickView({ moment = demoMoment.moment, scrollFunc}
                 alignItems: 'flex-start',
                 justifyContent: 'center',
                 width: '60%',
-                marginBottom: 30,
                 height: 40,
                 overflow: 'hidden',
             }}
@@ -278,10 +272,11 @@ export default function MomentPickView({ moment = demoMoment.moment, scrollFunc}
             borderWidth: 4,
             borderColor: '#333C42',
             alignItems: 'center',
+            marginTop: 10,
             width: '60%',
           }}
           onPress={() => scrollFunc(1)}>
-            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10 }}>Select</Text>
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10}}>Select</Text>
         </TouchableOpacity>
       </SafeAreaView>
 

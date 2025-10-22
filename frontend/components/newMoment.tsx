@@ -14,6 +14,7 @@ import { RNSVGSvgIOS } from 'react-native-svg';
 
 export default function MomentView({data} : {data: MomentInfo}) {
     const {height, width, scale, fontScale} = useWindowDimensions();
+    const vinylImg = require('../assets/images/vinyl.png');
     const spinAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -62,14 +63,14 @@ export default function MomentView({data} : {data: MomentInfo}) {
                             />
                         <View style = {{marginLeft: 10, marginRight: 40, flexDirection: 'row', flex: 1}}>
                             <View style = {[{width: '100%', justifyContent: "center"}]}>
-                                <View style = {[{width: '100%', height: 12, borderRadius: 50, backgroundColor: 'hsl(0, 100%, 100%)'}]}/>
-                                <View style = {{marginTop: 30}}><Waveform data = {data.moment.waveform} height = {25} start = {data.moment.start} end = {data.moment.end} baseColor = "white" selectedColor = "#87bd84" anim = {true}/></View>
+                                <View style = {[{width: '100%', height: 5, borderRadius: 50, backgroundColor: '#333c42', marginTop: 7}]}/>
+                                <View style = {{marginTop: 30}}><Waveform data = {data.moment.waveform} height = {25} start = {data.moment.start} end = {data.moment.end} baseColor = "#333C42" selectedColor = "#87bd84" anim = {true}/></View>
                         
                             </View>
                         </View>
                     </View>
                     <View style = {{marginLeft: 10}}>
-                        <Text style={[styles.texxt, {fontFamily: 'Luxurious Roman'}]}>{data.moment.songName}</Text>
+                        <Text style={[styles.texxt, {fontFamily: 'Luxurious Roman'}]}>{data.moment.title}</Text>
                         <Text style={[styles.texxt, {fontSize: 15, fontFamily: 'Jacques Francois'}]}>{data.moment.artist} </Text>
                     </View>
                     
@@ -85,7 +86,7 @@ export default function MomentView({data} : {data: MomentInfo}) {
                                     style = {{width: '40%', aspectRatio: 1, height: undefined}}
                                 />
                                 <Image 
-                                    source = {data.moment.vinyl}
+                                    source = {vinylImg}
                                     style = {{width: '100%', aspectRatio: 1, height: undefined, position: "absolute"}}>
                                 </Image>
                                 

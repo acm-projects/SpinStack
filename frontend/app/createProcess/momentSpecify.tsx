@@ -1,30 +1,45 @@
 import React, { useState, useRef, useEffect} from 'react';
 import { StyleSheet, View, Image, Text, TouchableOpacity, useWindowDimensions} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { demoMoment } from '../../components/demoMoment';
-import BottomL from '../assets/other/Bottom_L.svg';
-import TopL from '../assets/other/Top_L.svg';
-import { RNSVGSvgIOS } from 'react-native-svg';
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import {Moment} from '../../components/momentInfo'
+import Bubble from '../../assets/other/bubble.svg';
+import Feather from '@expo/vector-icons/Feather';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import EvilIcons from '@expo/vector-icons/EvilIcons';
 
 // seconds
 const momentLength = 30;
 
-export default function MomentSpecifyView({ moment = demoMoment.moment, scrollFunc}: { moment?: typeof demoMoment.moment, scrollFunc: (page: number) => void}) {
+export default function MomentSpecifyView({ moment, scrollFunc, height}: { moment: Moment, scrollFunc: (page: number) => void, height: number}) {
   const src = require('../../assets/images/stack.png');
+  const vinylImg = require('../../assets/images/vinyl.png');
   const { width } = useWindowDimensions();
   return (
     <View style={{ width, justifyContent: 'center', alignItems: 'center' }}>
         <SafeAreaView
         style={[StyleSheet.absoluteFill, { justifyContent: 'flex-start', alignItems: 'center', marginTop: 120, gap: 50}]}
         edges={['top', 'left', 'right']}
-      >    
-
-        <View style={{ justifyContent: 'center', alignItems: 'center'}}>
-            <Text style={{ fontSize: 40, fontWeight: 'bold' }}>placeholder</Text>
+      >   
+        <View style={{ alignItems: 'flex-end', width: '100%', height: 75}}>
+            <TouchableOpacity onPress = {() => scrollFunc(0)}style={{ position: 'absolute', alignItems: 'center', marginRight: 50, marginTop: -30}}>
+                <Bubble width={50} height={50} />
+                <View style={{ marginTop: -40 }}>
+                    <Feather name="arrow-left" size={30} color="black" />
+                </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ position: 'absolute', alignItems: 'center', marginRight: 130, marginTop: 0}}>
+                <Bubble width={75} height={75} />
+                <View style={{ marginTop: -60 }}>
+                    <AntDesign name="comment" size={40} color="black" />
+                </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ position: 'absolute', alignItems: 'center', marginRight: 40, marginTop: 50}}>
+                <Bubble width={100} height={100} />
+                <View style={{ marginTop: -85 }}>
+                    <EvilIcons name="image" size={80} color="black" />
+                </View>
+            </TouchableOpacity>
         </View>
-
             
 
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
@@ -37,7 +52,7 @@ export default function MomentSpecifyView({ moment = demoMoment.moment, scrollFu
                                 style = {{width: '40%', aspectRatio: 1, height: undefined}}
                             />
                             <Image 
-                                source = {moment.vinyl}
+                                source = {vinylImg}
                                 style = {{width: '100%', aspectRatio: 1, height: undefined, position: "absolute"}}>
                             </Image>
                             
@@ -46,7 +61,7 @@ export default function MomentSpecifyView({ moment = demoMoment.moment, scrollFu
                     <View style={{ width: 350, justifyContent: 'center', alignItems: 'center', marginTop: 30 }}>
                         <View style={{ marginLeft: 10}}>
                             <Text style={{ fontSize: 30, fontFamily: 'Jacques Francois'}}>
-                            {moment.songName} - {moment.artist}
+                            {moment.title} - {moment.artist}
                             </Text>
                         </View>
                     </View>

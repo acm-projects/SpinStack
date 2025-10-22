@@ -6,13 +6,12 @@ export default interface MomentInfo {
 }
 
 export interface Moment {
-    songName: string,
+    title: string,
     artist: string,
     start: number,
     end: number,
     length: number,
     album: ImageSourcePropType,
-    vinyl: ImageSourcePropType,
     waveform: number[]
 }
 

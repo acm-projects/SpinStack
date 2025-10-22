@@ -8,8 +8,6 @@ import {demoGroups} from '../../components/demoMoment'
 import GroupProfile from '../../components/groupProfile';
 import Feather from '@expo/vector-icons/Feather';
 
-
-
 function ClickableTab({ label, isActive, onPress }: { 
   label: string; 
   isActive: boolean; 
@@ -163,7 +161,6 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
                     onLayout={({ nativeEvent }) => {
                         const { width } = nativeEvent.layout;
                         setTabWidth(width);
-                        console.log('Height of the View:', width);
                     }}
                     >
                     {buttons.map((label, i) => (

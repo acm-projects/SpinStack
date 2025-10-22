@@ -4,6 +4,7 @@ import { View, Text, Button, Alert, StyleSheet, Image, Pressable } from "react-n
 import * as Spotify from "@wwdrew/expo-spotify-sdk";
 import { router } from "expo-router";
 import Feather from "react-native-vector-icons/Feather";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import BottomL from "../../assets/other/Bottom_L.svg";
 import TopL from "../../assets/other/Top_L.svg";
@@ -221,22 +222,16 @@ export default function TestSpotify() {
 
   if (hasSong === null) {
     return (
-      <View
+      <SafeAreaView
         style={{
           display: "flex",
           alignItems: "center",
-          paddingTop: 110,
           flex: 1,
         }}
       >
         <Text style={{ color: "white", fontSize: 30, fontWeight: "500" }}>
           Create Your Moment
         </Text>
-        <View style={{ alignItems: "center", paddingTop: 100 }}>
-          <Text style={{ color: "white", fontSize: 20, fontWeight: "500" }}>
-            Select a Song
-          </Text>
-        </View>
 
         <View
           style={{
@@ -253,7 +248,7 @@ export default function TestSpotify() {
             <Feather name="plus" size={120} color="white" />
           </Pressable>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 

@@ -74,7 +74,7 @@ export default function TabLayout() {
     );
   }
 
-  // ---------------- Custom Tab Bar ----------------
+  // ---------------- le Custom Tab Bar ----------------
   const MyCustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
     return (
       <View
@@ -87,10 +87,7 @@ export default function TabLayout() {
           justifyContent: 'flex-end',
         }}
       >
-        {/* Background SVG */}
         <Bottom width="100%" height="100%" />
-
-        {/* Icons row */}
         <View
           style={{
             position: 'absolute',
@@ -153,17 +150,6 @@ export default function TabLayout() {
         }}
       >
         <Tabs.Screen
-          name="momentEx"
-          initialParams={{ momentInfo: demoMoment }}
-          options={{
-            title: 'Home',
-            tabBarIcon: ({ color }) => (
-              <FontAwesome6 name="house" size={24} color="hsla(0, 0%, 67%, 1.00)" />
-            ),
-          }}
-        />
-
-        <Tabs.Screen
           name="stack"
           initialParams={{ momentInfo: demoMoments }}
           options={{
@@ -171,9 +157,9 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => (
               <FontAwesome6
                 name="house"
-                size={30}
+                size={27}
                 color="hsla(0, 0%, 67%, 1.00)"
-                style={{ marginLeft: 6 }}
+                style={{ marginLeft: 6, marginTop: -32}}
               />
             ),
           }}

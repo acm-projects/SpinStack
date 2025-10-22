@@ -1,19 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, Keyboard, Pressable, Image, FlatList, StyleSheet, TouchableWithoutFeedback } from "react-native";
 import * as Font from "expo-font";
-
-const mockData = [
-  { id: "1", title: "Golden", artist: "HUNTR/X: EJAE, Audrey Nuna & REI AMI", image: require("@/assets/images/album1.jpeg") },
-  { id: "2", title: "back to friends", artist: "sombr", image: require("@/assets/images/album2.jpeg") },
-  { id: "3", title: "Ordinary", artist: "Alex Warren", image: require("@/assets/images/album3.jpeg") },
-  { id: "4", title: "Man I Need", artist: "Olivia Dean", image: require("@/assets/images/album4.jpg") },
-  { id: "5", title: "TIT FOR TAT", artist: "Tate McRae", image: require("@/assets/images/album5.jpg") },
-  { id: "6", title: "Don't Say You Love Me", artist: "Jin", image: require("@/assets/images/album6.jpg") },
-  { id: "7", title: "Soda Pop", artist: "Saja Boys: Andrew Choi, Neckwav, Danny Chung, Kevin Woo & samUIL Lee", image: require("@/assets/images/album7.jpg") },
-  { id: "8", title: "Die With A Smile", artist: "Morgan Wallen Featuring Tate McRae", image: require("@/assets/images/album8.jpg") },
-  { id: "9", title: "BIRDS OF A FEATHER", artist: "Billie Eillish", image: require("@/assets/images/album9.jpg") },
-  { id: "10", title: "Gabriela", artist: "KATSEYE", image: require("@/assets/images/album10.jpg") },
-];
+import {moments} from '../../components/demoMoment'
 
 export default function SearchPage() {
   const [activeFilter, setActiveFilter] = useState("Songs");
@@ -68,7 +56,7 @@ export default function SearchPage() {
       {/* Song List */}
       <FlatList
         style = {{marginBottom: 92}}
-        data={mockData}
+        data={moments}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
         renderItem={({ item, index }) => (
@@ -79,7 +67,7 @@ export default function SearchPage() {
               <Text numberOfLines={1}
                 ellipsizeMode="tail" style={styles.songArtist}>{item.artist}</Text>
             </View>
-            <Image source={item.image} style={styles.albumArt} />
+            <Image source={item.album} style={styles.albumArt} />
           </View>
         )}
       />

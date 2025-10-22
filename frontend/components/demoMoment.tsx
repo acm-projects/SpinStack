@@ -1,19 +1,119 @@
 const albumImg = require('../assets/images/album.png');
-const vinylImg = require('../assets/images/vinyl.png');
 const profileImg = require('../assets/images/profile.png');
 const prof2 = require('../assets/images/profile2.png');
 const prof3 = require('../assets/images/profile3.png');
 
 const mom = {
-      songName: "Like This",
+      title: "Like This",
       artist: "Atura",
       start: 0.65,
       end: 0.87,
       length: 204,
       album: albumImg,
-      vinyl: vinylImg,
       waveform: [3, 4, 7, 8, 10, 2, 11, 12, 13, 17, 18, 16, 15, 14, 11, 7, 6, 7, 8, 9, 4, 3, 2, 1, 1, 5, 4, 8, 9, 10, 12, 13, 15, 17, 16, 19, 20, 22, 24, 24, 23, 21, 19, 18, 15, 11, 10, 7, 6, 1],
     };
+
+  const mom1 = {
+    id: "1",
+    title: "Golden",
+    length: 194,
+    start: 0.5,
+    end: 0.6,
+    artist: "HUNTR/X: EJAE, Audrey Nuna & REI AMI",
+    album: require("@/assets/images/album1.jpeg"),
+    waveform: [3, 4, 7, 8, 10, 2, 11, 12, 13, 17, 18, 16, 15, 14, 11, 7, 6, 7, 8, 9, 4, 3, 2, 1, 1, 5, 4, 8, 9, 10, 12, 13, 15, 17, 16, 19, 20, 22, 24, 24, 23, 21, 19, 18, 15, 11, 10, 7, 6, 1],
+  };
+  const mom2 = {
+    id: "2",
+    title: "back to friends",
+    artist: "sombr",
+    length: 199,
+    start: 0.6,
+    end: 0.7,
+    album: require("@/assets/images/album2.jpeg"),
+    waveform: [3, 4, 7, 8, 10, 2, 11, 12, 13, 17, 18, 16, 15, 14, 11, 7, 6, 7, 8, 9, 4, 3, 2, 1, 1, 5, 4, 8, 9, 10, 12, 13, 15, 17, 16, 19, 20, 22, 24, 24, 23, 21, 19, 18, 15, 11, 10, 7, 6, 1],
+  };
+  const mom3 = {
+    id: "3",
+    title: "Ordinary",
+    artist: "Alex Warren",
+    length: 186,
+    start: 0.2,
+    end: 0.3,
+    album: require("@/assets/images/album3.jpeg"),
+    waveform: [3, 4, 7, 8, 10, 2, 11, 12, 13, 17, 18, 16, 15, 14, 11, 7, 6, 7, 8, 9, 4, 3, 2, 1, 1, 5, 4, 8, 9, 10, 12, 13, 15, 17, 16, 19, 20, 22, 24, 24, 23, 21, 19, 18, 15, 11, 10, 7, 6, 1],
+  };
+  const mom4 = {
+    id: "4",
+    title: "Man I Need",
+    artist: "Olivia Dean",
+    length: 184,
+    start: 0.25,
+    end: 0.35,
+    album: require("@/assets/images/album4.jpg"),
+    waveform: [3, 4, 7, 8, 10, 2, 11, 12, 13, 17, 18, 16, 15, 14, 11, 7, 6, 7, 8, 9, 4, 3, 2, 1, 1, 5, 4, 8, 9, 10, 12, 13, 15, 17, 16, 19, 20, 22, 24, 24, 23, 21, 19, 18, 15, 11, 10, 7, 6, 1],
+  };
+  const mom5 = {
+    id: "5",
+    title: "TIT FOR TAT",
+    artist: "Tate McRae",
+    length: 175,
+    start: 0.44, 
+    end: 0.55,
+    album: require("@/assets/images/album5.jpg"),
+    waveform: [3, 4, 7, 8, 10, 2, 11, 12, 13, 17, 18, 16, 15, 14, 11, 7, 6, 7, 8, 9, 4, 3, 2, 1, 1, 5, 4, 8, 9, 10, 12, 13, 15, 17, 16, 19, 20, 22, 24, 24, 23, 21, 19, 18, 15, 11, 10, 7, 6, 1],
+  };
+  const mom6 = {
+    id: "6",
+    title: "Don't Say You Love Me",
+    length: 180,
+    start: 0.2,
+    end: 0.35,
+    artist: "Jin",
+    album: require("@/assets/images/album6.jpg"),
+    waveform: [3, 4, 7, 8, 10, 2, 11, 12, 13, 17, 18, 16, 15, 14, 11, 7, 6, 7, 8, 9, 4, 3, 2, 1, 1, 5, 4, 8, 9, 10, 12, 13, 15, 17, 16, 19, 20, 22, 24, 24, 23, 21, 19, 18, 15, 11, 10, 7, 6, 1],
+  };
+  const mom7 = {
+    id: "7",
+    title: "Soda Pop",
+    artist: "Saja Boys: Andrew Choi, Neckwav, Danny Chung, Kevin Woo & samUIL Lee",
+    waveform: [3, 4, 7, 8, 10, 2, 11, 12, 13, 17, 18, 16, 15, 14, 11, 7, 6, 7, 8, 9, 4, 3, 2, 1, 1, 5, 4, 8, 9, 10, 12, 13, 15, 17, 16, 19, 20, 22, 24, 24, 23, 21, 19, 18, 15, 11, 10, 7, 6, 1],
+    length: 150,
+    start: 0.3,
+    end: 0.44,
+    album: require("@/assets/images/album7.jpg"),
+    
+  };
+  const mom8 = {
+    id: "8",
+    title: "Die With A Smile",
+    length: 224,
+    start: 0.6,
+    end: 0.7,
+    artist: "Morgan Wallen Featuring Tate McRae",
+    album: require("@/assets/images/album8.jpg"),
+    waveform: [3, 4, 7, 8, 10, 2, 11, 12, 13, 17, 18, 16, 15, 14, 11, 7, 6, 7, 8, 9, 4, 3, 2, 1, 1, 5, 4, 8, 9, 10, 12, 13, 15, 17, 16, 19, 20, 22, 24, 24, 23, 21, 19, 18, 15, 11, 10, 7, 6, 1],
+  };
+  const mom9 = {
+    id: "9",
+    title: "BIRDS OF A FEATHER",
+    artist: "Billie Eillish",
+    length: 210,
+    start: 0.5,
+    end: 0.6,
+    album: require("@/assets/images/album9.jpg"),
+    waveform: [3, 4, 7, 8, 10, 2, 11, 12, 13, 17, 18, 16, 15, 14, 11, 7, 6, 7, 8, 9, 4, 3, 2, 1, 1, 5, 4, 8, 9, 10, 12, 13, 15, 17, 16, 19, 20, 22, 24, 24, 23, 21, 19, 18, 15, 11, 10, 7, 6, 1],
+  };
+  const mom10 = {
+    id: "10",
+    title: "Gabriela",
+    length: 197,
+    start: 0.5,
+    end: 0.67,
+    artist: "KATSEYE",
+    album: require("@/assets/images/album10.jpg"),
+    waveform: [3, 4, 7, 8, 10, 2, 11, 12, 13, 17, 18, 16, 15, 14, 11, 7, 6, 7, 8, 9, 4, 3, 2, 1, 1, 5, 4, 8, 9, 10, 12, 13, 15, 17, 16, 19, 20, 22, 24, 24, 23, 21, 19, 18, 15, 11, 10, 7, 6, 1],
+  };
 
 const helena = {
       name: "Helena Vance",
@@ -35,7 +135,26 @@ export const demoMoment = {
     user: helena
 };
 
-export const demoMoments = [demoMoment, demoMoment, demoMoment, demoMoment];
+const demoMoment2 = {
+    moment: mom1,
+    user: helena
+}
+const demoMoment3 = {
+    moment: mom2,
+    user: tyler
+}
+const demoMoment4 = {
+    moment: mom3,
+    user: annie
+}
+const demoMoment5 = {
+    moment: mom4,
+    user: helena
+}
+
+export const demoMoments = [demoMoment, demoMoment2, demoMoment3, demoMoment4, demoMoment5];
+
+export const moments = [mom1, mom2, mom3, mom4, mom5, mom6, mom7, mom8, mom9, mom10];
 
 const demoDaily = {
     moment: mom,
