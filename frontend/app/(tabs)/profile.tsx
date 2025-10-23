@@ -210,24 +210,21 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleSignOut = async () => {
-    logout();
-    router.replace("/signupProcess/signupPage" as RelativePathString);
-  };
+
 
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={{ flexDirection: "row", width: "100%", justifyContent: "center", alignItems: "center", paddingLeft: 115 }}>
+      <View style={{ flexDirection: "row", width: "100%", justifyContent: "center", alignItems: "center", paddingLeft: 0 }}>
         <Text style={styles.header}>Profile</Text>
 
-    <View style={{ marginLeft: 85 }}>
+        {/* <View style={{ marginLeft: 85 }}>
 <Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
             <Feather name="settings" size={30} color="#333C42" />
           </Pressable>
 
-    </View>
-         
+    </View> */}
+
       </View>
 
       {/* Profile Row */}

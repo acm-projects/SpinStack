@@ -71,13 +71,13 @@ export default function ProfileInfo() {
     ) {
       Alert.alert(
         'Error',
-        'Handle must be 3-30 characters, only letters/numbers/._-, and cannot start or end with special chars'
+        'Handle must be 3-10 characters, only letters/numbers/._-, and cannot start or end with special chars'
       );
       return false;
     }
 
-    if (bio && (bio.trim().length < 5 || bio.trim().length > 100)) {
-      Alert.alert('Error', 'Bio must be 5-100 characters if provided');
+    if (bio && (bio.trim().length < 5 || bio.trim().length > 30)) {
+      Alert.alert('Error', 'Bio must be 5-30 characters if provided');
       return false;
     }
 

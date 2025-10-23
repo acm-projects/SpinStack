@@ -82,7 +82,9 @@ export default function TabLayout() {
           width: '100%',
           height: 120,
           position: 'absolute',
-          bottom: 0,
+          left: 0,
+          bottom: -8,
+          right: 0,
           backgroundColor: 'transparent',
           justifyContent: 'flex-end',
         }}
@@ -97,8 +99,8 @@ export default function TabLayout() {
             alignItems: 'flex-end',
             gap: 40,
             width: '100%',
-            marginLeft: 37,
-            marginBottom: 20,
+            marginLeft: 15,
+            marginBottom: 15,
           }}
         >
           {state.routes.map((route, index) => {
@@ -149,6 +151,16 @@ export default function TabLayout() {
           tabBarButton: HapticTab,
         }}
       >
+        {/* <Tabs.Screen
+          name="stack"
+          initialParams={{ momentInfo: demoMoment }}
+          options={{
+            title: 'Home',
+            tabBarIcon: ({ color }) => (
+              <FontAwesome6 name="house" size={24} color="hsla(0, 0%, 67%, 1.00)" />
+            ),
+          }}
+        /> */}
 
         <Tabs.Screen
           name="home2"
@@ -191,7 +203,7 @@ export default function TabLayout() {
                   width: 55,
                   height: 55,
                   borderRadius: 50,
-                  
+
                 }}
               />
             ),
@@ -204,14 +216,14 @@ export default function TabLayout() {
           options={{
             title: ' ',
             tabBarIcon: ({ color }) => (
-              <View style = {{marginRight: -10}}>
+              <View style={{ marginRight: -10 }}>
                 <Ionicons
-                name="people-sharp"
-                size={35}
-                color="hsla(0, 0%, 67%, 1.00)"
-              />
+                  name="people-sharp"
+                  size={35}
+                  color="hsla(0, 0%, 67%, 1.00)"
+                />
               </View>
-              
+
             ),
           }}
         />

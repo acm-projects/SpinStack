@@ -130,7 +130,6 @@ export default function ProfileImageScreen() {
   };
 
   const handleNext = () => {
-    setProfileComplete(true);
     router.push("../signupProcess/spotifyConnect");
   };
 

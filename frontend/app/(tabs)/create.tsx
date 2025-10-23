@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, Pressable, Image, FlatList, StyleSheet, ActivityIndicator, Alert, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { moms } from '../../components/demoMoment'
 import { useMomentStore } from "../stores/useMomentStore";
 import { supabase } from "@/constants/supabase";
 
@@ -54,6 +55,9 @@ function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [loadingTopHits, setLoadingTopHits] = useState(true);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+
+
+
 
   // Helper function to extract Spotify track ID
   const extractTrackId = (songUrl: string): string | null => {
@@ -242,8 +246,16 @@ function SearchPage() {
     }
   };
 
-  const showTopHits = !search.trim() && topHits.length > 0;
-  const showSearchResults = search.trim() && results.length > 0;
+  const filteredData = moms.filter(item => {
+    if (!search.trim()) return true;//show all if empty
+    const lowerQuery = search.toLowerCase();
+    return (
+      item.title.toLowerCase().includes(lowerQuery)
+    );
+  });
+
+  const showTopHits = !search.trim();
+  const showSearchResults = !!search.trim() && results.length > 0;
 
   const renderTrack = ({ item, index }: { item: SpotifyTrack | TopHitTrack; index: number }) => (
     <Pressable
