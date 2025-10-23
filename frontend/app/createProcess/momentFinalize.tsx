@@ -9,7 +9,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 // seconds
 const momentLength = 30;
 
-export default function MomentFinalizeView({ moment, scrollFunc, height}: { moment: Moment, scrollFunc: (page: number) => void, height: number}) {
+export default function MomentFinalizeView({ moment, scrollFunc}: { moment: Moment, scrollFunc: (page: number) => void}) {
   const src = require('../../assets/images/stack.png');
   const vinylImg = require('../../assets/images/vinyl.png');
   const { width } = useWindowDimensions();

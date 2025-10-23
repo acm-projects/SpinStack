@@ -6,16 +6,17 @@ export default interface MomentInfo {
 }
 
 export interface Moment {
+    id: string,
     title: string,
     artist: string,
-    start: number,
-    end: number,
+    songStart: number,
+    songDuration: number,
     length: number,
     album: ImageSourcePropType,
     waveform: number[]
 }
 
-interface User {
+export interface User {
     name: string,
-    profilePic: ImageSourcePropType
+    profilePic: ImageSourcePropType | string
 }

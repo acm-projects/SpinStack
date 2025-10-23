@@ -6,7 +6,7 @@ import { router } from "expo-router";
 import Feather from "react-native-vector-icons/Feather";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TextInput, FlatList,} from "react-native";
-import {moments} from '../../components/demoMoment'
+import {moms} from '../../components/demoMoment'
 import { useMomentStore } from "../stores/useMomentStore";
 
 import BottomL from "../../assets/other/Bottom_L.svg";
@@ -259,7 +259,7 @@ function SearchPage() {
   const setSelectedMoment = useMomentStore((s) => s.setSelectedMoment);
   const [search, setSearch] = useState("");
 
-  const filteredData = moments.filter(item => {
+  const filteredData = moms.filter(item => {
       if (!search.trim()) return true;//show all if empty
       const lowerQuery = search.toLowerCase();
       return (

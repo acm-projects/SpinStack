@@ -41,19 +41,6 @@ export default function ProfileScreen() {
   const POLAROID_HEIGHT = 200;
   const POLAROID_URL = require("../../assets/images/polaroidFrame.webp");
 
-  // Load fonts
-  const loadFonts = async () => {
-    await Font.loadAsync({
-      "Luxurious Roman": require("@/fonts/LuxuriousRoman-Regular.ttf"),
-      "Jacques Francois": require("@/fonts/JacquesFrancois-Regular.ttf"),
-    });
-    setFontsLoaded(true);
-  };
-
-  useEffect(() => {
-    loadFonts();
-  }, []);
-
   // Fetch user info
   useEffect(() => {
     if (!user?.id) return;
@@ -219,8 +206,6 @@ export default function ProfileScreen() {
     logout();
     router.replace("/signupProcess/signupPage" as RelativePathString);
   };
-
-  if (!fontsLoaded) return null;
 
   return (
     <View style={styles.container}>
