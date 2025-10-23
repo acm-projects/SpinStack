@@ -10,7 +10,8 @@ import { AuthProvider, useAuth } from '../_context/AuthContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/constants/supabase';
 import { useFonts } from "expo-font";
-export const unstable_settings = {  initialRouteName: 'signupProcess/signupPage' };
+import React from 'react';
+export const unstable_settings = { initialRouteName: 'signupProcess/signupPage' };
 
 function RootStack() {
   const colorScheme = useColorScheme();
@@ -29,14 +30,17 @@ function RootStack() {
   // --------------- REDIRECT LOGIC ---------------
   useEffect(() => {
     if (loading || checkingProfile) return;
-
+    if(true) {
+      router.replace('/(tabs)/profile');
+    }else {
     if (!session) {
       router.replace('/signupProcess/signupPage');
     } else if (!profileComplete) {
       router.push('/signupProcess/profileSetup');
     } else {
       router.replace('/(tabs)/profile');
-    }
+    }}
+    
   }, [loading, checkingProfile, session, profileComplete]);
 
   //Loading spinner while AuthContext checks for existing session
@@ -49,7 +53,7 @@ function RootStack() {
   }
 
   return (
-    
+
     <Stack screenOptions={{ headerShown: false }}>
       {/* Signup Page */}
       <Stack.Screen
@@ -145,7 +149,7 @@ function RootStack() {
       />
 
 
-        <Stack.Screen
+      <Stack.Screen
         name="createProcess/momentSelect"
         options={{
           title: '',
