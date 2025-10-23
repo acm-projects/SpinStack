@@ -3,8 +3,6 @@ import React, { useState, useEffect } from "react";
 import { View, Text, Pressable, Image, FlatList, StyleSheet, ActivityIndicator, Alert, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { TextInput, FlatList,} from "react-native";
-import {moms} from '../../components/demoMoment'
 import { useMomentStore } from "../stores/useMomentStore";
 import { supabase } from "@/constants/supabase";
 
@@ -244,13 +242,48 @@ function SearchPage() {
     }
   };
 
-  const filteredData = moms.filter(item => {
-      if (!search.trim()) return true;//show all if empty
-      const lowerQuery = search.toLowerCase();
-      return (
-          item.title.toLowerCase().includes(lowerQuery)
-      );
-  });
+  const showTopHits = !search.trim() && topHits.length > 0;
+  const showSearchResults = search.trim() && results.length > 0;
+
+  const renderTrack = ({ item, index }: { item: SpotifyTrack | TopHitTrack; index: number }) => (
+    <Pressable
+      onPress={() => {
+        // Convert Spotify track to moment format
+        const moment = {
+          id: item.id,
+          title: item.name,
+          artist: item.artists.map((a) => a.name).join(", "),
+          length: Math.floor(item.duration_ms / 1000),
+          start: 0.5,
+          end: 0.6,
+          album: { uri: item.album.images[0]?.url },
+          waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
+        };
+        setSelectedMoment(moment);
+        router.push({ pathname: "/createProcess/momentProcess" });
+      }}
+    >
+      <View style={styles2.songRow}>
+        <Text style={styles2.rank}>{index + 1}</Text>
+        <View style={styles2.songInfo}>
+          <Text style={styles2.songTitle} numberOfLines={1}>
+            {item.name}
+          </Text>
+          <Text style={styles2.songArtist} numberOfLines={1} ellipsizeMode="tail">
+            {item.artists.map((a) => a.name).join(", ")}
+          </Text>
+          {'momentCount' in item && (
+            <Text style={styles2.momentCount}>
+              {item.momentCount} moment{item.momentCount !== 1 ? 's' : ''} created
+            </Text>
+          )}
+        </View>
+        {item.album.images[0]?.url && (
+          <Image source={{ uri: item.album.images[0].url }} style={styles2.albumArt} />
+        )}
+      </View>
+    </Pressable>
+  );
 
   return (
     <SafeAreaView style={styles2.container} edges={['top']}>

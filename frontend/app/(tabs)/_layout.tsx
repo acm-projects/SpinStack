@@ -95,9 +95,9 @@ export default function TabLayout() {
             flexDirection: 'row',
             justifyContent: 'space-around',
             alignItems: 'flex-end',
-            gap: 30,
+            gap: 40,
             width: '100%',
-            marginLeft: 47,
+            marginLeft: 37,
             marginBottom: 20,
           }}
         >
@@ -149,16 +149,6 @@ export default function TabLayout() {
           tabBarButton: HapticTab,
         }}
       >
-        <Tabs.Screen
-          name="stack"
-          initialParams={{ momentInfo: demoMoment }}
-          options={{
-            title: 'Home',
-            tabBarIcon: ({ color }) => (
-              <FontAwesome6 name="house" size={24} color="hsla(0, 0%, 67%, 1.00)" />
-            ),
-          }}
-        />
 
         <Tabs.Screen
           name="home2"

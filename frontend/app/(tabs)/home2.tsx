@@ -195,7 +195,7 @@ export default function HomeScreen() {
   if (!fontsLoaded) return null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FFF0E2" }}>
+    <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 100}}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>SpinStack</Text>
