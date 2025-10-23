@@ -1,305 +1,400 @@
-// app/TestSpotify.tsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, Button, Alert, StyleSheet, Image, Pressable } from "react-native";
-import * as Spotify from "@wwdrew/expo-spotify-sdk";
+// app/(tabs)/create.tsx
+import React, { useState, useEffect } from "react";
+import { View, Text, Pressable, Image, FlatList, StyleSheet, ActivityIndicator, Alert, TextInput } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import Feather from "react-native-vector-icons/Feather";
+import { TextInput, FlatList,} from "react-native";
+import {moms} from '../../components/demoMoment'
+import { useMomentStore } from "../stores/useMomentStore";
+import { supabase } from "@/constants/supabase";
 
-import BottomL from "../../assets/other/Bottom_L.svg";
-import TopL from "../../assets/other/Top_L.svg";
-import BottomM from "../../assets/other/Bottom_M.svg";
-import TopM from "../../assets/other/Top_M.svg";
-import BottomR from "../../assets/other/Bottom_R.svg";
-import MomentPick from "../createProcess/momentPick";
-import MomentSpecify from "../createProcess/momentSpecify";
-import MomentFinalize from "../createProcess/momentFinalize";
-import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import {
-  Animated,
-  useWindowDimensions,
-} from "react-native";
-import * as SecureStore from 'expo-secure-store';
+const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
-const TRACK_URI = "spotify:track:3NM41PVVUr0ceootKAtkAj"
-const API_BASE = "https://api.spotify.com/v1"
-
-type Device = {
+interface SpotifyTrack {
   id: string;
-  is_active: boolean;
   name: string;
-  type: string;
-  is_restricted: boolean;
-};
-
-type PlaybackState = {
-  is_playing: boolean;
-  progress_ms: number;
-  item?: {
+  artists: { name: string }[];
+  album: {
     name: string;
-    duration_ms: number;
-    album: { images: { url: string }[] };
-    artists: { name: string }[];
-  } | null;
-};
+    images: { url: string }[];
+  };
+  duration_ms: number;
+  uri: string;
+  preview_url?: string;
+}
+
+interface TopHitTrack extends SpotifyTrack {
+  momentCount: number;
+}
 
 export default function TestSpotify() {
-  const [token, setToken] = useState<string | null>(null)
-  const [playback, setPlayback] = useState<PlaybackState | null>(null)
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  return (
+    <SafeAreaView
+      style={{
+        display: "flex",
+        alignItems: "center",
+        flex: 1,
+        backgroundColor: '#FFF0E2'
+      }}
+    >
+      <Text style={{ color: "black", fontSize: 30, fontWeight: "500", fontFamily: 'Luxurious Roman' }}>
+        Create Your Moment
+      </Text>
 
-  const title = playback?.item?.name ?? "";
-  const artist = useMemo(
-    () => playback?.item?.artists?.map((a) => a.name).join(", ") ?? "",
-    [playback?.item?.artists]
+      <View style={{ width: '100%', flex: 1 }}>
+        <SearchPage />
+      </View>
+    </SafeAreaView>
   );
-  const albumArt = playback?.item?.album?.images?.[0]?.url ?? "";
-  const progressMs = playback?.progress_ms ?? 0;
-  const durationMs = playback?.item?.duration_ms ?? 0;
+}
 
-  const SNIPPET_START_MS = 37000;
-  const SNIPPET_END_MS = 68000;
+function SearchPage() {
+  const setSelectedMoment = useMomentStore((s) => s.setSelectedMoment);
+  const [search, setSearch] = useState("");
+  const [results, setResults] = useState<SpotifyTrack[]>([]);
+  const [topHits, setTopHits] = useState<TopHitTrack[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingTopHits, setLoadingTopHits] = useState(true);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  const authorize = async () => {
-    try {
-      const session = await Spotify.Authenticate.authenticateAsync({
-        scopes: [
-          "user-read-currently-playing",
-          "user-read-playback-state",
-          "user-modify-playback-state",
-          "app-remote-control",
-        ],
-      })
+  // Helper function to extract Spotify track ID
+  const extractTrackId = (songUrl: string): string | null => {
+    if (!songUrl) return null;
 
-      console.log("Got session:", session)
-      if (!session?.accessToken) throw new Error("No access token")
-      setToken(session.accessToken)
-      await SecureStore.setItemAsync('spotifyToken', session.accessToken);
-      Alert.alert("Spotify", "Authorized!")
-    } catch (e: any) {
-      Alert.alert("Auth error", String(e?.message ?? e));
+    if (songUrl.includes("spotify:track:")) {
+      return songUrl.split("spotify:track:")[1]?.split("?")[0] || null;
     }
-  };
 
-  const api = async (path: string, init?: RequestInit) => {
-    if (!token) throw new Error("No token");
-    const res = await fetch(`${API_BASE}${path}`, {
-      ...init,
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        ...(init?.headers || {}),
-      },
-    });
-    return res;
-  };
-
-  const getDevices = async (): Promise<Device[]> => {
-    const res = await api("/me/player/devices");
-    if (!res.ok) throw new Error(`devices: ${res.status}`);
-    const data = await res.json();
-    return data.devices as Device[];
-  };
-
-  const transferPlayback = async (deviceId: string) => {
-    await api("/me/player", {
-      method: "PUT",
-      body: JSON.stringify({ device_ids: [deviceId], play: true }),
-    });
-  };
-
-  const seekTo = async (ms: number) => {
-    if (!token) return;
-    await api(`/me/player/seek?position_ms=${ms}`, { method: "PUT" });
-  };
-
-  const startSnippetLoop = () => {
-    if (!token) return;
-    if (pollingRef.current) clearInterval(pollingRef.current);
-
-    pollingRef.current = setInterval(async () => {
-      try {
-        const res = await api("/me/player");
-        if (!res.ok) return;
-        const data = (await res.json()) as PlaybackState;
-        const pos = data.progress_ms ?? 0;
-
-        if (pos > SNIPPET_END_MS) {
-          await seekTo(SNIPPET_START_MS);
-        }
-
-        setPlayback(data);
-      } catch {
-        // ignore
-      }
-    }, 500);
-  };
-
-  const playOnActiveDevice = async () => {
-    if (!token) return Alert.alert("Spotify", "Please authorize first.");
-    try {
-      let res = await api("/me/player/play", {
-        method: "PUT",
-        body: JSON.stringify({ uris: [TRACK_URI] }),
-      });
-
-      if (res.status === 404 || res.status === 403 || res.status === 202) {
-        const devices = await getDevices();
-        const active = devices.find((d) => d.is_active && !d.is_restricted);
-        const iphone =
-          devices.find((d) => d.type === "Smartphone" && !d.is_restricted) ||
-          devices[0];
-        const target = active ?? iphone;
-        if (!target)
-          throw new Error("No available devices. Open Spotify once on your phone.");
-
-        await transferPlayback(target.id);
-        await new Promise((r) => setTimeout(r, 400));
-        res = await api(
-          `/me/player/play?device_id=${encodeURIComponent(target.id)}`,
-          {
-            method: "PUT",
-            body: JSON.stringify({ uris: [TRACK_URI] }),
-          }
-        );
-      }
-
-      if (!res.ok && res.status !== 204) {
-        const txt = await res.text();
-        throw new Error(`play error ${res.status}: ${txt}`);
-      }
-
-      await seekTo(SNIPPET_START_MS);
-      startSnippetLoop();
-      Alert.alert("Playback", "Looping 0:37 to 1:07!");
-    } catch (e: any) {
-      Alert.alert("Playback error", String(e?.message ?? e));
+    if (songUrl.includes("open.spotify.com/track/")) {
+      const match = songUrl.match(/track\/([a-zA-Z0-9]+)/);
+      return match ? match[1] : null;
     }
-  };
 
-  const fetchPlayback = async () => {
-    if (!token) return;
-    try {
-      const res = await api("/me/player");
-      if (res.status === 204) return;
-      if (!res.ok) return;
-      const data = (await res.json()) as PlaybackState;
-      setPlayback(data);
-    } catch {
-      // ignore
+    if (/^[a-zA-Z0-9]+$/.test(songUrl)) {
+      return songUrl;
     }
+
+    return null;
   };
 
   useEffect(() => {
-    if (!token) {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-      setPlayback(null);
+    fetchTopHits();
+  }, []);
+
+  // Auto-search when user types
+  useEffect(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    if (!search.trim()) {
+      setResults([]);
       return;
     }
-    fetchPlayback();
-    pollingRef.current = setInterval(fetchPlayback, 1000);
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    };
-  }, [token]);
 
-  const stopSnippet = async () => {
-    if (!token) return;
+    const timeout = setTimeout(() => {
+      handleSearch();
+    }, 500);
+
+    setSearchTimeout(timeout);
+
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [search]);
+
+  const fetchTopHits = async () => {
     try {
-      await fetch("https://api.spotify.com/v1/me/player/pause", {
-        method: "PUT",
+      setLoadingTopHits(true);
+
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const { data: moments, error } = await supabase
+        .from("moments")
+        .select("song_url")
+        .gte("created_at", sevenDaysAgo.toISOString());
+
+      if (error) {
+        console.error("Error fetching moments:", error);
+        setLoadingTopHits(false);
+        return;
+      }
+
+      if (!moments || moments.length === 0) {
+        setTopHits([]);
+        setLoadingTopHits(false);
+        return;
+      }
+
+      const songCounts: { [key: string]: number } = {};
+      moments?.forEach((moment) => {
+        if (moment.song_url) {
+          const trackId = extractTrackId(moment.song_url);
+          if (trackId) {
+            songCounts[trackId] = (songCounts[trackId] || 0) + 1;
+          }
+        }
+      });
+
+      const topTrackIds = Object.entries(songCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 10)
+        .map(([id, count]) => ({ id, count }));
+
+      if (topTrackIds.length === 0) {
+        setTopHits([]);
+        setLoadingTopHits(false);
+        return;
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      if (!token) {
+        setLoadingTopHits(false);
+        return;
+      }
+
+      const trackPromises = topTrackIds.map(async ({ id, count }) => {
+        try {
+          const response = await fetch(`${nUrl}/api/spotify/track/${id}`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!response.ok) {
+            return null;
+          }
+
+          const trackData = await response.json();
+          return { ...trackData, momentCount: count } as TopHitTrack;
+        } catch (err) {
+          return null;
+        }
+      });
+
+      const tracks = (await Promise.all(trackPromises)).filter(
+        (track): track is TopHitTrack => track !== null
+      );
+
+      setTopHits(tracks);
+    } catch (err) {
+      console.error("Error fetching top hits:", err);
+    } finally {
+      setLoadingTopHits(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!search.trim()) {
+      return;
+    }
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      if (!token) {
+        Alert.alert("Error", "You are not signed in");
+        return;
+      }
+
+      setLoading(true);
+
+      const url = `${nUrl}/api/spotify/search?q=${encodeURIComponent(
+        search
+      )}&type=track&limit=20`;
+
+      const response = await fetch(url, {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
-      Alert.alert("Snippet", "Playback paused.");
-    } catch (e: any) {
-      Alert.alert("Pause error", String(e?.message ?? e));
+
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseError) {
+        Alert.alert("Connection Error", "Cannot reach backend server");
+        setLoading(false);
+        return;
+      }
+
+      if (!response.ok) {
+        Alert.alert("Error", data.error || "Failed to search");
+        setLoading(false);
+        return;
+      }
+
+      setResults(data.tracks?.items || []);
+    } catch (err) {
+      console.error("Search error:", err);
+      Alert.alert("Error", "Failed to search");
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (hasSong === null) {
-    return (
-      <View
-        style={{
-          display: "flex",
-          alignItems: "center",
-          paddingTop: 110,
-          flex: 1,
-        }}
-      >
-        <Text style={{ color: "white", fontSize: 30, fontWeight: "500" }}>
-          Create Your Moment
-        </Text>
-        <View style={{ alignItems: "center", paddingTop: 100 }}>
-          <Text style={{ color: "white", fontSize: 20, fontWeight: "500" }}>
-            Select a Song
+  const filteredData = moms.filter(item => {
+      if (!search.trim()) return true;//show all if empty
+      const lowerQuery = search.toLowerCase();
+      return (
+          item.title.toLowerCase().includes(lowerQuery)
+      );
+  });
+
+  return (
+    <SafeAreaView style={styles2.container} edges={['top']}>
+      {/* Search Bar */}
+      <View style={styles2.searchContainer}>
+        <TextInput
+          style={styles2.searchInput}
+          placeholder="Search..."
+          placeholderTextColor="#333c42"
+          value={search}
+          onChangeText={setSearch}
+        />
+      </View>
+
+      {/* Section Title */}
+      {showTopHits ? (
+        <Text style={styles2.sectionTitle}>Top Hits This Week</Text>
+      ) : (
+        <Text style={styles2.sectionTitle}>Select a Song</Text>
+      )}
+
+      {/* Loading State */}
+      {loading || (loadingTopHits && !search.trim()) ? (
+        <ActivityIndicator size="large" color="#39868F" style={styles2.loader} />
+      ) : showTopHits ? (
+        /* Top Hits List */
+        <FlatList
+          data={topHits}
+          contentContainerStyle={styles2.listContainer}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item, index }) => renderTrack({ item, index })}
+        />
+      ) : showSearchResults ? (
+        /* Search Results List */
+        <FlatList
+          data={results}
+          contentContainerStyle={styles2.listContainer}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item, index }) => renderTrack({ item, index })}
+        />
+      ) : (
+        /* Empty State */
+        <View style={styles2.emptyContainer}>
+          <Text style={styles2.emptyText}>
+            {search.trim() ? "No results found" : "Top hits will appear here"}
           </Text>
         </View>
-
-        <View
-          style={{
-            width: "48%",
-            height: "29%",
-            backgroundColor: "#272727",
-            borderRadius: 30,
-            marginTop: 30,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Pressable onPress={() => router.push("/createProcess/momentSelect")}>
-            <Feather name="plus" size={120} color="white" />
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
-
-  return <View style={{ flex: 1, backgroundColor: "black" }} />;
+      )}
+    </SafeAreaView>
+  );
 }
 
-const styles = StyleSheet.create({
+const styles2 = StyleSheet.create({
   container: {
+    flex: 0.925,
+    backgroundColor: "#FFF0E2",
+    paddingHorizontal: 16,
+    paddingTop: 0,
+  },
+  searchContainer: {
+    backgroundColor: "#8DD2CA",
+    borderRadius: 25,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#333C42",
+  },
+  searchInput: {
+    color: "#333C42",
+    fontFamily: 'Jacques Francois',
+    fontSize: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333c42",
+    marginTop: 15,
+    marginBottom: 15,
+    textAlign: "center",
+    fontFamily: 'Jacques Francois',
+  },
+  songRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 13,
+    paddingHorizontal: 15,
+    width: '100%',
+    borderRadius: 15
+  },
+  rank: {
+    color: "#333c42",
+    fontSize: 20,
+    fontFamily: 'Jacques Francois',
+    width: 25,
+    textAlign: 'center'
+  },
+  songInfo: {
     flex: 1,
-    gap: 12,
-    alignItems: "center",
+    marginLeft: 10,
+  },
+  songTitle: {
+    color: "#333c42",
+    fontFamily: 'Jacques Francois',
+    fontSize: 16,
+  },
+  songArtist: {
+    color: "#39868F",
+    fontFamily: 'Jacques Francois',
+    fontSize: 13,
+  },
+  momentCount: {
+    color: "#1DB954",
+    fontSize: 12,
+    marginTop: 2,
+    fontWeight: "500",
+    fontFamily: "Jacques Francois",
+  },
+  albumArt: {
+    width: 40,
+    height: 40,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: "#333C42",
+  },
+  listContainer: {
+    backgroundColor: '#8DD2CA',
+    borderRadius: 15,
+    paddingVertical: 5,
+    borderWidth: 1.5,
+    borderColor: "#333C42",
+  },
+  loader: {
+    marginTop: 40,
+  },
+  emptyContainer: {
+    flex: 1,
     justifyContent: "center",
-    padding: 24,
-  },
-  title: { fontSize: 18, fontWeight: "600" },
-  nowPlaying: {
-    marginTop: 16,
-    width: "100%",
-    maxWidth: 520,
-    flexDirection: "row",
-    gap: 12,
     alignItems: "center",
+    marginTop: 40,
   },
-  art: { width: 80, height: 80, borderRadius: 6, backgroundColor: "#222" },
-  track: { fontSize: 16, fontWeight: "700", color: "white" },
-  artist: { fontSize: 14, opacity: 0.8, marginTop: 2, color: "white" },
-  barBg: {
-    marginTop: 8,
-    height: 4,
-    width: "100%",
-    backgroundColor: "#ddd",
-    borderRadius: 2,
-    flexDirection: "row",
-    overflow: "hidden",
+  emptyText: {
+    color: "#39868F",
+    fontSize: 16,
+    fontFamily: "Jacques Francois",
+    textAlign: "center",
   },
-  barFill: { backgroundColor: "#1DB954" },
-  timeRow: {
-    marginTop: 6,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  time: { fontSize: 12, opacity: 0.7, color: "white" },
-  playState: { marginTop: 4, fontSize: 12, opacity: 0.7 },
 });

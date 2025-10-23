@@ -1,16 +1,16 @@
 import React from "react";
 import { View, Image, StyleSheet, ImageSourcePropType } from "react-native";
 
-const GroupProfile = ({pics}: {pics: ImageSourcePropType[]}) => {
+const GroupProfile = ({pics, scale=1}: {pics: (ImageSourcePropType | null)[], scale: number}) => {
   //limit to 3 bc why not
   const displayedPics = pics.slice(0, 3);
 
-  const arrangementRadius = 20;
-  const center = 40; //offset of center
+  const arrangementRadius = scale * 20;
+  const center = scale * 40; //offset of center
 
-  const size = (pics.length == 1) ? (60) : ((pics.length == 2) ? (50) : (40));
+  const size = scale * ((pics.length == 1) ? (60) : ((pics.length == 2) ? (50) : (40)));
 
-  const rand = (360 / displayedPics.length) * Math.random();
+  const rand = 0;
 
   return (
     <View style={[styles.container, { width: center * 2, height: center * 2 }]}>
@@ -24,7 +24,11 @@ const GroupProfile = ({pics}: {pics: ImageSourcePropType[]}) => {
         return (
           <Image
             key={index}
-            source={pic}
+            source={
+                typeof pic === "string"
+                ? { uri: pic }
+                : pic
+            }
             style={[styles.image, { 
     borderRadius: size/2, width: size, height: size, left: x, top: y }]}
           />

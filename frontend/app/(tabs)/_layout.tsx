@@ -74,7 +74,7 @@ export default function TabLayout() {
     );
   }
 
-  // ---------------- Custom Tab Bar ----------------
+  // ---------------- le Custom Tab Bar ----------------
   const MyCustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
     return (
       <View
@@ -87,10 +87,7 @@ export default function TabLayout() {
           justifyContent: 'flex-end',
         }}
       >
-        {/* Background SVG */}
         <Bottom width="100%" height="100%" />
-
-        {/* Icons row */}
         <View
           style={{
             position: 'absolute',
@@ -98,9 +95,9 @@ export default function TabLayout() {
             flexDirection: 'row',
             justifyContent: 'space-around',
             alignItems: 'flex-end',
-            gap: 20,
+            gap: 30,
             width: '100%',
-            marginLeft: 20,
+            marginLeft: 47,
             marginBottom: 20,
           }}
         >
@@ -153,27 +150,16 @@ export default function TabLayout() {
         }}
       >
         <Tabs.Screen
-          name="momentEx"
+          name="stack"
           initialParams={{ momentInfo: demoMoment }}
           options={{
             title: 'Home',
             tabBarIcon: ({ color }) => (
-              <FontAwesome6 name="house" size={24} color="hsla(0, 0%, 67%, 1.00)" />
-            ),
-          }}
-        />
 
-        <Tabs.Screen
-          name="search"
-          options={{
-            title: ' ',
-            tabBarIcon: ({ color }) => (
-              <FontAwesome6
-                name="house"
-                size={30}
-                color="hsla(0, 0%, 67%, 1.00)"
-                style={{ marginLeft: 6 }}
-              />
+                <View style = {{marginLeft: -15, width: 50}}>
+                <FontAwesome6 name="house" size={30} color="hsla(0, 0%, 67%, 1.00)" />
+              </View>              
+              
             ),
           }}
         />
@@ -196,17 +182,8 @@ export default function TabLayout() {
           name="create"
           options={{
             title: ' ',
-            tabBarIcon: () => (
-              <Image
-                source={createPic}
-                style={{
-                  width: 55,
-                  height: 55,
-                  borderRadius: 50,
-                  marginLeft: 10,
-                  overflow: 'hidden',
-                }}
-              />
+            tabBarIcon: ({ color }) => (
+              <Image source={createPic} style={{ width: 55, height: 55, borderRadius: 50, overflow: 'hidden' }} />
             ),
           }}
         />
@@ -217,11 +194,14 @@ export default function TabLayout() {
           options={{
             title: ' ',
             tabBarIcon: ({ color }) => (
-              <Ionicons
+              <View style = {{marginRight: -10}}>
+                <Ionicons
                 name="people-sharp"
-                size={30}
+                size={35}
                 color="hsla(0, 0%, 67%, 1.00)"
               />
+              </View>
+              
             ),
           }}
         />

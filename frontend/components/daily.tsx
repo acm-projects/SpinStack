@@ -1,26 +1,34 @@
 import React from 'react'
-import { StyleSheet, Text, View, Image, Easing, Animated} from 'react-native';
-import {useRef, useEffect} from 'react';
+import { StyleSheet, Text, View, Image, Easing, Animated, TouchableOpacity} from 'react-native';
+import {useRef, useEffect, useState} from 'react';
 import {SafeAreaView} from "react-native-safe-area-context";
 import {useWindowDimensions} from 'react-native';
 import Waveform from './waveform';
-import MomentInfo from './momentInfo';
-import LikeButton from './likeButton';
+import {Moment} from './momentInfo';
+import {User} from './momentInfo';
 import Top from '@/assets/other/Group 7.svg';
 import Upper from '@/assets/other/Group 5.svg';
 import Lower from '@/assets/other/Group 8.svg';
+import GroupProfile from './groupProfile';
+import RatingButton from './ui/ratingButton';
+import { useNavigation } from '@react-navigation/native';
 
 import { RNSVGSvgIOS } from 'react-native-svg';
+import { DailyInfo } from './groupInfo';
 
 
-export default function MomentView({ data }: { data: MomentInfo }) {
-    if(!data) {
-        return (<View style = {{flex: 1, backgroundColor: 'red'}}><Text>you're cooked buddy the moment doesn't even exist</Text></View>);
+export default function DailyView({ daily, users }: { daily: DailyInfo, users: User[] }) {
+    if(!daily) {
+        return (<View style = {{flex: 1, backgroundColor: 'red'}}><Text>you're cooked buddy the daily doesn't even exist</Text></View>);
     }
+    const data = daily.moment;
+    
+
 
     const {height, width, scale, fontScale} = useWindowDimensions();
     const vinylImg = require('../assets/images/vinyl.png');
     const spinAnim = useRef(new Animated.Value(0)).current;
+    const [rating, setRating] = useState<number | null>(4);
 
     useEffect(() => {
     Animated.loop(
@@ -38,6 +46,29 @@ export default function MomentView({ data }: { data: MomentInfo }) {
     inputRange: [0, 1],
     outputRange: ['360deg', '0deg'],
     });
+
+    const [sent, setSent] = useState(false);
+    const navigation = useNavigation();
+
+    const handlePress = () => {
+        setSent(!sent);
+    };
+
+    useEffect(() => {
+        let timer: NodeJS.Timeout | undefined;
+
+        if (sent) {
+        timer = setTimeout(() => {
+            navigation.goBack();
+            //mark this daily rating
+            if(daily.rating === rating) daily.rating = rating;
+        }, 750);
+        }
+
+        return () => {
+        if (timer) clearTimeout(timer);
+        };
+    }, [sent, navigation]);
 
   return (
         <View style = {{flex: 1, backgroundColor: '#FFF0E2'}}>
@@ -61,26 +92,22 @@ export default function MomentView({ data }: { data: MomentInfo }) {
             
             <SafeAreaView style = {[StyleSheet.absoluteFill]} edges = {['top', 'left', 'right']}>
                 <View style = {{justifyContent: 'flex-start'}}>
-                    <View style = {{marginHorizontal: 10, flexDirection: 'row', alignItems: 'flex-start'}}>
-                        <Image 
-                                source = {
-                                        typeof data.user.profilePic === "string"
-                                        ? { uri: data.user.profilePic }
-                                        : data.user.profilePic
-                                    }
-                                style = {{width: 40, height: 40, borderRadius: 50, overflow: 'hidden'}}
-                            />
+                    <View style = {{marginLeft: 20, marginHorizontal: 10, flexDirection: 'row', alignItems: 'flex-start', marginTop: -10}}>
+                        <GroupProfile pics = {users.slice(0, 3).map(user => (typeof user.profilePic === "string"
+                                        ? { uri: user.profilePic }
+                                        : user.profilePic))} scale={0.6} 
+                                        />
                         <View style = {{marginLeft: 10, marginRight: 40, flexDirection: 'row', flex: 1}}>
                             <View style = {[{width: '100%', justifyContent: "center"}]}>
                                 <View style = {[{width: '100%', height: 5, borderRadius: 50, backgroundColor: '#333c42', marginTop: 7}]}/>
-                                <View style = {{marginTop: 30}}><Waveform data = {data.moment.waveform} height = {25} start = {data.moment.songStart / data.moment.length} end = {(data.moment.songStart + data.moment.songDuration)/(data.moment.length)} baseColor = "#333C42" selectedColor = "#87bd84" anim = {true}/></View>
+                                <View style = {{marginTop: 30}}><Waveform data = {data.waveform} height = {25} start = {data.songStart / data.length} end = {(data.songStart + data.songDuration)/(data.length)} baseColor = "#333C42" selectedColor = "#87bd84" anim = {true}/></View>
                         
                             </View>
                         </View>
                     </View>
                     <View style = {{marginLeft: 10}}>
-                        <Text style={[styles.texxt, {fontFamily: 'Luxurious Roman'}]}>{data.moment.title}</Text>
-                        <Text style={[styles.texxt, {fontSize: 15, fontFamily: 'Jacques Francois'}]}>{data.moment.artist} </Text>
+                        <Text style={[styles.texxt, {fontFamily: 'Luxurious Roman'}]}>{data.title}</Text>
+                        <Text style={[styles.texxt, {fontSize: 15, fontFamily: 'Jacques Francois'}]}>{data.artist} </Text>
                     </View>
                     
                 </View>
@@ -92,9 +119,9 @@ export default function MomentView({ data }: { data: MomentInfo }) {
                             <View style = {[{justifyContent: "center", alignItems: "center"}]}>
                                 <Image 
                                     source = {
-                                        typeof data.moment.album === "string"
-                                        ? { uri: data.moment.album }
-                                        : data.moment.album
+                                        typeof data.album === "string"
+                                        ? { uri: data.album }
+                                        : data.album
                                     }
                                     style = {{width: '40%', aspectRatio: 1, height: undefined}}
                                 />
@@ -108,8 +135,17 @@ export default function MomentView({ data }: { data: MomentInfo }) {
                     </View>
                     
                     
-                    <View style = {[{flexDirection: 'row', alignItems: "center", justifyContent: "flex-end", marginBottom: 20, marginRight: 15}]}>
-                        <LikeButton/>
+                    <View style = {[{flexDirection: 'row', alignItems: "flex-start", justifyContent: "flex-end", marginRight: 15}]}>
+                        {[1,2,3,4,5].map((num) => (<RatingButton key = {num} value = {num} selected = {rating === num} onPress = {setRating}/>))}
+                        <View style = {{position: 'absolute', marginTop: 90, marginRight: 40}}>
+                            <TouchableOpacity onPress={handlePress}>
+                                <FontAwesome
+                                    name={'send'}
+                                    size={50}
+                                    color={sent ? '#5eb0d9ff' : 'gray'}
+                                />
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
                 
@@ -125,7 +161,6 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
         justifyContent: 'space-between',
         alignItems: 'stretch',
-        /*backgroundColor: '#fffefe69',*/
         borderColor: 'hsl(0,100%,100%)',
     },
     texxt: {
