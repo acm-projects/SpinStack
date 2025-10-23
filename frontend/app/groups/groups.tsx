@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, FlatList, Animated, TextInput, Easing } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList, Animated, TextInput, Easing, ImageSourcePropType} from 'react-native';
 import {useState, useRef, useEffect} from 'react';
 import { Layout, FadeInDown, FadeOutUp } from 'react-native-reanimated';
 import {useRouter, usePathname} from 'expo-router';
@@ -8,6 +8,8 @@ import GroupInfo from '../../components/groupInfo';
 import {demoGroups} from '../../components/demoMoment'
 import GroupProfile from '../../components/groupProfile';
 import Feather from '@expo/vector-icons/Feather';
+import { useGroupStore } from "../stores/useGroupStore";
+import type { DailyInfo } from "../../components/groupInfo"; 
 
 function ClickableTab({ label, isActive, onPress }: { 
   label: string; 
@@ -41,6 +43,7 @@ function GroupClickTab({ item, onPress }: {
   item: GroupInfo; 
   onPress: () => void; 
 }) {
+    const vinylImg = require('../../assets/images/vinyl.png')
   return (
    <TouchableOpacity
       onPress={onPress}
@@ -66,12 +69,9 @@ function GroupClickTab({ item, onPress }: {
                             </View>
 
                             <View>
-                                {/*
-                                <Image 
-                                                    source = {item.users[1].profilePic}
-                                                    style = {{marginLeft: 10, width: 60, height: 60, borderRadius: 50, overflow: 'hidden'}}
-                                                />*/}
-                                <GroupProfile pics={item.users.slice(0, 3).map(user => user.profilePic)}/>
+                                <GroupProfile pics={item.users.slice(0, 3).map(user => (typeof user.profilePic === "string"
+                                        ? { uri: user.profilePic }
+                                        : user.profilePic))}/>
                             </View>
                         </View>
     </TouchableOpacity>     
@@ -82,6 +82,9 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
     const [active, setActive] = useState<number>(0);
     const router = useRouter();
     const buttons = ["Recent", "Search", "Create"];
+
+    const setSelectedGroup = useGroupStore((s) => s.setSelectedGroup);
+    
 
     const [isSearchActive, setIsSearchActive] = useState(false);
     const fadeTabs = useRef(new Animated.Value(1)).current;   // starts fully visible
@@ -226,7 +229,12 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
                         borderColor: "#333C42",
                         }}
                     >   
-                        <GroupClickTab item = {item} onPress = {() => router.push('/groups/group')}></GroupClickTab>
+                        <GroupClickTab item = {item} 
+                            
+                            onPress={() => {
+                                        setSelectedGroup(item); 
+                                        router.push({pathname: "/groups/group"})}}
+                                        ></GroupClickTab>
                     </View>
                     )}
                     ListEmptyComponent={

@@ -7,7 +7,10 @@ import Feather from '@expo/vector-icons/Feather';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import EvilIcons from '@expo/vector-icons/EvilIcons';
 
-export default function MomentSpecifyView({ moment, scrollFunc, height}: { moment: Moment, scrollFunc: (page: number) => void, height: number}) {
+// seconds
+const momentLength = 30;
+
+export default function MomentSpecifyView({ moment, scrollFunc}: { moment: Moment, scrollFunc: (page: number) => void}) {
   const src = require('../../assets/images/stack.png');
   const vinylImg = require('../../assets/images/vinyl.png');
   const { width } = useWindowDimensions();
