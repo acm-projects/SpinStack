@@ -148,16 +148,16 @@ export default function ProfileScreen() {
     fetchStacks();
   }, [user?.id]);
 
-  // Fetch friends list for modal
   const fetchFriendsList = async () => {
     if (!user?.id) return;
     setLoadingFriends(true);
 
     try {
+      // Get friendships in both directions
       const { data: friendLinks, error: linkError } = await supabase
         .from("friends")
-        .select("friend_id")
-        .eq("user_id", user.id);
+        .select("user_id, friend_id")
+        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
 
       if (linkError) throw linkError;
       if (!friendLinks || friendLinks.length === 0) {
@@ -165,7 +165,15 @@ export default function ProfileScreen() {
         return;
       }
 
-      const friendIds = friendLinks.map((f) => f.friend_id);
+      // Extract friend IDs (the ID that isn't the current user)
+      const friendIds = friendLinks.map(row =>
+        row.user_id === user.id ? row.friend_id : row.user_id
+      ).filter(id => id !== user.id);
+
+      if (friendIds.length === 0) {
+        setFriendsList([]);
+        return;
+      }
 
       const { data: friendProfiles, error: profileError } = await supabase
         .from("users")
