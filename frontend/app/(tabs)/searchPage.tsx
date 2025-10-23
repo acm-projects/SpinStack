@@ -17,20 +17,7 @@ import { supabase } from "@/constants/supabase";
 
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
-type SearchType = "Songs" | "Stacks" | "Users";
-
-interface SpotifyTrack {
-  id: string;
-  name: string;
-  artists: { name: string }[];
-  album: {
-    name: string;
-    images: { url: string }[];
-  };
-  duration_ms: number;
-  uri: string;
-  preview_url?: string;
-}
+type SearchType = "Stacks" | "Users";
 
 interface Stack {
   id: string;
@@ -56,160 +43,39 @@ interface User {
   last_name: string;
 }
 
-interface TopHitTrack extends SpotifyTrack {
-  momentCount: number;
-}
-
 export default function SearchPage() {
-  const [activeFilter, setActiveFilter] = useState<SearchType>("Songs");
+  const [activeFilter, setActiveFilter] = useState<SearchType>("Stacks");
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<{
-    tracks?: SpotifyTrack[];
     stacks?: Stack[];
     users?: User[];
   }>({});
-  const [topHits, setTopHits] = useState<TopHitTrack[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingTopHits, setLoadingTopHits] = useState(true);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
-
-  // Helper function to extract Spotify track ID
-  const extractTrackId = (songUrl: string): string | null => {
-    if (!songUrl) return null;
-
-    if (songUrl.includes("spotify:track:")) {
-      return songUrl.split("spotify:track:")[1]?.split("?")[0] || null;
-    }
-
-    if (songUrl.includes("open.spotify.com/track/")) {
-      const match = songUrl.match(/track\/([a-zA-Z0-9]+)/);
-      return match ? match[1] : null;
-    }
-
-    if (/^[a-zA-Z0-9]+$/.test(songUrl)) {
-      return songUrl;
-    }
-
-    return null;
-  };
-
-  useEffect(() => {
-    fetchTopHits();
-  }, []);
 
   // Auto-search when user types
   useEffect(() => {
-    // Clear existing timeout
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
 
-    // If search is empty, clear results and show top hits
     if (!search.trim()) {
       setResults({});
       return;
     }
 
-    // Set a new timeout to search after 500ms of no typing
     const timeout = setTimeout(() => {
       handleSearch();
-    }, 100);
+    }, 500);
 
     setSearchTimeout(timeout);
 
-    // Cleanup function
     return () => {
       if (timeout) {
         clearTimeout(timeout);
       }
     };
   }, [search, activeFilter]);
-
-  const fetchTopHits = async () => {
-    try {
-      setLoadingTopHits(true);
-
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-      const { data: moments, error } = await supabase
-        .from("moments")
-        .select("song_url")
-        .gte("created_at", sevenDaysAgo.toISOString());
-
-      if (error) {
-        console.error("Error fetching moments:", error);
-        setLoadingTopHits(false);
-        return;
-      }
-
-      if (!moments || moments.length === 0) {
-        setTopHits([]);
-        setLoadingTopHits(false);
-        return;
-      }
-
-      const songCounts: { [key: string]: number } = {};
-      moments?.forEach((moment) => {
-        if (moment.song_url) {
-          const trackId = extractTrackId(moment.song_url);
-          if (trackId) {
-            songCounts[trackId] = (songCounts[trackId] || 0) + 1;
-          }
-        }
-      });
-
-      const topTrackIds = Object.entries(songCounts)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 10)
-        .map(([id, count]) => ({ id, count }));
-
-      if (topTrackIds.length === 0) {
-        setTopHits([]);
-        setLoadingTopHits(false);
-        return;
-      }
-
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-
-      if (!token) {
-        setLoadingTopHits(false);
-        return;
-      }
-
-      const trackPromises = topTrackIds.map(async ({ id, count }) => {
-        try {
-          const response = await fetch(`${nUrl}/api/spotify/track/${id}`, {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          });
-
-          if (!response.ok) {
-            return null;
-          }
-
-          const trackData = await response.json();
-          return { ...trackData, momentCount: count } as TopHitTrack;
-        } catch (err) {
-          return null;
-        }
-      });
-
-      const tracks = (await Promise.all(trackPromises)).filter(
-        (track): track is TopHitTrack => track !== null
-      );
-
-      setTopHits(tracks);
-    } catch (err) {
-      console.error("Error fetching top hits:", err);
-    } finally {
-      setLoadingTopHits(false);
-    }
-  };
 
   const handleSearch = async () => {
     if (!search.trim()) {
@@ -227,39 +93,7 @@ export default function SearchPage() {
 
       setLoading(true);
 
-      if (activeFilter === "Songs") {
-        const url = `${nUrl}/api/spotify/search?q=${encodeURIComponent(
-          search
-        )}&type=track&limit=20`;
-
-        const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        const text = await response.text();
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (parseError) {
-          Alert.alert("Connection Error", "Cannot reach backend server");
-          setLoading(false);
-          return;
-        }
-
-        if (!response.ok) {
-          Alert.alert("Error", data.error || "Failed to search");
-          setLoading(false);
-          return;
-        }
-
-        setResults({
-          tracks: data.tracks?.items || [],
-        });
-      } else if (activeFilter === "Stacks") {
+      if (activeFilter === "Stacks") {
         const { data: stacks, error } = await supabase
           .from("stacks")
           .select(
@@ -314,41 +148,14 @@ export default function SearchPage() {
   };
 
   const getCurrentResults = () => {
-    if (activeFilter === "Songs") {
-      return results.tracks || [];
-    } else if (activeFilter === "Stacks") {
+    if (activeFilter === "Stacks") {
       return results.stacks || [];
     } else {
       return results.users || [];
     }
   };
 
-  const showTopHits =
-    !search.trim() && topHits.length > 0 && activeFilter === "Songs";
   const showSearchResults = search.trim() && getCurrentResults().length > 0;
-
-  const renderTrack = ({
-    item,
-    index,
-  }: {
-    item: SpotifyTrack | TopHitTrack;
-    index: number;
-  }) => (
-    <View style={styles.songRow}>
-      <Text style={styles.rank}>{index + 1}</Text>
-      <View style={styles.songInfo}>
-        <Text style={styles.songTitle} numberOfLines={1}>
-          {item.name}
-        </Text>
-        <Text numberOfLines={1} ellipsizeMode="tail" style={styles.songArtist}>
-          {item.artists.map((a) => a.name).join(", ")}
-        </Text>
-      </View>
-      {item.album.images[0]?.url && (
-        <Image source={{ uri: item.album.images[0].url }} style={styles.albumArt} />
-      )}
-    </View>
-  );
 
   const renderStack = ({ item, index }: { item: Stack; index: number }) => (
     <View style={styles.songRow}>
@@ -421,16 +228,14 @@ export default function SearchPage() {
             placeholder="Search..."
             placeholderTextColor="#333C42"
             value={search}
-            onChangeText={(text) => {
-              setSearch(text);
-            }}
+            onChangeText={setSearch}
             returnKeyType="search"
           />
         </View>
 
         {/* Filter Buttons */}
         <View style={styles.filterRow}>
-          {(["Songs", "Stacks", "Users"] as SearchType[]).map((filter) => (
+          {(["Stacks", "Users"] as SearchType[]).map((filter) => (
             <Pressable
               key={filter}
               style={[
@@ -454,26 +259,12 @@ export default function SearchPage() {
           ))}
         </View>
 
-        {/* Section Title */}
-        {showTopHits && (
-          <Text style={styles.sectionTitle}>Top Hits This Week</Text>
-        )}
-
         {/* Loading State */}
-        {loading || (loadingTopHits && !search.trim() && activeFilter === "Songs") ? (
+        {loading ? (
           <ActivityIndicator
             size="large"
             color="#39868F"
             style={styles.loader}
-          />
-        ) : showTopHits ? (
-          /* Top Hits List */
-          <FlatList
-            data={topHits}
-            contentContainerStyle={styles.listContainer}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item, index }) => renderTrack({ item, index })}
-            style={styles.list}
           />
         ) : showSearchResults ? (
           /* Search Results List */
@@ -482,9 +273,7 @@ export default function SearchPage() {
             contentContainerStyle={styles.listContainer}
             keyExtractor={(item) => item.id}
             renderItem={({ item, index }) => {
-              if (activeFilter === "Songs") {
-                return renderTrack({ item: item as SpotifyTrack, index });
-              } else if (activeFilter === "Stacks") {
+              if (activeFilter === "Stacks") {
                 return renderStack({ item: item as Stack, index });
               } else {
                 return renderUser({ item: item as User, index });
@@ -498,8 +287,6 @@ export default function SearchPage() {
             <Text style={styles.emptyText}>
               {search.trim()
                 ? "No results found"
-                : activeFilter === "Songs"
-                ? "Top hits will appear here"
                 : `Search for ${activeFilter.toLowerCase()} to get started`}
             </Text>
           </View>
@@ -555,20 +342,13 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: "#FFF0E2",
   },
-  sectionTitle: {
-    fontSize: 25,
-    fontFamily: "Luxurious Roman",
-    color: "#333C42",
-    marginTop: 15,
-    marginBottom: 15,
-    textAlign: "center",
-  },
   listContainer: {
     backgroundColor: "#8DD2CA",
     borderRadius: 15,
     paddingVertical: 8,
     borderWidth: 1.5,
     borderColor: "#333C42",
+    marginTop: 15,
   },
   list: {
     marginBottom: 92,
