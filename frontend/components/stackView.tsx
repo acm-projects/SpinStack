@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FlatList, Dimensions, View, ViewToken, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import MomentView from "./newMoment";
-import {demoMoments} from "./demoMoment"; 
-import * as Spotify from "@wwdrew/expo-spotify-sdk";
+import {demoMoments} from "./demoMoment";
+import { demoMoment } from "./demoMoment";
 import * as SecureStore from 'expo-secure-store';
 
 type Device = {
@@ -142,20 +142,19 @@ export default function StackView({ moments = demoMoments }: { moments?: typeof 
     })
   }
 
-  
   return (
     <FlatList
-      data={moments}
+      data={demoMoments}
       keyExtractor={(_, index) => index.toString()}
       horizontal
       pagingEnabled
       showsHorizontalScrollIndicator={false}
+      onMomentumScrollEnd={onMomentumScrollEnd}
       renderItem={({ item }) => (
         <View style={{ width, flex: 1 }}>
-          <MomentView data={item} />
+          <MomentView data = {item}/>
         </View>
       )}
-      onMomentumScrollEnd={onMomentumScrollEnd}
     />
   );
 }

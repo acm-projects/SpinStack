@@ -1,5 +1,5 @@
-import User from './momentInfo'
-import Moment from './momentInfo'
+import type {User} from './momentInfo'
+import type {Moment} from './momentInfo'
 
 
 export default interface GroupInfo {
@@ -8,7 +8,7 @@ export default interface GroupInfo {
     dailies: DailyInfo[],
 }
 
-interface DailyInfo {
+export interface DailyInfo {
     moment: Moment,
     date: number,
     title: string,

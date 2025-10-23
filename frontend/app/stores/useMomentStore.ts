@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Moment } from "../../components/momentInfo"; // your interface
+import type { Moment } from "../../components/momentInfo"; 
 
 export default interface MomentState {
   selectedMoment: Moment | null;
