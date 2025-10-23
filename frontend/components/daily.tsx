@@ -12,6 +12,7 @@ import Lower from '@/assets/other/Group 8.svg';
 import GroupProfile from './groupProfile';
 import RatingButton from './ui/ratingButton';
 import { useNavigation } from '@react-navigation/native';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { RNSVGSvgIOS } from 'react-native-svg';
 import { DailyInfo } from './groupInfo';

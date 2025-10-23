@@ -97,9 +97,9 @@ export default function TabLayout() {
             flexDirection: 'row',
             justifyContent: 'space-around',
             alignItems: 'flex-end',
-            gap: 30,
+            gap: 40,
             width: '100%',
-            marginLeft: 38,
+            marginLeft: 15,
             marginBottom: 15,
           }}
         >
