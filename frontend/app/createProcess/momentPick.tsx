@@ -1,5 +1,6 @@
+// app/createProcess/momentPick.tsx - Fixed with Select button
 import React, { useState, useRef, useEffect} from 'react';
-import { StyleSheet, View, Image, Text, Animated, PanResponder,Easing, useWindowDimensions, TouchableOpacity} from 'react-native';
+import { StyleSheet, View, Image, Text, Animated, PanResponder, Easing, useWindowDimensions, TouchableOpacity} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Waveform from '../../components/waveform';
 import {Moment} from '../../components/momentInfo'
@@ -10,44 +11,44 @@ const momentLength = 30;
 
 export default function MomentPickView({ moment, scrollFunc}: { moment: Moment, scrollFunc: (page: number) => void}) {
   const src = require('../../assets/images/stack.png');
-   const { width } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const [waveWidth, setWaveWidth] = useState(0);
 
   //progress bar anim
   const progress = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => {
+  useEffect(() => {
     Animated.loop(
-        Animated.sequence([
+      Animated.sequence([
         Animated.timing(progress, {
-            toValue: 1,
-            duration: 3000,
-            easing: Easing.linear,
-            useNativeDriver: false,
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.linear,
+          useNativeDriver: false,
         }),
         Animated.timing(progress, {
-            toValue: 0,
-            duration: 0,
-            useNativeDriver: false,
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: false,
         }),
-        ])
+      ])
     ).start();
-    }, []);
+  }, []);
 
-    //resetter
-    const restartAnimation = () => {
+  //resetter
+  const restartAnimation = () => {
     progress.stopAnimation(() => {
-        progress.setValue(0);
-        Animated.timing(progress, {
+      progress.setValue(0);
+      Animated.timing(progress, {
         toValue: 1,
         duration: 2000,
         easing: Easing.linear,
         useNativeDriver: false,
-        }).start(({ finished }) => {
+      }).start(({ finished }) => {
         if (finished) restartAnimation();
-        });
+      });
     });
-    };
+  };
 
   //slider positions
   const startX = useRef(new Animated.Value(0)).current;
@@ -64,7 +65,7 @@ export default function MomentPickView({ moment, scrollFunc}: { moment: Moment, 
     if (waveWidth > 0) setEnd(Math.min(1, Math.max(value / waveWidth, start + 0.01)));
   });
 
-  //respotinioning
+  //repositioning
   const onWaveLayout = (e: any) => {
     const w = e.nativeEvent.layout.width;
     setWaveWidth(w);
@@ -85,7 +86,7 @@ export default function MomentPickView({ moment, scrollFunc}: { moment: Moment, 
         startX.flattenOffset();
         restartAnimation();
         if((end - start) * moment.length < momentLength) {
-            moment.start = start;
+          moment.start = start;
         }
       },
     })
@@ -103,13 +104,12 @@ export default function MomentPickView({ moment, scrollFunc}: { moment: Moment, 
         endX.flattenOffset();
         restartAnimation();
         if((end - start) * moment.length < momentLength) {
-            moment.end = end;
+          moment.end = end;
         }
       },
     })
   ).current;
 
-  
   const startNorm = startX.interpolate({
     inputRange: [0, waveWidth],
     outputRange: [0, 1],
@@ -121,7 +121,6 @@ export default function MomentPickView({ moment, scrollFunc}: { moment: Moment, 
     extrapolate: 'clamp',
   });
 
-
   moment.start = start;
   moment.end = end;
 
@@ -132,13 +131,13 @@ export default function MomentPickView({ moment, scrollFunc}: { moment: Moment, 
         edges={['top', 'left', 'right']}
       >
         <View style={{ justifyContent: 'center', alignItems: 'center'}}>
-            <Text style={{ fontSize: 40, fontFamily: 'Luxurious Roman', fontWeight: 'bold' }}>Pick Your Moment</Text>
+          <Text style={{ fontSize: 40, fontFamily: 'Luxurious Roman', fontWeight: 'bold', color: '#333C42' }}>Pick Your Moment</Text>
         </View>
 
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ justifyContent: 'center', alignItems: 'center' }}>
             <View style={{ marginLeft: 10, marginTop: -20, marginBottom: 30 }}>
-              <Text style={{ fontSize: 30, fontFamily: 'Jacques Francois'}}>
+              <Text style={{ fontSize: 30, fontFamily: 'Jacques Francois', color: '#333C42'}}>
                 {moment.title} - {moment.artist}
               </Text>
             </View>
@@ -172,7 +171,6 @@ export default function MomentPickView({ moment, scrollFunc}: { moment: Moment, 
                       {...panStart.panHandlers}
                       style={{
                         position: 'absolute',
-                        //screw you react
                         left: Animated.add(startX, new Animated.Value(-10)),
                         width: 20,
                         height: 60,
@@ -207,66 +205,66 @@ export default function MomentPickView({ moment, scrollFunc}: { moment: Moment, 
         </View>
         
         <View
+          style={{
+            backgroundColor: '#E4D7CB',
+            borderRadius: 50,
+            borderWidth: 4,
+            borderColor: '#333C42',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            width: '60%',
+            height: 40,
+            overflow: 'hidden',
+          }}
+        >
+          <View
             style={{
-                backgroundColor: '#E4D7CB',
-                borderRadius: 50,
-                borderWidth: 4,
-                borderColor: '#333C42',
-                alignItems: 'flex-start',
-                justifyContent: 'center',
-                width: '60%',
-                height: 40,
-                overflow: 'hidden',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '90%',
+              height: '80%',
+              position: 'absolute',
+              zIndex: 0,
+              marginLeft: 12,
             }}
-            >
-            <View
+          >
+            {Array.from({ length: 10 }).map((_, i) => (
+              <View
+                key={i}
                 style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    width: '90%',
-                    height: '80%',
-                    position: 'absolute',
-                    zIndex: 0,
-                    marginLeft: 12,
+                  width: 4,
+                  height: '50%',
+                  borderRadius: 10,
+                  backgroundColor: '#333C42',
                 }}
-                >
-                {Array.from({ length: 10 }).map((_, i) => (
-                    <View
-                    key={i}
-                    style={{
-                        width: 4,
-                        height: '50%',
-                        borderRadius: 10,
-                        backgroundColor: '#333C42',
-                    }}
-                    />
-                ))}
-            </View>
+              />
+            ))}
+          </View>
 
-            <Animated.View
-                style={{
-                    position: 'absolute',
-                    top: 4,
-                    bottom: 0,
-                    height: '75%',
-                    backgroundColor: '#39868F',
-                    width: 6,
-                    borderRadius: 80,
-                    transform: [
-                    {
-                        translateX: progress.interpolate({
-                        inputRange: [0, 1],
-                        //messed with the parameters here to get it seamless
-                        outputRange: [-30, waveWidth - 100],
-                        }),
-                    },
-                    ],
-                }}
-            />
-
+          <Animated.View
+            style={{
+              position: 'absolute',
+              top: 4,
+              bottom: 0,
+              height: '75%',
+              backgroundColor: '#39868F',
+              width: 6,
+              borderRadius: 80,
+              transform: [
+                {
+                  translateX: progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-30, waveWidth - 100],
+                  }),
+                },
+              ],
+            }}
+          />
         </View>
-        <TouchableOpacity style={{
+
+        <TouchableOpacity 
+          style={{
             backgroundColor: '#39868F',
             borderRadius: 10,
             borderWidth: 4,
@@ -275,11 +273,13 @@ export default function MomentPickView({ moment, scrollFunc}: { moment: Moment, 
             marginTop: 10,
             width: '60%',
           }}
-          onPress={() => !((end - start) * moment.length > momentLength) && scrollFunc(1)}>
-            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10}}>Select</Text>
+          onPress={() => !((end - start) * moment.length > momentLength) && scrollFunc(1)}
+        >
+          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10, fontFamily: 'Jacques Francois' }}>
+            Select
+          </Text>
         </TouchableOpacity>
       </SafeAreaView>
-
     </View>
   );
 }
