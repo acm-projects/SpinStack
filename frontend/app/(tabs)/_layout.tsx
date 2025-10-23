@@ -17,7 +17,7 @@ import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const profilePic = require('../../assets/images/profile.png');
-  const createPic = require('../../assets/images/createPic.png');
+  const createPic = require('../../assets/images/stack.png');
   const { width } = Dimensions.get('window');
   const IMAGE_SIZE = width * 0.2;
 
@@ -155,11 +155,23 @@ export default function TabLayout() {
           options={{
             title: 'Home',
             tabBarIcon: ({ color }) => (
+              <FontAwesome6 name="house" size={24} color="hsla(0, 0%, 67%, 1.00)" />
+            ),
+          }}
+        />
 
-                <View style = {{marginLeft: -15, width: 50}}>
-                <FontAwesome6 name="house" size={30} color="hsla(0, 0%, 67%, 1.00)" />
-              </View>              
-              
+        <Tabs.Screen
+          name="home2"
+          initialParams={{ momentInfo: demoMoments }}
+          options={{
+            title: ' ',
+            tabBarIcon: ({ color }) => (
+              <FontAwesome6
+                name="house"
+                size={30}
+                color="hsla(0, 0%, 67%, 1.00)"
+                style={{ marginLeft: 6 }}
+              />
             ),
           }}
         />
@@ -182,8 +194,16 @@ export default function TabLayout() {
           name="create"
           options={{
             title: ' ',
-            tabBarIcon: ({ color }) => (
-              <Image source={createPic} style={{ width: 55, height: 55, borderRadius: 50, overflow: 'hidden' }} />
+            tabBarIcon: () => (
+              <Image
+                source={createPic}
+                style={{
+                  width: 55,
+                  height: 55,
+                  borderRadius: 50,
+                  
+                }}
+              />
             ),
           }}
         />

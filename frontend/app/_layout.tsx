@@ -168,6 +168,8 @@ function RootStack() {
           ),
         }}
       />
+
+      
       <Stack.Screen
         name="createProcess/momentCut"
         options={{
@@ -187,7 +189,18 @@ function RootStack() {
           ),
         }}
       />
+       <Stack.Screen
+        name="home2"
+        options={{
+          title: '',
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#FFF0E2' : '#FFF0E2' },
+          contentStyle: { backgroundColor: '#FFF0E2' }
+        }}
+      />
     </Stack>
+
+    
   );
 }
 
@@ -195,7 +208,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   return (
     <AuthProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={colorScheme === 'light' ? DarkTheme : DefaultTheme}>
         <RootStack />
         <StatusBar style="dark" />
       </ThemeProvider>

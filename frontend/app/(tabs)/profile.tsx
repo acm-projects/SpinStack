@@ -218,8 +218,16 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={{ width: "100%", alignItems: "center", paddingHorizontal: 10 }}>
+      <View style={{ flexDirection: "row", width: "100%", justifyContent: "center", alignItems: "center", paddingLeft: 115 }}>
         <Text style={styles.header}>Profile</Text>
+
+    <View style={{ marginLeft: 85 }}>
+<Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
+            <Feather name="settings" size={30} color="#333C42" />
+          </Pressable>
+
+    </View>
+         
       </View>
 
       {/* Profile Row */}
@@ -407,7 +415,7 @@ export default function ProfileScreen() {
                       setFriendsModalVisible(false);
                       // When opening friend's profile
                       router.push({
-                        pathname: '/profile/[id]',
+                        pathname: '/profile/[id]' as RelativePathString,
                         params: { id: item.id, fromProfile: 'true' },
                       });
 
