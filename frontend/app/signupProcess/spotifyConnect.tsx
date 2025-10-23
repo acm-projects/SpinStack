@@ -8,9 +8,11 @@ import Bubble from '../../assets/other/bubble.svg';
 import Feather from '@expo/vector-icons/Feather';
 
 export default function SpotifyConnect() {
-  const { signingUp, setSigningUp } = useAuth();
+  const { user, setProfileComplete } = useAuth();
+
 
   const handleNext = () => {
+    setProfileComplete(true);
     router.replace("../profile");
     /*this will fix but not yet (needs some more work)*/
     /*
@@ -19,7 +21,7 @@ export default function SpotifyConnect() {
   }, 100);*/
   };
   return (
-    <View style = {[StyleSheet.absoluteFill, {flex: 1}]}>
+    <View style={[StyleSheet.absoluteFill, { flex: 1 }]}>
       <View
         style={{
           flex: 1,
@@ -30,18 +32,18 @@ export default function SpotifyConnect() {
           backgroundColor: "#FFF0E2",
         }}
       >
-        <OpeningSplash width="100%" height="100%" style = {{marginTop: -30}}/>
+        <OpeningSplash width="100%" height="100%" style={{ marginTop: -30 }} />
       </View>
       <View style={{ marginBottom: 10, marginLeft: 10, paddingTop: 70 }}>
         <Pressable onPress={() => router.back()}>
-          <View style = {{marginBottom: 60, marginLeft: 10}}>
-              <View style = {{position: 'absolute', alignItems: 'center'}}>
-                <Bubble width = {50} height = {50}/>
-                <View style = {{marginTop: -40}}>
-                  <Feather name="arrow-left" size={30} color="black"/>
-                </View>
+          <View style={{ marginBottom: 60, marginLeft: 10 }}>
+            <View style={{ position: 'absolute', alignItems: 'center' }}>
+              <Bubble width={50} height={50} />
+              <View style={{ marginTop: -40 }}>
+                <Feather name="arrow-left" size={30} color="black" />
               </View>
             </View>
+          </View>
 
         </Pressable>
       </View>

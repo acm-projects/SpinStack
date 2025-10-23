@@ -3,7 +3,7 @@ import { supabase } from "@/constants/supabase";
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image, Pressable, Dimensions } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
-import { useRouter } from "expo-router";
+import { RelativePathString, useRouter } from "expo-router";
 import Bubble from '../assets/other/bubble.svg';
 import { AutoSizeText, ResizeTextMode } from 'react-native-auto-size-text'; // import these
 
@@ -11,9 +11,14 @@ export default function ProfileSettings() {
   const { width } = Dimensions.get("window");
   const [username, setUsername] = useState<string>("Loading...");
   const [bio, setBio] = useState<string>("");
-  const { user, pfpUrl, setPfpUrl } = useAuth();
+  const { user, pfpUrl, setPfpUrl, logout } = useAuth();
   const IMAGE_SIZE = width * 0.2;
   const router = useRouter();
+
+  const handleSignOut = async () => {
+    logout();
+    router.replace("/signupProcess/signupPage" as RelativePathString);
+  };
 
   useEffect(() => {
     if (!user?.id) return;
@@ -110,6 +115,7 @@ export default function ProfileSettings() {
         <Text style={styles.optionText}>Edit Username</Text>
         <Text style={styles.optionText}>Edit Email</Text>
         <Text style={styles.optionText}>Edit Password</Text>
+        <Text style={styles.optionText} onPress={handleSignOut}>Sign Out</Text>
       </View>
     </View>
   );
@@ -161,7 +167,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#8DD2CA",
     justifyContent: "flex-start",
     alignItems: "flex-start",
-    
+
   },
   optionText: {
     fontSize: 18,

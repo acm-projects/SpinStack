@@ -30,17 +30,15 @@ function RootStack() {
   // --------------- REDIRECT LOGIC ---------------
   useEffect(() => {
     if (loading || checkingProfile) return;
-    if(true) {
-      router.replace('/(tabs)/profile');
-    }else {
+
     if (!session) {
       router.replace('/signupProcess/signupPage');
     } else if (!profileComplete) {
       router.push('/signupProcess/profileSetup');
     } else {
       router.replace('/(tabs)/profile');
-    }}
-    
+    }
+
   }, [loading, checkingProfile, session, profileComplete]);
 
   //Loading spinner while AuthContext checks for existing session
@@ -169,7 +167,7 @@ function RootStack() {
         }}
       />
 
-      
+
       <Stack.Screen
         name="createProcess/momentCut"
         options={{
@@ -189,7 +187,7 @@ function RootStack() {
           ),
         }}
       />
-       <Stack.Screen
+      <Stack.Screen
         name="home2"
         options={{
           title: '',
@@ -200,7 +198,7 @@ function RootStack() {
       />
     </Stack>
 
-    
+
   );
 }
 
