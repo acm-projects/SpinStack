@@ -73,7 +73,7 @@ export default function ProfileImageScreen() {
       const fileType = 'image/webp';
 
       const uploadUrlRes = await fetch(
-        'https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/presigned-url',
+        'https://unhemmed-unhedonistically-waneta.ngrok-free.dev/api/upload/presigned-url',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

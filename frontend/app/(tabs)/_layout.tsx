@@ -13,6 +13,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import Bottom from '@/assets/other/Group 9.svg';
 import { supabase } from '@/constants/supabase';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -42,7 +43,7 @@ export default function TabLayout() {
 
         if (userData?.pfp_url) {
           const res = await fetch(
-            `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
+            `https://unhemmed-unhedonistically-waneta.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
           );
           if (res.ok) {
             const { downloadURL } = await res.json();

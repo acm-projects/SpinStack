@@ -19,7 +19,7 @@ import { supabase } from "@/constants/supabase";
 const POLAROID_WIDTH = 150;
 const POLAROID_HEIGHT = 200;
 const POLAROID_URL = require("@/assets/images/polaroidFrame.webp");
-const NGROK_URL = "https://cayson-mouthiest-kieran.ngrok-free.dev";
+const NGROK_URL = "https://unhemmed-unhedonistically-waneta.ngrok-free.dev";
 
 interface Profile {
     id: string;

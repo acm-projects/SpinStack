@@ -15,6 +15,7 @@ import { RelativePathString, useRouter } from "expo-router";
 import { supabase } from "@/constants/supabase";
 import { useAuth } from "@/_context/AuthContext";
 import * as Font from "expo-font";
+const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
 export default function ProfileScreen() {
   const { width } = Dimensions.get("window");
@@ -64,7 +65,7 @@ export default function ProfileScreen() {
         if (userData?.pfp_url) {
           try {
             const res = await fetch(
-              `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
+              `https://unhemmed-unhedonistically-waneta.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
             );
             if (res.ok) {
               const { downloadURL } = await res.json();
@@ -188,7 +189,7 @@ export default function ProfileScreen() {
           if (f.pfp_url) {
             try {
               const res = await fetch(
-                `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${f.pfp_url}`
+                `https://unhemmed-unhedonistically-waneta.ngrok-free.dev/api/upload/download-url/${f.pfp_url}`
               );
               if (res.ok) {
                 const { downloadURL } = await res.json();
