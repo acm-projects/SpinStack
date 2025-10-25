@@ -32,7 +32,7 @@ type MasonryItem = {
   caption?: string;
   cover_url?: string | null;
   type?: 'moment' | 'stack';
-  userId?: string; // Add userId for navigation
+  userId?: string;
 };
 
 type MasonryProps = {
@@ -49,7 +49,7 @@ function Masonry({ data, spacing = 8, columns = 2, router }: MasonryProps) {
   useEffect(() => {
     const withHeights = data.map((item) => ({
       ...item,
-      height: Math.random() * 50 + 180, // varied height
+      height: Math.random() * 50 + 180,
     }));
 
     const nextCols: MasonryItem[][] = Array.from({ length: columns }, () => []);
@@ -189,9 +189,12 @@ function Masonry({ data, spacing = 8, columns = 2, router }: MasonryProps) {
   );
 }
 
+
+
 export default function HomeScreen() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [activeFilter, setActiveFilter] = useState("For You");
+  const [friends, setFriends] = useState<string[]>([]);
   const [albums, setAlbums] = useState<MasonryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -202,6 +205,33 @@ export default function HomeScreen() {
       "Jacques Francois": require("@/fonts/JacquesFrancois-Regular.ttf"),
     });
     setFontsLoaded(true);
+  };
+
+  const getCurrentUserId = async (): Promise<string | null> => {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) {
+      console.error("Failed to get current user:", error);
+      return null;
+    }
+    return user?.id || null;
+  };
+
+  const fetchFriends = async () => {
+    const userId = await getCurrentUserId();
+    if (!userId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("friends")
+        .select("friend_id")
+        .eq("user_id", userId);
+
+      if (error) throw error;
+
+      setFriends(data?.map((f: any) => f.friend_id) || []);
+    } catch (err) {
+      console.error("Error fetching friends:", err);
+    }
   };
 
   // Helper function to fetch profile picture URL
@@ -299,14 +329,22 @@ export default function HomeScreen() {
         ...(stacksData || []).map(item => ({ ...item, type: 'stack' as const }))
       ];
 
+      // Apply friends filter
+      const filteredContent = allContent.filter(item => {
+        if (activeFilter === "Friends") {
+          return friends.includes(item.user_id);
+        }
+        return true;
+      });
+
       // Sort by created_at
-      allContent.sort((a, b) =>
+      filteredContent.sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
       // Process each item to get URLs
       const processedAlbums = await Promise.all(
-        allContent.map(async (item) => {
+        filteredContent.map(async (item) => {
           const userData = Array.isArray(item.users) ? item.users[0] : item.users;
           const pfpUrl = await fetchProfilePictureUrl(userData?.pfp_url);
           const coverUrl = await fetchCoverImageUrl(item.cover_url);
@@ -333,15 +371,18 @@ export default function HomeScreen() {
     }
   };
 
+  // Load fonts and fetch friends on mount
   useEffect(() => {
     loadFonts();
+    fetchFriends();
   }, []);
 
+  // Fetch content when fonts load, filter changes, or friends list changes
   useEffect(() => {
     if (fontsLoaded) {
       fetchAllContent();
     }
-  }, [fontsLoaded]);
+  }, [activeFilter, fontsLoaded, friends]);
 
   if (!fontsLoaded || loading) {
     return (
@@ -374,7 +415,7 @@ export default function HomeScreen() {
 
       {/* Filters */}
       <View style={styles.filterContainer}>
-        {["Following", "For You"].map((filter) => (
+        {["Friends", "For You"].map((filter) => (
           <Pressable
             key={filter}
             style={[

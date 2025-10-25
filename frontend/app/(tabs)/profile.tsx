@@ -190,7 +190,7 @@ export default function ProfileScreen() {
           if (f.pfp_url) {
             try {
               const res = await fetch(
-                `${nUrl}/${f.pfp_url}`
+                `${nUrl}/api/upload/download-url/${f.pfp_url}`
               );
               if (res.ok) {
                 const { downloadURL } = await res.json();

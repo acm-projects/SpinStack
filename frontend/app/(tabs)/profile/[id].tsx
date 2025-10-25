@@ -232,12 +232,62 @@ export default function FriendProfile() {
 
             Alert.alert("Friend added!");
             setIsFriend(true);
-            // Refetch friends list to update count
             fetchFriendsList();
         } catch (err) {
             console.error("Error adding friend:", err);
         }
     };
+
+    // Remove friend functionality
+    const removeFriend = async () => {
+        try {
+            const sessionData = await supabase.auth.getSession();
+            const currentUser = sessionData?.data?.session?.user;
+            const accessToken = sessionData?.data?.session?.access_token;
+
+            if (!currentUser || !accessToken) return;
+
+            // Ask for confirmation before removal
+            Alert.alert(
+                "Remove Friend",
+                "Are you sure you want to remove this friend?",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                        text: "Yes, Remove",
+                        style: "destructive",
+                        onPress: async () => {
+                            const response = await fetch(`${nUrl}/api/friends`, {
+                                method: "DELETE",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    Authorization: `Bearer ${accessToken}`,
+                                },
+                                body: JSON.stringify({
+                                    user_id: currentUser.id,
+                                    friend_id: id,
+                                }),
+                            });
+
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                console.error("Failed to remove friend:", errorData);
+                                Alert.alert("Error", "Could not remove friend.");
+                                return;
+                            }
+
+                            Alert.alert("Friend removed");
+                            setIsFriend(false);
+                            fetchFriendsList();
+                        },
+                    },
+                ]
+            );
+        } catch (err) {
+            console.error("Error removing friend:", err);
+        }
+    };
+
 
     // Handle back button navigation
     const handleBackPress = () => {
@@ -404,20 +454,33 @@ export default function FriendProfile() {
                             {numFriends} Friends
                         </Text>
                     </Pressable>
-                    {!isFriend && (
-                        <Pressable
-                            onPress={addFriend}
+                    <Pressable
+                        onPress={isFriend ? removeFriend : addFriend}
+                        style={{
+                            backgroundColor: isFriend ? "#B85C5C" : "#39868F",
+                            paddingVertical: 4,
+                            paddingHorizontal: 8,
+                            borderRadius: 8,
+                            marginTop: 4,
+                            maxWidth: 90, // Limit width
+                            alignItems: "center", // Center text
+                        }}
+                    >
+                        <Text
                             style={{
-                                backgroundColor: "#39868F",
-                                paddingVertical: 4,
-                                paddingHorizontal: 8,
-                                borderRadius: 8,
-                                marginTop: 4,
+                                color: "#FFF0E2",
+                                fontFamily: "Jacques Francois",
+                                textAlign: "center",
+                                flexWrap: "wrap", // Allow wrapping
+                                fontSize: 13,
                             }}
+                            numberOfLines={2}
                         >
-                            <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois" }}>Add Friend</Text>
-                        </Pressable>
-                    )}
+                            {isFriend ? "Remove\nFriend" : "Add Friend"}
+                        </Text>
+                    </Pressable>
+
+
                 </View>
             </View>
 
