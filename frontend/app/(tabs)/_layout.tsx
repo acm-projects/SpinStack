@@ -99,7 +99,7 @@ export default function TabLayout() {
             alignItems: 'flex-end',
             gap: 40,
             width: '100%',
-            marginLeft: 15,
+            marginLeft: 18,
             marginBottom: 15,
           }}
         >

@@ -7,84 +7,43 @@ import {
   StyleSheet,
   Pressable,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as Font from "expo-font";
+import { supabase } from "@/constants/supabase";
+import { useRouter, RelativePathString } from "expo-router";
 
 const { width } = Dimensions.get("window");
+const POLAROID_WIDTH = 150;
+const POLAROID_HEIGHT = 200;
+const POLAROID_URL = require("@/assets/images/polaroidFrame.webp");
+const NGROK_URL = "https://cayson-mouthiest-kieran.ngrok-free.dev";
 
 const profiles = Array.from({ length: 10 }).map((_, i) => ({ id: i.toString() }));
-
-const albums = [
-  {
-    id: "1",
-    src: require("../../assets/images/album1.jpeg"),
-    user: "Helena Vance",
-    profilePic: require("../../assets/images/profile.png"),
-    time: "3 mins ago",
-    caption:
-      "oh yea its happeing alright. BOOYA!, this with a side of Mushoku Tensei",
-  },
-  {
-    id: "2",
-    src: require("../../assets/images/album2.jpeg"),
-    user: "Jordan Peterson",
-    profilePic: require("../../assets/images/profile2.png"),
-    time: "5 hours ago",
-    caption: "This song makes me happy",
-  },
-  {
-    id: "3",
-    src: require("../../assets/images/album3.jpeg"),
-    user: "Jordan Peterson",
-    profilePic: require("../../assets/images/profile2.png"),
-    time: "18 hours ago",
-    caption: "Add this to your playlist.. NOW!",
-  },
-  {
-    id: "4",
-    src: require("../../assets/images/album4.jpg"),
-    user: "Helena Vance",
-    profilePic: require("../../assets/images/profile.png"),
-    time: "4 hours ago",
-    caption: "feeling sad might delete later >.<",
-  },
-  {
-    id: "5",
-    src: require("../../assets/images/album5.jpg"),
-    user: "Jordan Peterson",
-    profilePic: require("../../assets/images/profile3.png"),
-    time: "6 hours ago",
-    caption: "Great mix, vibes immaculate.",
-  },
-  {
-    id: "6",
-    src: require("../../assets/images/album6.jpg"),
-    user: "Helena Vance",
-    profilePic: require("../../assets/images/profile.png"),
-    time: "8 hours ago",
-    caption: "",
-  },
-];
 
 type MasonryItem = {
   id: string;
   src: any;
   height?: number;
   user?: string;
-  profilePic?: any;
+  profilePic?: string | null;
   time?: string;
   caption?: string;
+  cover_url?: string | null;
+  type?: 'moment' | 'stack';
+  userId?: string; // Add userId for navigation
 };
 
 type MasonryProps = {
   data: MasonryItem[];
   spacing?: number;
   columns?: number;
+  router: any;
 };
 
 // 🧱 Masonry Component
-function Masonry({ data, spacing = 8, columns = 2 }: MasonryProps) {
+function Masonry({ data, spacing = 8, columns = 2, router }: MasonryProps) {
   const [cols, setCols] = useState<MasonryItem[][]>([]);
 
   useEffect(() => {
@@ -119,36 +78,90 @@ function Masonry({ data, spacing = 8, columns = 2 }: MasonryProps) {
     >
       {/* Header */}
       <View style={styles.cardHeader}>
-        <Image source={item.profilePic} style={styles.avatar} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.username}>{item.user}</Text>
-          <Text style={styles.time}>{item.time}</Text>
-        </View>
+        <Pressable
+          onPress={() => {
+            console.log("Profile pressed, userId:", item.userId);
+            if (item.userId) {
+              router.push(`/profile/${item.userId}` as RelativePathString);
+            }
+          }}
+          style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+        >
+          <Image
+            source={item.profilePic ? { uri: item.profilePic } : require("@/assets/images/profile.png")}
+            style={styles.avatar}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.username}>{item.user}</Text>
+            <Text style={styles.time}>{item.time}</Text>
+          </View>
+        </Pressable>
         <Feather name="more-horizontal" size={20} color="#555" />
       </View>
 
-      {/* Image */}
-      <View>
-        <Image
-          source={item.src}
-          style={{
-            width: "100%",
-            height: item.height,
-            borderRadius: 16,
-          }}
-          resizeMode="cover"
-        />
-        <View
-          style={{
-            position: "absolute",
-            top: "47%",
-            left: "49%",
-            transform: [{ translateX: -10 }, { translateY: -10 }],
-          }}
-        >
-          <Feather name="play" size={28} color="white" />
+      {/* Image - Different rendering for stacks vs moments */}
+      {item.type === 'stack' ? (
+        // Stack with polaroid frame
+        <View style={{
+          width: "100%",
+          height: item.height,
+          justifyContent: "center",
+          alignItems: "center",
+          position: "relative",
+        }}>
+          <Image
+            source={item.src}
+            style={{
+              width: POLAROID_WIDTH * 0.88,
+              height: POLAROID_HEIGHT * 0.88,
+              borderRadius: 8,
+            }}
+            resizeMode="cover"
+          />
+          <Image
+            source={POLAROID_URL}
+            style={{
+              width: POLAROID_WIDTH,
+              height: POLAROID_HEIGHT,
+              position: "absolute",
+              resizeMode: "contain",
+            }}
+          />
+          <View
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: [{ translateX: -14 }, { translateY: -14 }],
+            }}
+          >
+            <Feather name="play" size={28} color="white" />
+          </View>
         </View>
-      </View>
+      ) : (
+        // Regular moment image
+        <View>
+          <Image
+            source={item.src}
+            style={{
+              width: "100%",
+              height: item.height,
+              borderRadius: 16,
+            }}
+            resizeMode="cover"
+          />
+          <View
+            style={{
+              position: "absolute",
+              top: "47%",
+              left: "49%",
+              transform: [{ translateX: -10 }, { translateY: -10 }],
+            }}
+          >
+            <Feather name="play" size={28} color="white" />
+          </View>
+        </View>
+      )}
 
       {/* Caption */}
       {item.caption ? (
@@ -179,6 +192,9 @@ function Masonry({ data, spacing = 8, columns = 2 }: MasonryProps) {
 export default function HomeScreen() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [activeFilter, setActiveFilter] = useState("For You");
+  const [albums, setAlbums] = useState<MasonryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const loadFonts = async () => {
     await Font.loadAsync({
@@ -188,14 +204,155 @@ export default function HomeScreen() {
     setFontsLoaded(true);
   };
 
+  // Helper function to fetch profile picture URL
+  const fetchProfilePictureUrl = async (pfpPath: string | null): Promise<string | null> => {
+    if (!pfpPath) return null;
+
+    try {
+      const res = await fetch(`${NGROK_URL}/api/upload/download-url/${pfpPath}`);
+      if (res.ok) {
+        const { downloadURL } = await res.json();
+        return downloadURL;
+      }
+    } catch (err) {
+      console.error("Failed to fetch profile picture URL:", err);
+    }
+    return null;
+  };
+
+  // Helper function to fetch cover image URL
+  const fetchCoverImageUrl = async (coverPath: string | null): Promise<string | null> => {
+    if (!coverPath) return null;
+
+    // If it's already a full URL (http/https), return it directly
+    if (coverPath.startsWith('http://') || coverPath.startsWith('https://')) {
+      return coverPath;
+    }
+
+    // Otherwise, fetch from your API
+    try {
+      const res = await fetch(`${NGROK_URL}/api/upload/download-url/${coverPath}`);
+      if (res.ok) {
+        const { downloadURL } = await res.json();
+        return downloadURL;
+      }
+    } catch (err) {
+      console.error("Failed to fetch cover image URL:", err);
+    }
+    return null;
+  };
+
+  // Calculate time ago
+  const getTimeAgo = (timestamp: string): string => {
+    const now = new Date();
+    const created = new Date(timestamp);
+    const diffMs = now.getTime() - created.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins} mins ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    return `${diffDays} days ago`;
+  };
+
+  // Fetch all moments and stacks with user data
+  const fetchAllContent = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch moments with user info
+      const { data: momentsData, error: momentsError } = await supabase
+        .from("moments")
+        .select(`
+          id,
+          cover_url,
+          title,
+          description,
+          created_at,
+          user_id,
+          users!inner(id, username, pfp_url)
+        `)
+        .order("created_at", { ascending: false });
+
+      if (momentsError) throw momentsError;
+
+      // Fetch stacks with user info
+      const { data: stacksData, error: stacksError } = await supabase
+        .from("stacks")
+        .select(`
+          id,
+          cover_url,
+          title,
+          description,
+          created_at,
+          user_id,
+          users!inner(id, username, pfp_url)
+        `)
+        .order("created_at", { ascending: false });
+
+      if (stacksError) throw stacksError;
+
+      // Combine and format data
+      const allContent = [
+        ...(momentsData || []).map(item => ({ ...item, type: 'moment' as const })),
+        ...(stacksData || []).map(item => ({ ...item, type: 'stack' as const }))
+      ];
+
+      // Sort by created_at
+      allContent.sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      // Process each item to get URLs
+      const processedAlbums = await Promise.all(
+        allContent.map(async (item) => {
+          const userData = Array.isArray(item.users) ? item.users[0] : item.users;
+          const pfpUrl = await fetchProfilePictureUrl(userData?.pfp_url);
+          const coverUrl = await fetchCoverImageUrl(item.cover_url);
+
+          return {
+            id: item.id,
+            src: coverUrl ? { uri: coverUrl } : require("@/assets/images/album1.jpeg"),
+            user: userData?.username || "Unknown User",
+            profilePic: pfpUrl,
+            time: getTimeAgo(item.created_at),
+            caption: item.description || item.title || "",
+            cover_url: coverUrl,
+            type: item.type,
+            userId: item.user_id,
+          };
+        })
+      );
+
+      setAlbums(processedAlbums);
+    } catch (err) {
+      console.error("Error fetching content:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadFonts();
   }, []);
 
-  if (!fontsLoaded) return null;
+  useEffect(() => {
+    if (fontsLoaded) {
+      fetchAllContent();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded || loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#FFF0E2", justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#333C42" />
+      </View>
+    );
+  }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 100}}>
+    <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 100 }}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>SpinStack</Text>
@@ -239,7 +396,13 @@ export default function HomeScreen() {
       </View>
 
       {/* Masonry Feed */}
-      <Masonry data={albums} spacing={10} columns={2} />
+      {albums.length > 0 ? (
+        <Masonry data={albums} spacing={10} columns={2} router={router} />
+      ) : (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <Text style={styles.username}>No content available</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -303,7 +466,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 6,
-    paddingTop: -19
+    paddingTop: -19,
   },
   avatar: {
     width: 40,
@@ -316,7 +479,6 @@ const styles = StyleSheet.create({
     color: "#333C42",
     fontSize: 14,
     fontFamily: "Jacques Francois",
-    
   },
   time: {
     fontSize: 11,
@@ -329,6 +491,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#333C42",
     fontFamily: "Jacques Francois",
-    textAlign: "center"
+    textAlign: "center",
   },
 });
