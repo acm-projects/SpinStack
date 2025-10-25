@@ -40,6 +40,8 @@ export default function ProfileScreen() {
   const POLAROID_WIDTH = 150;
   const POLAROID_HEIGHT = 200;
   const POLAROID_URL = require("../../assets/images/polaroidFrame.webp");
+  const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
+
 
   // Fetch user info
   useEffect(() => {
@@ -64,7 +66,7 @@ export default function ProfileScreen() {
         if (userData?.pfp_url) {
           try {
             const res = await fetch(
-              `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
+              `${nUrl}}/${userData.pfp_url}`
             );
             if (res.ok) {
               const { downloadURL } = await res.json();
@@ -188,7 +190,7 @@ export default function ProfileScreen() {
           if (f.pfp_url) {
             try {
               const res = await fetch(
-                `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${f.pfp_url}`
+                `${nUrl}/${f.pfp_url}`
               );
               if (res.ok) {
                 const { downloadURL } = await res.json();

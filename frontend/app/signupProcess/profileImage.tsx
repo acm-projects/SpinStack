@@ -16,6 +16,8 @@ export default function ProfileImageScreen() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const { user, setProfileComplete } = useAuth();
   const router = useRouter();
+  const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
+
 
   const loadFonts = async () => {
     await Font.loadAsync({
@@ -73,7 +75,7 @@ export default function ProfileImageScreen() {
       const fileType = 'image/webp';
 
       const uploadUrlRes = await fetch(
-        'https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/presigned-url',
+        `${nUrl}/api/upload/presigned-url`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

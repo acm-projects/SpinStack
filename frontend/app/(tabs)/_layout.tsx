@@ -20,6 +20,7 @@ export default function TabLayout() {
   const createPic = require('../../assets/images/stack.png');
   const { width } = Dimensions.get('window');
   const IMAGE_SIZE = width * 0.2;
+  const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
   const { user, pfpUrl, setPfpUrl } = useAuth();
 
@@ -42,7 +43,7 @@ export default function TabLayout() {
 
         if (userData?.pfp_url) {
           const res = await fetch(
-            `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
+            `${nUrl}/${userData.pfp_url}`
           );
           if (res.ok) {
             const { downloadURL } = await res.json();
@@ -99,7 +100,7 @@ export default function TabLayout() {
             alignItems: 'flex-end',
             gap: 40,
             width: '100%',
-            marginLeft: 15,
+            marginLeft: 18,
             marginBottom: 15,
           }}
         >

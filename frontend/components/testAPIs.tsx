@@ -6,7 +6,6 @@ import { supabase } from '@/constants/supabase';
 import { Button, ScrollView, View, Text, StyleSheet, Keyboard, TextInput, TouchableWithoutFeedback, Alert } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useAuth } from '../_context/AuthContext';
-import { NGROK_URL } from '@env';
 
 
 
