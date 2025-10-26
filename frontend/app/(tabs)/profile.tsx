@@ -215,15 +215,15 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={{ flexDirection: "row", width: "100%", justifyContent: "center", alignItems: "center", paddingLeft: 0 }}>
+      <View style={{ flexDirection: "row", width: "100%", justifyContent: "center", alignItems: "center", paddingLeft: 110 }}>
         <Text style={styles.header}>Profile</Text>
 
-        {/* <View style={{ marginLeft: 85 }}>
-<Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
+         <View style={{ marginLeft: 85, }}>
+          <Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
             <Feather name="settings" size={30} color="#333C42" />
           </Pressable>
 
-    </View> */}
+    </View> 
 
       </View>
 
@@ -266,9 +266,7 @@ export default function ProfileScreen() {
             </Text>
           </Pressable>
 
-          <Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
-            <Feather name="settings" size={30} color="#333C42" />
-          </Pressable>
+          
         </View>
       </View>
 

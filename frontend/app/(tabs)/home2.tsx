@@ -7,6 +7,8 @@ import {
   StyleSheet,
   Pressable,
   Dimensions,
+  Modal,
+  TouchableOpacity,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as Font from "expo-font";
@@ -67,33 +69,16 @@ const albums = [
   },
 ];
 
-type MasonryItem = {
-  id: string;
-  src: any;
-  height?: number;
-  user?: string;
-  profilePic?: any;
-  time?: string;
-  caption?: string;
-};
-
-type MasonryProps = {
-  data: MasonryItem[];
-  spacing?: number;
-  columns?: number;
-};
-
-// 🧱 Masonry Component
-function Masonry({ data, spacing = 8, columns = 2 }: MasonryProps) {
-  const [cols, setCols] = useState<MasonryItem[][]>([]);
+function Masonry({ data, spacing = 8, columns = 2, onPressMore }: any) {
+  const [cols, setCols] = useState<any[][]>([]);
 
   useEffect(() => {
-    const withHeights = data.map((item) => ({
+    const withHeights = data.map((item: any) => ({
       ...item,
-      height: Math.random() * 50 + 180, // varied height
+      height: Math.random() * 50 + 180,
     }));
 
-    const nextCols: MasonryItem[][] = Array.from({ length: columns }, () => []);
+    const nextCols: any[][] = Array.from({ length: columns }, () => []);
     const colHeights = new Array(columns).fill(0);
 
     for (const item of withHeights) {
@@ -107,7 +92,7 @@ function Masonry({ data, spacing = 8, columns = 2 }: MasonryProps) {
 
   const colWidth = (width - spacing * (columns + 1)) / columns;
 
-  const renderItem = (item: MasonryItem) => (
+  const renderItem = (item: any) => (
     <View
       key={item.id}
       style={{
@@ -124,7 +109,9 @@ function Masonry({ data, spacing = 8, columns = 2 }: MasonryProps) {
           <Text style={styles.username}>{item.user}</Text>
           <Text style={styles.time}>{item.time}</Text>
         </View>
-        <Feather name="more-horizontal" size={20} color="#555" />
+        <Pressable onPress={() => onPressMore(item)}>
+          <Feather name="more-horizontal" size={20} color="#555" />
+        </Pressable>
       </View>
 
       {/* Image */}
@@ -150,7 +137,6 @@ function Masonry({ data, spacing = 8, columns = 2 }: MasonryProps) {
         </View>
       </View>
 
-      {/* Caption */}
       {item.caption ? (
         <Text style={styles.caption}>{item.caption}</Text>
       ) : null}
@@ -179,6 +165,9 @@ function Masonry({ data, spacing = 8, columns = 2 }: MasonryProps) {
 export default function HomeScreen() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [activeFilter, setActiveFilter] = useState("For You");
+  const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const [addToStackVisible, setAddToStackVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
 
   const loadFonts = async () => {
     await Font.loadAsync({
@@ -194,17 +183,25 @@ export default function HomeScreen() {
 
   if (!fontsLoaded) return null;
 
+  const handleMorePress = (item: any) => {
+    setSelectedItem(item);
+    setAddToStackVisible(true);
+  };
+
   return (
-    <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 100}}>
+    <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 100 }}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>SpinStack</Text>
-        <Pressable style={styles.bellIcon}>
+        <Pressable
+          onPress={() => setNotificationsVisible(true)}
+          style={styles.bellIcon}
+        >
           <Feather name="bell" size={28} color="#333C42" />
         </Pressable>
       </View>
 
-      {/* Profile Scroll */}
+      {/* Profiles */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -217,7 +214,7 @@ export default function HomeScreen() {
 
       {/* Filters */}
       <View style={styles.filterContainer}>
-        {["Following", "For You"].map((filter) => (
+        {["Friends", "For You"].map((filter) => (
           <Pressable
             key={filter}
             style={[
@@ -238,8 +235,80 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      {/* Masonry Feed */}
-      <Masonry data={albums} spacing={10} columns={2} />
+      {/* Feed */}
+      <Masonry data={albums} spacing={10} columns={2} onPressMore={handleMorePress} />
+
+      {/* Notifications Popup */}
+      <Modal
+        visible={notificationsVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setNotificationsVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.friendsPopup}>
+            <View style={styles.popupHeader}>
+              <Text style={styles.popupTitle}>Notifications</Text>
+              <Pressable onPress={() => setNotificationsVisible(false)}>
+                <Feather name="x" size={26} color="#333C42" />
+              </Pressable>
+            </View>
+            <View style={styles.popupContent}>
+              <Text style={{ color: "#333C42", fontFamily: "Jacques Francois" }}>
+                No notifications yet 📭
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ➕ Add to Stack Popup */}
+      <Modal
+        visible={addToStackVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAddToStackVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.friendsPopup}>
+            <View style={styles.popupHeader}>
+              <Text style={styles.popupTitle}>Add to Stack</Text>
+              <Pressable onPress={() => setAddToStackVisible(false)}>
+                <Feather name="x" size={26} color="#333C42" />
+              </Pressable>
+            </View>
+
+            <View style={styles.popupContent}>
+                
+            <View style={{ flexDirection: "row", alignItems: "flex-start",}} >
+
+            
+             <ScrollView>
+                
+                  
+              {["Workout Mixxxxxxxxxxxx", "Chill Vibes", "Anime OSTs", "Favorites"].map((stack) => (
+                <TouchableOpacity
+                  key={stack}
+                  style={styles.stackOption}
+                  onPress={() => setAddToStackVisible(false)}
+                >
+                  <Feather name="folder" size={20} color="#333C42" />
+                  <Text style={styles.stackText}>{stack}</Text>
+                </TouchableOpacity>
+                
+                
+              ))}
+            </ScrollView> 
+            </View>
+              <TouchableOpacity style={styles.newStackButton}>
+                <Feather name="plus" size={18} color="#333C42" />
+                <Text style={styles.newStackText}>Create New Stack</Text>
+              </TouchableOpacity>
+              
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -303,7 +372,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 6,
-    paddingTop: -19
+    paddingTop: -19,
   },
   avatar: {
     width: 40,
@@ -316,7 +385,6 @@ const styles = StyleSheet.create({
     color: "#333C42",
     fontSize: 14,
     fontFamily: "Jacques Francois",
-    
   },
   time: {
     fontSize: 11,
@@ -329,6 +397,65 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#333C42",
     fontFamily: "Jacques Francois",
-    textAlign: "center"
+    textAlign: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  friendsPopup: {
+    width: "85%",
+    backgroundColor: "#FFF0E2",
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5,
+    marginBottom: 200,
+  },
+  popupHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  popupTitle: {
+    fontFamily: "Luxurious Roman",
+    fontSize: 22,
+    color: "#333C42",
+  },
+  popupContent: {
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: 100,
+  },
+  // ➕ Add-to-Stack styles
+  stackOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomColor: "#ddd",
+    borderBottomWidth: 1,
+    width: "200%",
+  },
+  stackText: {
+    marginLeft: 10,
+    fontFamily: "Jacques Francois",
+    color: "#333C42",
+    fontSize: 16,
+  },
+  newStackButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 20,
+  },
+  newStackText: {
+    marginLeft: 6,
+    color: "#333C42",
+    fontFamily: "Jacques Francois",
+    fontSize: 15,
   },
 });
