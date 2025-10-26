@@ -144,7 +144,7 @@ export default function SearchPage() {
             if (user.pfp_url) {
               try {
                 const res = await fetch(
-                  `https://unhemmed-unhedonistically-waneta.ngrok-free.dev/api/upload/download-url/${user.pfp_url}`
+                  `${nUrl}/${user.pfp_url}`
                 );
                 if (res.ok) {
                   const { downloadURL } = await res.json();

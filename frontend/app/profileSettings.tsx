@@ -15,6 +15,8 @@ export default function ProfileSettings() {
   const { user, pfpUrl, setPfpUrl, logout } = useAuth();
   const IMAGE_SIZE = width * 0.2;
   const router = useRouter();
+  const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
+
 
   const handleSignOut = async () => {
     logout();
@@ -43,7 +45,7 @@ export default function ProfileSettings() {
         if (userData?.pfp_url) {
           try {
             const res = await fetch(
-              `https://unhemmed-unhedonistically-waneta.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
+              `${nUrl}/${userData.pfp_url}`
             );
             if (res.ok) {
               const { downloadURL } = await res.json();
