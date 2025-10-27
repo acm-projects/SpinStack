@@ -9,6 +9,7 @@ import Top from '@/assets/other/Group 7.svg';
 import Upper from '@/assets/other/Group 5.svg';
 import Lower from '@/assets/other/Group 8.svg';
 import { RNSVGSvgIOS } from 'react-native-svg';
+import { useFocusEffect } from '@react-navigation/native';
 import * as SecureStore from 'expo-secure-store';
 
 const API_BASE = "https://api.spotify.com/v1";
@@ -25,47 +26,46 @@ export default function MomentView({ data }: { data: MomentInfo }) {
   const { height, width } = useWindowDimensions();
   const vinylImg = require('../assets/images/vinyl.png');
   const spinAnim = useRef(new Animated.Value(0)).current;
-  
+
   const [token, setToken] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  if (!data) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#FFF0E2', justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ fontFamily: 'Jacques Francois', color: '#333C42' }}>
-          No moment data available
-        </Text>
-      </View>
-    );
-  }
+  const playbackSession = useRef(Math.random());
 
-  // Vinyl spinning animation
+  // Vinyl animation loop
   useEffect(() => {
-    Animated.loop(
-      Animated.timing(spinAnim, {
-        toValue: 1,
-        duration: 2000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-        isInteraction: false,
-      })
-    ).start();
-  }, [spinAnim]);
+    let loop: Animated.CompositeAnimation | null = null;
+    if (isPlaying) {
+      loop = Animated.loop(
+        Animated.timing(spinAnim, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      );
+      loop.start();
+    } else {
+      spinAnim.stopAnimation();
+    }
+
+    return () => {
+      loop?.stop?.();
+    };
+  }, [isPlaying]);
 
   const spin = spinAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['360deg', '0deg'],
   });
 
-  // Check Spotify auth and get token on mount
+  // 🧭 Fix (2): Initialize token safely and defer playback until both token + focus are ready
   useEffect(() => {
     const initSpotify = async () => {
       try {
-        // Get stored token
         const storedToken = await SecureStore.getItemAsync('spotifyToken');
-        
         if (!storedToken) {
           Alert.alert(
             "Spotify Not Connected",
@@ -76,14 +76,8 @@ export default function MomentView({ data }: { data: MomentInfo }) {
           return;
         }
 
-        console.log("âœ… Found Spotify token");
+        console.log("✅ Found Spotify token");
         setToken(storedToken);
-        
-        // Start playback after a short delay to ensure state is set
-        setTimeout(() => {
-          startPlayback(storedToken);
-        }, 300);
-        
       } catch (error) {
         console.error("Error initializing Spotify:", error);
         Alert.alert("Error", "Failed to initialize Spotify playback");
@@ -103,8 +97,45 @@ export default function MomentView({ data }: { data: MomentInfo }) {
         pausePlayback(token).catch(console.error);
       }
     };
-  }, []); // Empty dependency array - only run once on mount
+  }, []);
 
+  // 🧭 Fix (4): Use focus effect to control playback lifecycle safely
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log("🎧 MomentView focused");
+
+      let didCancel = false;
+
+      // Wait briefly to ensure token and Spotify device are ready
+      const delayedStart = setTimeout(async () => {
+        if (didCancel || !token) return;
+
+        // Always stop any lingering playback session before starting new one
+        await pausePlayback(token).catch(() => {});
+        await startPlayback(token);
+      }, 300);
+
+      return () => {
+        console.log("🛑 MomentView unfocused – stopping playback and clearing intervals");
+        didCancel = true;
+        clearTimeout(delayedStart);
+
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+
+        if (token) {
+          pausePlayback(token).catch(console.error);
+        }
+
+        spinAnim.stopAnimation();
+        setIsPlaying(false);
+      };
+    }, [token])
+  );
+
+  // --- Spotify API helpers ---
   const api = async (token: string, path: string, init?: RequestInit) => {
     const res = await fetch(`${API_BASE}${path}`, {
       ...init,
@@ -120,17 +151,12 @@ export default function MomentView({ data }: { data: MomentInfo }) {
 
   const getDevices = async (token: string): Promise<Device[]> => {
     const res = await api(token, "/me/player/devices");
-    if (!res.ok) {
-      console.error(`Failed to get devices: ${res.status}`);
-      throw new Error(`devices: ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`devices: ${res.status}`);
     const deviceData = await res.json();
-    console.log("Available devices:", deviceData.devices);
     return deviceData.devices as Device[];
   };
 
   const transferPlayback = async (token: string, deviceId: string) => {
-    console.log(`Transferring playback to device: ${deviceId}`);
     await api(token, "/me/player", {
       method: "PUT",
       body: JSON.stringify({ device_ids: [deviceId], play: false }),
@@ -144,134 +170,100 @@ export default function MomentView({ data }: { data: MomentInfo }) {
   const pausePlayback = async (token: string) => {
     try {
       await api(token, "/me/player/pause", { method: "PUT" });
-      console.log("âœ… Playback paused");
+      console.log("⏸ Playback paused");
     } catch (error) {
       console.error("Error pausing playback:", error);
     }
   };
 
+  // --- Main playback logic ---
   const startPlayback = async (spotifyToken: string) => {
     try {
       setIsLoading(true);
+      const thisSession = playbackSession.current;
+
       const trackUri = `spotify:track:${data.moment.id}`;
       const startMs = Math.floor(data.moment.songStart * 1000);
       const endMs = Math.floor((data.moment.songStart + data.moment.songDuration) * 1000);
 
-      console.log(`ðŸŽµ Starting playback for track: ${data.moment.title}`);
-      console.log(`Track URI: ${trackUri}`);
-      console.log(`Start: ${startMs}ms, End: ${endMs}ms`);
+      console.log(`🎵 Starting playback for ${data.moment.title}`);
 
-      // First, try to play on the active device
       let res = await api(spotifyToken, "/me/player/play", {
         method: "PUT",
-        body: JSON.stringify({ 
-          uris: [trackUri],
-          position_ms: startMs
-        }),
+        body: JSON.stringify({ uris: [trackUri], position_ms: startMs }),
       });
 
-      // Handle various device states
       if (res.status === 404 || res.status === 403 || res.status === 202) {
-        console.log("âš ï¸ No active device, searching for available devices...");
-        
+        console.log("⚠️ No active device, searching...");
         const devices = await getDevices(spotifyToken);
-        
-        if (devices.length === 0) {
-          throw new Error("No Spotify devices found. Please open the Spotify app on your phone and start playing any song, then try again.");
-        }
 
-        // Find the best device to use
+        if (devices.length === 0) throw new Error("No Spotify devices found.");
+
         const active = devices.find((d) => d.is_active && !d.is_restricted);
         const smartphone = devices.find((d) => d.type === "Smartphone" && !d.is_restricted);
-        const anyAvailable = devices.find((d) => !d.is_restricted);
-        
-        const target = active ?? smartphone ?? anyAvailable;
-        
-        if (!target) {
-          throw new Error("No available Spotify devices. Please make sure Spotify is installed and you're logged in.");
-        }
+        const any = devices.find((d) => !d.is_restricted);
+        const target = active ?? smartphone ?? any;
 
-        console.log(`ðŸ“± Using device: ${target.name} (${target.type})`);
+        if (!target) throw new Error("No available Spotify devices.");
 
-        // Transfer playback to the target device
         await transferPlayback(spotifyToken, target.id);
-        
-        // Wait for transfer to complete
         await new Promise((r) => setTimeout(r, 800));
-        
-        // Try playing again on the specific device
         res = await api(
           spotifyToken,
           `/me/player/play?device_id=${encodeURIComponent(target.id)}`,
           {
             method: "PUT",
-            body: JSON.stringify({ 
-              uris: [trackUri],
-              position_ms: startMs
-            }),
+            body: JSON.stringify({ uris: [trackUri], position_ms: startMs }),
           }
         );
       }
 
       if (!res.ok && res.status !== 204) {
         const txt = await res.text();
-        console.error(`Play error ${res.status}: ${txt}`);
-        throw new Error(`Failed to start playback (${res.status}). Make sure Spotify is open and playing on your device.`);
+        throw new Error(`Play error ${res.status}: ${txt}`);
       }
 
-      console.log("âœ… Playback started successfully");
+      console.log("✅ Playback started");
       setIsPlaying(true);
       setIsLoading(false);
 
-      // Start loop to keep playback within moment boundaries
+      // Polling loop
       if (pollingRef.current) clearInterval(pollingRef.current);
-      
+
       pollingRef.current = setInterval(async () => {
+        if (playbackSession.current !== thisSession) return; // stale instance
         try {
           const playbackRes = await api(spotifyToken, "/me/player");
-          
-          if (playbackRes.status === 204) {
-            // No active playback
-            console.log("âš ï¸ No active playback detected");
-            return;
-          }
-          
-          if (!playbackRes.ok) return;
-          
+          if (playbackRes.status === 204 || !playbackRes.ok) return;
+
           const playbackData = await playbackRes.json();
           const pos = playbackData.progress_ms ?? 0;
 
-          // Loop back to start if we've passed the end or are before start
           if (pos > endMs || pos < startMs) {
-            console.log(`ðŸ”„ Looping back to start (was at ${pos}ms)`);
+            console.log(`🔁 Looping back to start`);
             await seekTo(spotifyToken, startMs);
           }
         } catch (error) {
           console.error("Error in playback loop:", error);
         }
       }, 500);
-
     } catch (error: any) {
       console.error("Playback error:", error);
       setIsLoading(false);
-      
-      let errorMessage = "Failed to start playback. ";
-      
-      if (error.message.includes("No Spotify devices")) {
-        errorMessage += "Please open the Spotify app on your phone, start playing any song, then try again.";
-      } else if (error.message.includes("No available Spotify devices")) {
-        errorMessage += "Please make sure Spotify is installed and you're logged in.";
-      } else {
-        errorMessage += error.message || "Unknown error occurred.";
-      }
-      
-      Alert.alert(
-        "Playback Error",
-        errorMessage,
-        [{ text: "OK" }]
-      );
+      Alert.alert("Playback Error", error.message || "Failed to start playback.");
     }
   };
+
+  // --- UI below unchanged ---
+  if (!data) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#FFF0E2', justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ fontFamily: 'Jacques Francois', color: '#333C42' }}>
+          No moment data available
+        </Text>
+      </View>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -322,7 +314,8 @@ export default function MomentView({ data }: { data: MomentInfo }) {
                     data={data.moment.waveform}
                     height={25}
                     start={data.moment.songStart / data.moment.length}
-                    end={(data.moment.songStart + data.moment.songDuration) / (data.moment.length)}
+                    end={(data.moment.songStart + data.moment.songDuration) / data.moment.length}
+                    duration={data.moment.songDuration}
                     baseColor="#333C42"
                     selectedColor="#87bd84"
                     anim={isPlaying}
@@ -367,16 +360,9 @@ export default function MomentView({ data }: { data: MomentInfo }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    alignItems: 'stretch',
-    borderColor: 'hsl(0,100%,100%)',
-  },
   texxt: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333C42'
-  }
+    color: '#333C42',
+  },
 });

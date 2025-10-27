@@ -266,8 +266,8 @@ function SearchPage() {
           title: item.name,
           artist: item.artists.map((a) => a.name).join(", "),
           length: Math.floor(item.duration_ms / 1000),
-          start: 0.5,
-          end: 0.6,
+          songStart: 0,
+          songDuration: 30,
           album: { uri: item.album.images[0]?.url },
           waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
         };

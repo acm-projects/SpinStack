@@ -118,12 +118,7 @@ export default function momentProcess() {
         Alert.alert("Error", "You are not signed in");
         return false;
       }
-
-      // Calculate start time and duration based on the moment's start/end values
-      const startTimeSeconds = Math.floor(moment.start * moment.length);
-      const endTimeSeconds = Math.floor(moment.end * moment.length);
-      const durationSeconds = endTimeSeconds - startTimeSeconds;
-
+      
       // Build the Spotify URL from the track ID
       const songUrl = `https://open.spotify.com/track/${moment.id}`;
 
@@ -136,8 +131,8 @@ export default function momentProcess() {
         body: JSON.stringify({
           title: moment.title,
           song_url: songUrl,
-          start_time: startTimeSeconds,
-          duration: durationSeconds,
+          start_time: Math.floor(moment.songStart),
+          duration: Math.floor(moment.songDuration),
           cover_url: moment.album.uri || null,
           visibility: true,
           description: `${moment.artist}` // Store artist as description for now

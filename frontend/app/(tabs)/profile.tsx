@@ -19,6 +19,7 @@ import { hasSpotifyAuth, authenticateSpotify } from "../utils/spotifyAuth";
 import { useMomentInfoStore } from "../stores/useMomentInfoStore";
 import * as Spotify from "@wwdrew/expo-spotify-sdk";
 import * as SecureStore from 'expo-secure-store';
+import { useNavigationState } from '@react-navigation/native';
 
 export default function ProfileScreen() {
   const { width } = Dimensions.get("window");
@@ -115,6 +116,21 @@ export default function ProfileScreen() {
       setIsConnectingSpotify(false);
     }
   };
+
+  const getSpotifyTrackLength = async (trackId: string, token: string): Promise<number | null> => {
+    try {
+      const res = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch track data");
+      const data = await res.json();
+      return data.duration_ms / 1000; // Convert to seconds
+    } catch (err) {
+      console.error("Error fetching Spotify track length:", err);
+      return null;
+    }
+  };
+
 
   // Fetch user info
   useEffect(() => {
@@ -282,7 +298,11 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleMomentPress = (moment: any) => {
+  const stackExists = useNavigationState(state =>
+      state.routes.some(route => route.name === 'stack')
+    );
+
+  const handleMomentPress = async (moment: any) => {
     console.log(moment);
     if (!spotifyConnected) {
       console.log("spotify not connected");
@@ -295,7 +315,14 @@ export default function ProfileScreen() {
     }
 
     const trackId = extractTrackId(moment.song_url);
-    console.log(trackId);
+    const token = await SecureStore.getItemAsync('spotifyToken');
+
+    if (trackId && token) {
+      const length = await getSpotifyTrackLength(trackId, token);
+      if (length) moment.length = length;
+    }
+
+
     setSelectedMomentInfo({
       moment: {
         id: trackId || moment.id,
@@ -303,7 +330,7 @@ export default function ProfileScreen() {
         artist: moment.description || "Unknown Artist",
         songStart: moment.start_time || 0,
         songDuration: moment.duration || 30,
-        length: 180,
+        length: moment.length || 180,
         album: moment.cover_url ? { uri: moment.cover_url } : require("../../assets/images/album1.jpeg"),
         waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
       },
@@ -312,8 +339,17 @@ export default function ProfileScreen() {
         profilePic: pfpUrl,
       }
     });
-    console.log("navigating to stack");
-    router.push('/stack' as RelativePathString);
+
+    
+
+    if (true) {
+      console.log("Replacing existing /stack screen");
+      router.replace('/stack' as RelativePathString);
+    } else {
+      console.log("Pushing new /stack screen");
+      //router.push('/stack' as RelativePathString);
+    }
+
   };
 
   return (

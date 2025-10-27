@@ -1,4 +1,3 @@
-import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import MomentView from '../../components/newMoment';
 import { useMomentInfoStore } from '../stores/useMomentInfoStore';

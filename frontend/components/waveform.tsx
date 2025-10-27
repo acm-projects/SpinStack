@@ -4,25 +4,25 @@ import Svg, { Rect, Ellipse } from "react-native-svg";
 
 //specify types for some dumbahh reason
 //start and end are the relative starts and ends of the moments
-const Waveform = ({ data, height, start, end, baseColor='#ffffff', selectedColor = "#87bd84", anim=true}: {data: number[], height: number, start: number, end: number, baseColor: ColorValue, selectedColor: ColorValue, anim: boolean}) => {
+const Waveform = ({ data, height, start, end, baseColor='#ffffff', selectedColor = "#87bd84", anim=true, duration}: {data: number[], height: number, start: number, end: number, baseColor: ColorValue, selectedColor: ColorValue, anim: boolean, duration: number}) => {
     const [width, setWidth] = useState(0);
     const barWidth = width / data.length;
     const maxVal = Math.max(...data);
 
     const [progress, setProgress] = useState(0);
-    const loopDuration = 6767;
 
-    if(anim) {
+    
         //create animation for sliding progress
         useEffect(() => {
+            if(!anim) return;
             const start = Date.now();
             const interval = setInterval(() => {
-            const elapsed = (Date.now() - start) % loopDuration;
-            setProgress(elapsed / loopDuration);
+            const elapsed = (Date.now() - start) % (duration * 1000);
+            setProgress(elapsed / (duration * 1000));
             }, 30);
             return () => clearInterval(interval);
-        }, [loopDuration]);
-    } 
+        }, [(duration * 1000)]);
+    
 
     const sIndex = Math.trunc(start * data.length);
     const fIndex = Math.trunc(end * data.length);
