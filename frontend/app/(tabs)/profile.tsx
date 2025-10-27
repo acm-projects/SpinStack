@@ -9,19 +9,23 @@ import {
   FlatList,
   ActivityIndicator,
   Modal,
+  Alert,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { RelativePathString, useRouter } from "expo-router";
 import { supabase } from "@/constants/supabase";
 import { useAuth } from "@/_context/AuthContext";
-import * as Font from "expo-font";
-const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
+import { hasSpotifyAuth, authenticateSpotify } from "../utils/spotifyAuth";
+import { useMomentInfoStore } from "../stores/useMomentInfoStore";
+import * as Spotify from "@wwdrew/expo-spotify-sdk";
+import * as SecureStore from 'expo-secure-store';
 
 export default function ProfileScreen() {
   const { width } = Dimensions.get("window");
   const IMAGE_SIZE = width * 0.2;
   const { user, pfpUrl, setPfpUrl, logout } = useAuth();
   const router = useRouter();
+  const setSelectedMomentInfo = useMomentInfoStore((s) => s.setSelectedMomentInfo);
 
   const [username, setUsername] = useState<string>("Loading...");
   const [bio, setBio] = useState<string>("");
@@ -33,16 +37,84 @@ export default function ProfileScreen() {
   const [loadingStacks, setLoadingStacks] = useState(true);
   const [viewMode, setViewMode] = useState<"moments" | "stacks">("moments");
 
-  // modal state
   const [friendsModalVisible, setFriendsModalVisible] = useState(false);
   const [friendsList, setFriendsList] = useState<any[]>([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
+  const [isConnectingSpotify, setIsConnectingSpotify] = useState(false);
+  const [spotifyConnected, setSpotifyConnected] = useState(false);
 
   const POLAROID_WIDTH = 150;
   const POLAROID_HEIGHT = 200;
   const POLAROID_URL = require("../../assets/images/polaroidFrame.webp");
   const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
+  // Extract track ID from Spotify URL
+  const extractTrackId = (songUrl: string): string | null => {
+    if (!songUrl) return null;
+    const match = songUrl.match(/track\/([a-zA-Z0-9]+)/);
+    return match ? match[1] : null;
+  };
+
+  // Check Spotify connection status
+  useEffect(() => {
+    const checkSpotifyConnection = async () => {
+      try {
+        const storedToken = await SecureStore.getItemAsync('spotifyToken');
+        setSpotifyConnected(!!storedToken);
+      } catch (error) {
+        console.error("Error checking Spotify connection:", error);
+      }
+    };
+    checkSpotifyConnection();
+  }, []);
+
+  // Disconnect Spotify
+  const handleDisconnectSpotify = async () => {
+    try {
+      await SecureStore.deleteItemAsync('spotifyToken');
+      setSpotifyConnected(false);
+      Alert.alert("Disconnected", "Spotify has been disconnected");
+    } catch (err) {
+      console.error("Error disconnecting Spotify:", err);
+      Alert.alert("Error", "Failed to disconnect Spotify");
+    }
+  };
+  const handleConnectSpotify = async () => {
+    try {
+      setIsConnectingSpotify(true);
+      const session = await Spotify.Authenticate.authenticateAsync({
+        scopes: [
+          "user-read-currently-playing",
+          "user-read-playback-state",
+          "user-modify-playback-state",
+          "app-remote-control",
+        ],
+      });
+
+      if (!session?.accessToken) {
+        throw new Error("No access token received");
+      }
+
+      // Store token
+      await SecureStore.setItemAsync('spotifyToken', session.accessToken);
+      setSpotifyConnected(true);
+      
+      Alert.alert(
+        "Success! 🎉",
+        "Your Spotify account has been connected.",
+        [{ text: "OK" }]
+      );
+    } catch (error: any) {
+      console.error("Spotify connection error:", error);
+      Alert.alert(
+        "Error",
+        error?.message || "An error occurred while connecting to Spotify.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setIsConnectingSpotify(false);
+    }
+  };
 
   // Fetch user info
   useEffect(() => {
@@ -74,13 +146,14 @@ export default function ProfileScreen() {
               setPfpUrl(downloadURL);
             } else {
               console.error("Failed to fetch presigned URL:", res.status);
+              // Don't set pfpUrl if it fails, will use default
             }
           } catch (err) {
             console.error("Error fetching presigned URL:", err);
+            // Don't set pfpUrl if it fails, will use default
           }
         }
 
-        // Count friends
         const { count, error: friendsError } = await supabase
           .from("friends")
           .select("*", { count: "exact", head: true })
@@ -108,12 +181,11 @@ export default function ProfileScreen() {
         setLoadingMoments(true);
         const { data, error } = await supabase
           .from("moments")
-          .select("id, cover_url, title, description, created_at")
+          .select("id, cover_url, title, description, created_at, song_url, start_time, duration")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false });
 
         if (error) throw error;
-
         setMoments(data || []);
       } catch (err) {
         console.error("Error fetching moments:", err);
@@ -139,7 +211,6 @@ export default function ProfileScreen() {
           .order("created_at", { ascending: false });
 
         if (error) throw error;
-
         setStacks(data || []);
       } catch (err) {
         console.error("Error fetching stacks:", err);
@@ -156,7 +227,6 @@ export default function ProfileScreen() {
     setLoadingFriends(true);
 
     try {
-      // Get friendships in both directions
       const { data: friendLinks, error: linkError } = await supabase
         .from("friends")
         .select("user_id, friend_id")
@@ -168,7 +238,6 @@ export default function ProfileScreen() {
         return;
       }
 
-      // Extract friend IDs (the ID that isn't the current user)
       const friendIds = friendLinks.map(row =>
         row.user_id === user.id ? row.friend_id : row.user_id
       ).filter(id => id !== user.id);
@@ -191,7 +260,7 @@ export default function ProfileScreen() {
           if (f.pfp_url) {
             try {
               const res = await fetch(
-                `${nUrl}/${f.pfp_url}`
+                `${nUrl}/api/upload/download-url/${f.pfp_url}`
               );
               if (res.ok) {
                 const { downloadURL } = await res.json();
@@ -213,24 +282,44 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleMomentPress = (moment: any) => {
+    if (!spotifyConnected) {
+      Alert.alert(
+        "Spotify Not Connected",
+        "Please connect your Spotify account to play moments.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
 
+    const trackId = extractTrackId(moment.song_url);
+    
+    setSelectedMomentInfo({
+      moment: {
+        id: trackId || moment.id,
+        title: moment.title,
+        artist: moment.description || "Unknown Artist",
+        songStart: moment.start_time || 0,
+        songDuration: moment.duration || 30,
+        length: 180,
+        album: moment.cover_url ? { uri: moment.cover_url } : require("../../assets/images/album1.jpeg"),
+        waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
+      },
+      user: {
+        name: username,
+        profilePic: pfpUrl,
+      }
+    });
+    
+    router.push('/stack' as RelativePathString);
+  };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={{ flexDirection: "row", width: "100%", justifyContent: "center", alignItems: "center", paddingLeft: 0 }}>
         <Text style={styles.header}>Profile</Text>
-
-        {/* <View style={{ marginLeft: 85 }}>
-<Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
-            <Feather name="settings" size={30} color="#333C42" />
-          </Pressable>
-
-    </View> */}
-
       </View>
 
-      {/* Profile Row */}
       <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5, paddingHorizontal: 20 }}>
         <Image
           source={pfpUrl ? { uri: pfpUrl } : require("../../assets/images/profile.png")}
@@ -251,7 +340,6 @@ export default function ProfileScreen() {
           </Text>
         </View>
         <View style={{ alignItems: "flex-end" }}>
-          {/* Friends list trigger */}
           <Pressable
             onPress={async () => {
               await fetchFriendsList();
@@ -275,7 +363,57 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Content Section */}
+      {/* Spotify Connection Button */}
+      <View style={{ width: "90%", alignItems: "center", marginTop: 15 }}>
+        {spotifyConnected ? (
+          <Pressable
+            onPress={handleDisconnectSpotify}
+            style={{
+              backgroundColor: "#1DB954",
+              paddingVertical: 8,
+              paddingHorizontal: 20,
+              borderRadius: 8,
+              borderWidth: 2,
+              borderColor: "#333C42",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <Feather name="check-circle" size={18} color="#FFF0E2" />
+            <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois", fontSize: 14 }}>
+              Spotify Connected (Tap to Disconnect)
+            </Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={handleConnectSpotify}
+            disabled={isConnectingSpotify}
+            style={{
+              backgroundColor: "#1DB954",
+              paddingVertical: 8,
+              paddingHorizontal: 20,
+              borderRadius: 8,
+              borderWidth: 2,
+              borderColor: "#333C42",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              opacity: isConnectingSpotify ? 0.6 : 1,
+            }}
+          >
+            {isConnectingSpotify ? (
+              <ActivityIndicator size="small" color="#FFF0E2" />
+            ) : (
+              <Feather name="music" size={18} color="#FFF0E2" />
+            )}
+            <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois", fontSize: 14 }}>
+              {isConnectingSpotify ? "Connecting..." : "Connect Spotify"}
+            </Text>
+          </Pressable>
+        )}
+      </View>
+
       <View style={styles.content}>
         <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8, width: "100%", justifyContent: "space-between", paddingHorizontal: 20 }}>
           <Pressable>
@@ -289,9 +427,7 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
-        {/* Main Feed */}
         <View style={{ flex: 1, width: "100%", paddingHorizontal: 15, paddingTop: 10 }}>
-          {/* Moments */}
           <View style={{ display: viewMode === "moments" ? "flex" : "none", flex: 1 }}>
             {loadingMoments ? (
               <View style={styles.loadingContainer}>
@@ -309,7 +445,10 @@ export default function ProfileScreen() {
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={{ paddingBottom: 100 }}
                 renderItem={({ item }) => (
-                  <View style={{ flex: 1, margin: 6, alignItems: "center" }}>
+                  <Pressable 
+                    style={{ flex: 1, margin: 6, alignItems: "center" }}
+                    onPress={() => handleMomentPress(item)}
+                  >
                     <Image
                       source={{ uri: item.cover_url }}
                       style={{
@@ -328,13 +467,12 @@ export default function ProfileScreen() {
                         {item.description}
                       </Text>
                     </View>
-                  </View>
+                  </Pressable>
                 )}
               />
             )}
           </View>
 
-          {/* Stacks */}
           <View style={{ display: viewMode === "stacks" ? "flex" : "none", flex: 1 }}>
             {loadingStacks ? (
               <View style={styles.loadingContainer}>
@@ -379,7 +517,6 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Friends Modal */}
       <Modal
         visible={friendsModalVisible}
         transparent={true}
@@ -413,12 +550,10 @@ export default function ProfileScreen() {
                     style={styles.friendRow}
                     onPress={() => {
                       setFriendsModalVisible(false);
-                      // When opening friend's profile
                       router.push({
                         pathname: '/profile/[id]' as RelativePathString,
                         params: { id: item.id, fromProfile: 'true' },
                       });
-
                     }}
                   >
                     <Image
@@ -430,7 +565,6 @@ export default function ProfileScreen() {
                       <Text style={styles.friendBio} numberOfLines={1}>
                         "{String(item.bio || "No bio")}"
                       </Text>
-
                     </View>
                   </Pressable>
                 )}

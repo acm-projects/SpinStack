@@ -13,12 +13,13 @@ import { Feather } from "@expo/vector-icons";
 import * as Font from "expo-font";
 import { supabase } from "@/constants/supabase";
 import { useRouter, RelativePathString } from "expo-router";
+import { useMomentInfoStore } from "../stores/useMomentInfoStore";
 
 const { width } = Dimensions.get("window");
 const POLAROID_WIDTH = 150;
 const POLAROID_HEIGHT = 200;
 const POLAROID_URL = require("@/assets/images/polaroidFrame.webp");
-const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL
+const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
 
 const profiles = Array.from({ length: 10 }).map((_, i) => ({ id: i.toString() }));
 
@@ -32,7 +33,21 @@ type MasonryItem = {
   caption?: string;
   cover_url?: string | null;
   type?: 'moment' | 'stack';
-  userId?: string; // Add userId for navigation
+  userId?: string;
+  momentData?: {
+    id: string;
+    title: string;
+    artist: string;
+    songStart: number;
+    songDuration: number;
+    length: number;
+    album: any;
+    waveform: number[];
+  };
+  userData?: {
+    name: string;
+    profilePic: string | null;
+  };
 };
 
 type MasonryProps = {
@@ -40,16 +55,16 @@ type MasonryProps = {
   spacing?: number;
   columns?: number;
   router: any;
+  setSelectedMomentInfo: (momentInfo: any) => void;
 };
 
-// 🧱 Masonry Component
-function Masonry({ data, spacing = 8, columns = 2, router }: MasonryProps) {
+function Masonry({ data, spacing = 8, columns = 2, router, setSelectedMomentInfo }: MasonryProps) {
   const [cols, setCols] = useState<MasonryItem[][]>([]);
 
   useEffect(() => {
     const withHeights = data.map((item) => ({
       ...item,
-      height: Math.random() * 50 + 180, // varied height
+      height: Math.random() * 50 + 180,
     }));
 
     const nextCols: MasonryItem[][] = Array.from({ length: columns }, () => []);
@@ -66,6 +81,17 @@ function Masonry({ data, spacing = 8, columns = 2, router }: MasonryProps) {
 
   const colWidth = (width - spacing * (columns + 1)) / columns;
 
+  const handleMomentPress = (item: MasonryItem) => {
+    if (item.type === 'moment' && item.momentData && item.userData) {
+      setSelectedMomentInfo({
+        moment: item.momentData,
+        user: item.userData
+      });
+      
+      router.push('/stack' as RelativePathString);
+    }
+  };
+
   const renderItem = (item: MasonryItem) => (
     <View
       key={item.id}
@@ -76,11 +102,9 @@ function Masonry({ data, spacing = 8, columns = 2, router }: MasonryProps) {
         overflow: "hidden",
       }}
     >
-      {/* Header */}
       <View style={styles.cardHeader}>
         <Pressable
           onPress={() => {
-            console.log("Profile pressed, userId:", item.userId);
             if (item.userId) {
               router.push(`/profile/${item.userId}` as RelativePathString);
             }
@@ -99,71 +123,69 @@ function Masonry({ data, spacing = 8, columns = 2, router }: MasonryProps) {
         <Feather name="more-horizontal" size={20} color="#555" />
       </View>
 
-      {/* Image - Different rendering for stacks vs moments */}
-      {item.type === 'stack' ? (
-        // Stack with polaroid frame
-        <View style={{
-          width: "100%",
-          height: item.height,
-          justifyContent: "center",
-          alignItems: "center",
-          position: "relative",
-        }}>
-          <Image
-            source={item.src}
-            style={{
-              width: POLAROID_WIDTH * 0.88,
-              height: POLAROID_HEIGHT * 0.88,
-              borderRadius: 8,
-            }}
-            resizeMode="cover"
-          />
-          <Image
-            source={POLAROID_URL}
-            style={{
-              width: POLAROID_WIDTH,
-              height: POLAROID_HEIGHT,
-              position: "absolute",
-              resizeMode: "contain",
-            }}
-          />
-          <View
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: [{ translateX: -14 }, { translateY: -14 }],
-            }}
-          >
-            <Feather name="play" size={28} color="white" />
+      <Pressable onPress={() => handleMomentPress(item)}>
+        {item.type === 'stack' ? (
+          <View style={{
+            width: "100%",
+            height: item.height,
+            justifyContent: "center",
+            alignItems: "center",
+            position: "relative",
+          }}>
+            <Image
+              source={item.src}
+              style={{
+                width: POLAROID_WIDTH * 0.88,
+                height: POLAROID_HEIGHT * 0.88,
+                borderRadius: 8,
+              }}
+              resizeMode="cover"
+            />
+            <Image
+              source={POLAROID_URL}
+              style={{
+                width: POLAROID_WIDTH,
+                height: POLAROID_HEIGHT,
+                position: "absolute",
+                resizeMode: "contain",
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: [{ translateX: -14 }, { translateY: -14 }],
+              }}
+            >
+              <Feather name="play" size={28} color="white" />
+            </View>
           </View>
-        </View>
-      ) : (
-        // Regular moment image
-        <View>
-          <Image
-            source={item.src}
-            style={{
-              width: "100%",
-              height: item.height,
-              borderRadius: 16,
-            }}
-            resizeMode="cover"
-          />
-          <View
-            style={{
-              position: "absolute",
-              top: "47%",
-              left: "49%",
-              transform: [{ translateX: -10 }, { translateY: -10 }],
-            }}
-          >
-            <Feather name="play" size={28} color="white" />
+        ) : (
+          <View>
+            <Image
+              source={item.src}
+              style={{
+                width: "100%",
+                height: item.height,
+                borderRadius: 16,
+              }}
+              resizeMode="cover"
+            />
+            <View
+              style={{
+                position: "absolute",
+                top: "47%",
+                left: "49%",
+                transform: [{ translateX: -10 }, { translateY: -10 }],
+              }}
+            >
+              <Feather name="play" size={28} color="white" />
+            </View>
           </View>
-        </View>
-      )}
+        )}
+      </Pressable>
 
-      {/* Caption */}
       {item.caption ? (
         <Text style={styles.caption}>{item.caption}</Text>
       ) : null}
@@ -195,6 +217,7 @@ export default function HomeScreen() {
   const [albums, setAlbums] = useState<MasonryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const setSelectedMomentInfo = useMomentInfoStore((s) => s.setSelectedMomentInfo);
 
   const loadFonts = async () => {
     await Font.loadAsync({
@@ -204,7 +227,6 @@ export default function HomeScreen() {
     setFontsLoaded(true);
   };
 
-  // Helper function to fetch profile picture URL
   const fetchProfilePictureUrl = async (pfpPath: string | null): Promise<string | null> => {
     if (!pfpPath) return null;
 
@@ -220,16 +242,13 @@ export default function HomeScreen() {
     return null;
   };
 
-  // Helper function to fetch cover image URL
   const fetchCoverImageUrl = async (coverPath: string | null): Promise<string | null> => {
     if (!coverPath) return null;
 
-    // If it's already a full URL (http/https), return it directly
     if (coverPath.startsWith('http://') || coverPath.startsWith('https://')) {
       return coverPath;
     }
 
-    // Otherwise, fetch from your API
     try {
       const res = await fetch(`${NGROK_URL}/api/upload/download-url/${coverPath}`);
       if (res.ok) {
@@ -242,7 +261,6 @@ export default function HomeScreen() {
     return null;
   };
 
-  // Calculate time ago
   const getTimeAgo = (timestamp: string): string => {
     const now = new Date();
     const created = new Date(timestamp);
@@ -256,12 +274,16 @@ export default function HomeScreen() {
     return `${diffDays} days ago`;
   };
 
-  // Fetch all moments and stacks with user data
+  const extractTrackId = (songUrl: string): string | null => {
+    if (!songUrl) return null;
+    const match = songUrl.match(/track\/([a-zA-Z0-9]+)/);
+    return match ? match[1] : null;
+  };
+
   const fetchAllContent = async () => {
     try {
       setLoading(true);
 
-      // Fetch moments with user info
       const { data: momentsData, error: momentsError } = await supabase
         .from("moments")
         .select(`
@@ -271,13 +293,15 @@ export default function HomeScreen() {
           description,
           created_at,
           user_id,
+          song_url,
+          start_time,
+          duration,
           users!inner(id, username, pfp_url)
         `)
         .order("created_at", { ascending: false });
 
       if (momentsError) throw momentsError;
 
-      // Fetch stacks with user info
       const { data: stacksData, error: stacksError } = await supabase
         .from("stacks")
         .select(`
@@ -293,25 +317,22 @@ export default function HomeScreen() {
 
       if (stacksError) throw stacksError;
 
-      // Combine and format data
       const allContent = [
         ...(momentsData || []).map(item => ({ ...item, type: 'moment' as const })),
         ...(stacksData || []).map(item => ({ ...item, type: 'stack' as const }))
       ];
 
-      // Sort by created_at
       allContent.sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
-      // Process each item to get URLs
       const processedAlbums = await Promise.all(
         allContent.map(async (item) => {
           const userData = Array.isArray(item.users) ? item.users[0] : item.users;
           const pfpUrl = await fetchProfilePictureUrl(userData?.pfp_url);
           const coverUrl = await fetchCoverImageUrl(item.cover_url);
 
-          return {
+          const baseItem = {
             id: item.id,
             src: coverUrl ? { uri: coverUrl } : require("@/assets/images/album1.jpeg"),
             user: userData?.username || "Unknown User",
@@ -322,6 +343,29 @@ export default function HomeScreen() {
             type: item.type,
             userId: item.user_id,
           };
+
+          if (item.type === 'moment') {
+            const trackId = extractTrackId(item.song_url);
+            return {
+              ...baseItem,
+              momentData: {
+                id: trackId || item.id,
+                title: item.title,
+                artist: item.description || "Unknown Artist",
+                songStart: item.start_time || 0,
+                songDuration: item.duration || 30,
+                length: 180,
+                album: coverUrl ? { uri: coverUrl } : require("@/assets/images/album1.jpeg"),
+                waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
+              },
+              userData: {
+                name: userData?.username || "Unknown User",
+                profilePic: pfpUrl,
+              }
+            };
+          }
+
+          return baseItem;
         })
       );
 
@@ -353,7 +397,6 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 100 }}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>SpinStack</Text>
         <Pressable style={styles.bellIcon}>
@@ -361,7 +404,6 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
-      {/* Profile Scroll */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -372,7 +414,6 @@ export default function HomeScreen() {
         ))}
       </ScrollView>
 
-      {/* Filters */}
       <View style={styles.filterContainer}>
         {["Following", "For You"].map((filter) => (
           <Pressable
@@ -395,9 +436,14 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      {/* Masonry Feed */}
       {albums.length > 0 ? (
-        <Masonry data={albums} spacing={10} columns={2} router={router} />
+        <Masonry 
+          data={albums} 
+          spacing={10} 
+          columns={2} 
+          router={router}
+          setSelectedMomentInfo={setSelectedMomentInfo}
+        />
       ) : (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <Text style={styles.username}>No content available</Text>
