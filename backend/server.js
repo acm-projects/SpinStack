@@ -42,7 +42,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/spotify', spotifyRoutes);
 
 // Start the server
-const PORT = 3000; // or process.env.PORT if deployed
+const PORT = 5000; // or process.env.PORT if deployed
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });

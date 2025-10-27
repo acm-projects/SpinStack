@@ -9,16 +9,12 @@ import {
   FlatList,
   ActivityIndicator,
   Modal,
-  Alert,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { RelativePathString, useRouter } from "expo-router";
 import { supabase } from "@/constants/supabase";
 import { useAuth } from "@/_context/AuthContext";
-import * as Spotify from "@wwdrew/expo-spotify-sdk";
-import * as SecureStore from 'expo-secure-store';
-
-const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
+import * as Font from "expo-font";
 
 export default function ProfileScreen() {
   const { width } = Dimensions.get("window");
@@ -29,14 +25,14 @@ export default function ProfileScreen() {
   const [username, setUsername] = useState<string>("Loading...");
   const [bio, setBio] = useState<string>("");
   const [numFriends, setNumFriends] = useState<number>(0);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
   const [moments, setMoments] = useState<any[]>([]);
   const [stacks, setStacks] = useState<any[]>([]);
   const [loadingMoments, setLoadingMoments] = useState(true);
   const [loadingStacks, setLoadingStacks] = useState(true);
   const [viewMode, setViewMode] = useState<"moments" | "stacks">("moments");
-  const [spotifyToken, setSpotifyToken] = useState<string | null>(null);
-  const [authorizingSpotify, setAuthorizingSpotify] = useState(false);
 
+  // modal state
   const [friendsModalVisible, setFriendsModalVisible] = useState(false);
   const [friendsList, setFriendsList] = useState<any[]>([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
@@ -44,63 +40,6 @@ export default function ProfileScreen() {
   const POLAROID_WIDTH = 150;
   const POLAROID_HEIGHT = 200;
   const POLAROID_URL = require("../../assets/images/polaroidFrame.webp");
-<<<<<<< Updated upstream
-=======
-
-  // Check if Spotify is authorized
-  useEffect(() => {
-    const checkSpotifyAuth = async () => {
-      try {
-        const storedToken = await SecureStore.getItemAsync('spotifyToken');
-        setSpotifyToken(storedToken);
-      } catch (err) {
-        console.error("Error checking Spotify token:", err);
-      }
-    };
-    checkSpotifyAuth();
-  }, []);
-
-  // Spotify Authorization Function
-  const authorizeSpotify = async () => {
-    try {
-      setAuthorizingSpotify(true);
-      const session = await Spotify.Authenticate.authenticateAsync({
-        scopes: [
-          "user-read-currently-playing",
-          "user-read-playback-state",
-          "user-modify-playback-state",
-          "app-remote-control",
-        ],
-      });
-
-      if (!session?.accessToken) {
-        throw new Error("No access token received");
-      }
-
-      // Store the token
-      await SecureStore.setItemAsync('spotifyToken', session.accessToken);
-      setSpotifyToken(session.accessToken);
-      
-      Alert.alert("Success!", "Spotify authorized successfully");
-    } catch (e: any) {
-      console.error("Spotify auth error:", e);
-      Alert.alert("Authorization Failed", e?.message || "Could not authorize Spotify");
-    } finally {
-      setAuthorizingSpotify(false);
-    }
-  };
-
-  // Disconnect Spotify
-  const disconnectSpotify = async () => {
-    try {
-      await SecureStore.deleteItemAsync('spotifyToken');
-      setSpotifyToken(null);
-      Alert.alert("Disconnected", "Spotify has been disconnected");
-    } catch (err) {
-      console.error("Error disconnecting Spotify:", err);
-    }
-  };
->>>>>>> Stashed changes
 
   // Fetch user info
   useEffect(() => {
@@ -125,11 +64,7 @@ export default function ProfileScreen() {
         if (userData?.pfp_url) {
           try {
             const res = await fetch(
-<<<<<<< Updated upstream
               `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
-=======
-              `https://nonfraudulently-photoemissive-syreeta.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
->>>>>>> Stashed changes
             );
             if (res.ok) {
               const { downloadURL } = await res.json();
@@ -142,6 +77,7 @@ export default function ProfileScreen() {
           }
         }
 
+        // Count friends
         const { count, error: friendsError } = await supabase
           .from("friends")
           .select("*", { count: "exact", head: true })
@@ -174,6 +110,7 @@ export default function ProfileScreen() {
           .order("created_at", { ascending: false });
 
         if (error) throw error;
+
         setMoments(data || []);
       } catch (err) {
         console.error("Error fetching moments:", err);
@@ -199,6 +136,7 @@ export default function ProfileScreen() {
           .order("created_at", { ascending: false });
 
         if (error) throw error;
+
         setStacks(data || []);
       } catch (err) {
         console.error("Error fetching stacks:", err);
@@ -227,18 +165,7 @@ export default function ProfileScreen() {
         return;
       }
 
-<<<<<<< Updated upstream
       const friendIds = friendLinks.map((f) => f.friend_id);
-=======
-      const friendIds = friendLinks.map(row =>
-        row.user_id === user.id ? row.friend_id : row.user_id
-      ).filter(id => id !== user.id);
-
-      if (friendIds.length === 0) {
-        setFriendsList([]);
-        return;
-      }
->>>>>>> Stashed changes
 
       const { data: friendProfiles, error: profileError } = await supabase
         .from("users")
@@ -253,11 +180,7 @@ export default function ProfileScreen() {
           if (f.pfp_url) {
             try {
               const res = await fetch(
-<<<<<<< Updated upstream
                 `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${f.pfp_url}`
-=======
-                `https://nonfraudulently-photoemissive-syreeta.ngrok-free.dev/api/upload/download-url/${f.pfp_url}`
->>>>>>> Stashed changes
               );
               if (res.ok) {
                 const { downloadURL } = await res.json();
@@ -279,7 +202,6 @@ export default function ProfileScreen() {
     }
   };
 
-<<<<<<< Updated upstream
   const handleSignOut = async () => {
     logout();
     router.replace("/signupProcess/signupPage" as RelativePathString);
@@ -289,11 +211,6 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={{ width: "100%", alignItems: "center", paddingHorizontal: 10 }}>
-=======
-  return (
-    <View style={styles.container}>
-      <View style={{ flexDirection: "row", width: "100%", justifyContent: "center", alignItems: "center", paddingLeft: 0 }}>
->>>>>>> Stashed changes
         <Text style={styles.header}>Profile</Text>
       </View>
 
@@ -318,6 +235,7 @@ export default function ProfileScreen() {
           </Text>
         </View>
         <View style={{ alignItems: "flex-end" }}>
+          {/* Friends list trigger */}
           <Pressable
             onPress={async () => {
               await fetchFriendsList();
@@ -341,57 +259,6 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Spotify Authorization Button */}
-      <View style={{ width: "90%", alignItems: "center", marginTop: 15 }}>
-        {spotifyToken ? (
-          <Pressable
-            onPress={disconnectSpotify}
-            style={{
-              backgroundColor: "#FF6B6B",
-              paddingVertical: 8,
-              paddingHorizontal: 20,
-              borderRadius: 8,
-              borderWidth: 2,
-              borderColor: "#333C42",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <Feather name="x-circle" size={18} color="#FFF0E2" />
-            <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois", fontSize: 14 }}>
-              Disconnect Spotify
-            </Text>
-          </Pressable>
-        ) : (
-          <Pressable
-            onPress={authorizeSpotify}
-            disabled={authorizingSpotify}
-            style={{
-              backgroundColor: "#1DB954",
-              paddingVertical: 8,
-              paddingHorizontal: 20,
-              borderRadius: 8,
-              borderWidth: 2,
-              borderColor: "#333C42",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-              opacity: authorizingSpotify ? 0.6 : 1,
-            }}
-          >
-            {authorizingSpotify ? (
-              <ActivityIndicator size="small" color="#FFF0E2" />
-            ) : (
-              <Feather name="music" size={18} color="#FFF0E2" />
-            )}
-            <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois", fontSize: 14 }}>
-              {authorizingSpotify ? "Connecting..." : "Connect Spotify"}
-            </Text>
-          </Pressable>
-        )}
-      </View>
-
       {/* Content Section */}
       <View style={styles.content}>
         <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8, width: "100%", justifyContent: "space-between", paddingHorizontal: 20 }}>
@@ -408,6 +275,7 @@ export default function ProfileScreen() {
 
         {/* Main Feed */}
         <View style={{ flex: 1, width: "100%", paddingHorizontal: 15, paddingTop: 10 }}>
+          {/* Moments */}
           <View style={{ display: viewMode === "moments" ? "flex" : "none", flex: 1 }}>
             {loadingMoments ? (
               <View style={styles.loadingContainer}>
@@ -450,6 +318,7 @@ export default function ProfileScreen() {
             )}
           </View>
 
+          {/* Stacks */}
           <View style={{ display: viewMode === "stacks" ? "flex" : "none", flex: 1 }}>
             {loadingStacks ? (
               <View style={styles.loadingContainer}>
@@ -528,10 +397,12 @@ export default function ProfileScreen() {
                     style={styles.friendRow}
                     onPress={() => {
                       setFriendsModalVisible(false);
+                      // When opening friend's profile
                       router.push({
                         pathname: '/profile/[id]',
                         params: { id: item.id, fromProfile: 'true' },
                       });
+
                     }}
                   >
                     <Image
@@ -543,6 +414,7 @@ export default function ProfileScreen() {
                       <Text style={styles.friendBio} numberOfLines={1}>
                         "{String(item.bio || "No bio")}"
                       </Text>
+
                     </View>
                   </Pressable>
                 )}

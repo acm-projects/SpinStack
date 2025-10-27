@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
         flex: 0.1,
     },
     main: {
-        flex: 1, borderWidth: 0, borderColor: 'hsl(0,100%,100%)'
+        flex: 0.9, borderWidth: 0, borderColor: 'hsl(0,100%,100%)'
     },
     foot: {
         flex: 0.12,

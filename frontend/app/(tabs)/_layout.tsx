@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/_context/AuthContext';
 import { HapticTab } from '@/components/haptic-tab';
 import { Colors } from '@/constants/theme';
@@ -7,17 +7,12 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
-import { View, Dimensions, Image, ActivityIndicator, Text, TouchableOpacity} from 'react-native';
-import { demoMoments, demoGroups } from '../../components/demoMoment';
+import { View, Dimensions, Image, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
+import { demoMoment, demoMoments, demoGroups } from '../../components/demoMoment';
+import * as ImageManipulator from 'expo-image-manipulator';
 import Bottom from '@/assets/other/Group 9.svg';
 import { supabase } from '@/constants/supabase';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-
-
-const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
-
-import { useTabBar } from './profile/tabBarContext';
-
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -27,11 +22,6 @@ export default function TabLayout() {
   const IMAGE_SIZE = width * 0.2;
 
   const { user, pfpUrl, setPfpUrl } = useAuth();
-
-  const {tabHeight, setTabHeight} = useTabBar();
-
-  const ICON_SIZE = useMemo(() => tabHeight * 0.29|| 24, [tabHeight]);
-  const PROFILE_SIZE = useMemo(() => tabHeight * 0.33 || 28, [tabHeight]);
 
   // ---------------- Fetch user profile pic ----------------
   useEffect(() => {
@@ -52,11 +42,7 @@ export default function TabLayout() {
 
         if (userData?.pfp_url) {
           const res = await fetch(
-<<<<<<< Updated upstream
             `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
-=======
-            `https://nonfraudulently-photoemissive-syreeta.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
->>>>>>> Stashed changes
           );
           if (res.ok) {
             const { downloadURL } = await res.json();
@@ -94,39 +80,25 @@ export default function TabLayout() {
       <View
         style={{
           width: '100%',
-          aspectRatio: 3.62344538,
+          height: 120,
           position: 'absolute',
           bottom: 0,
           backgroundColor: 'transparent',
           justifyContent: 'flex-end',
-          //borderWidth: 3,
-        }}
-        onLayout={(e) => {
-          const layoutHeight = e.nativeEvent.layout.height;
-          if (layoutHeight > 0 && tabHeight !== layoutHeight) {
-            setTabHeight(layoutHeight);
-          }
         }}
       >
         <Bottom width="100%" height="100%" />
         <View
           style={{
             position: 'absolute',
-            bottom: 0,
+            bottom: 25,
             flexDirection: 'row',
             justifyContent: 'space-around',
             alignItems: 'flex-end',
-<<<<<<< Updated upstream
             gap: 30,
             width: '100%',
             marginLeft: 47,
             marginBottom: 20,
-=======
-            width: '100%',
-            gap: ICON_SIZE,
-            marginLeft: ICON_SIZE,
-            marginBottom: ICON_SIZE,
->>>>>>> Stashed changes
           }}
         >
           {state.routes.map((route, index) => {
@@ -155,7 +127,7 @@ export default function TabLayout() {
               });
 
             return (
-              <View key={route.key} style={{ justifyContent: 'center', alignItems: 'center'}}>
+              <View key={route.key} style={{ alignItems: 'center' }}>
                 <TouchableOpacity onPress={onPress}>{icon}</TouchableOpacity>
               </View>
             );
@@ -177,7 +149,6 @@ export default function TabLayout() {
           tabBarButton: HapticTab,
         }}
       >
-<<<<<<< Updated upstream
         <Tabs.Screen
           name="stack"
           initialParams={{ momentInfo: demoMoment }}
@@ -189,20 +160,6 @@ export default function TabLayout() {
                 <FontAwesome6 name="house" size={30} color="hsla(0, 0%, 67%, 1.00)" />
               </View>              
               
-=======
-
-        <Tabs.Screen
-          name="home2"
-          initialParams={{ momentInfo: demoMoments }}
-          options={{
-            title: ' ',
-            tabBarIcon: ({ color }) => (
-              <FontAwesome6
-                name="house"
-                size = {ICON_SIZE}
-                color="hsla(0, 0%, 67%, 1.00)"
-              />
->>>>>>> Stashed changes
             ),
           }}
         />
@@ -214,7 +171,7 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => (
               <FontAwesome6
                 name="magnifying-glass"
-                size = {ICON_SIZE}
+                size={30}
                 color="hsla(0, 0%, 67%, 1.00)"
               />
             ),
@@ -225,20 +182,8 @@ export default function TabLayout() {
           name="create"
           options={{
             title: ' ',
-<<<<<<< Updated upstream
             tabBarIcon: ({ color }) => (
               <Image source={createPic} style={{ width: 55, height: 55, borderRadius: 50, overflow: 'hidden' }} />
-=======
-            tabBarIcon: () => (
-              <Image
-                source={createPic}
-                style={{
-                  width: 1.9*ICON_SIZE,
-                  height: 1.9*ICON_SIZE,
-                  borderRadius: 50,
-                }}
-              />
->>>>>>> Stashed changes
             ),
           }}
         />
@@ -249,24 +194,21 @@ export default function TabLayout() {
           options={{
             title: ' ',
             tabBarIcon: ({ color }) => (
-<<<<<<< Updated upstream
               <View style = {{marginRight: -10}}>
                 <Ionicons
                 name="people-sharp"
                 size={35}
                 color="hsla(0, 0%, 67%, 1.00)"
               />
-=======
-              <View>
-                <Ionicons
-                  name="people-sharp"
-                  size = {ICON_SIZE}
-                  color="hsla(0, 0%, 67%, 1.00)"
-                />
->>>>>>> Stashed changes
               </View>
               
             ),
+          }}
+        />
+        <Tabs.Screen
+          name="index"
+          options={{
+            href: null, // This hides it from the tab bar
           }}
         />
         <Tabs.Screen
@@ -276,6 +218,9 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => (
               <View
                 style={{
+                  width: 0,   // fixed width for the tab icon
+                  height: 35,  // fixed height
+                  marginLeft: 0,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -283,12 +228,11 @@ export default function TabLayout() {
                 <Image
                   source={pfpUrl ? { uri: pfpUrl } : require("../../assets/images/profile.png")}
                   style={{
-                    width: PROFILE_SIZE,
-                    height: PROFILE_SIZE,
-                    borderRadius: PROFILE_SIZE/2,
+                    width: 35,
+                    height: 35,
+                    borderRadius: 50,
                     borderWidth: 1,
                     borderColor: 'white',
-                    resizeMode: 'cover',
                   }}
                 />
               </View>

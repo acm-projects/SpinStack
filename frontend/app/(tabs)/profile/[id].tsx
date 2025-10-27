@@ -16,26 +16,6 @@ import { supabase } from "@/constants/supabase";
 
 const POLAROID_WIDTH = 150;
 const POLAROID_HEIGHT = 200;
-<<<<<<< Updated upstream
-=======
-const POLAROID_URL = require("@/assets/images/polaroidFrame.webp");
-const NGROK_URL = "https://nonfraudulently-photoemissive-syreeta.ngrok-free.dev";
-
-interface Profile {
-    id: string;
-    username: string;
-    bio: string;
-    pfp_url: string | null;
-}
-
-interface ContentItem {
-    id: string;
-    cover_url: string;
-    title: string;
-    description: string;
-    created_at: string;
-}
->>>>>>> Stashed changes
 
 export default function FriendProfile() {
     const router = useRouter();
