@@ -283,7 +283,9 @@ export default function ProfileScreen() {
   };
 
   const handleMomentPress = (moment: any) => {
+    console.log(moment);
     if (!spotifyConnected) {
+      console.log("spotify not connected");
       Alert.alert(
         "Spotify Not Connected",
         "Please connect your Spotify account to play moments.",
@@ -293,7 +295,7 @@ export default function ProfileScreen() {
     }
 
     const trackId = extractTrackId(moment.song_url);
-    
+    console.log(trackId);
     setSelectedMomentInfo({
       moment: {
         id: trackId || moment.id,
@@ -310,7 +312,7 @@ export default function ProfileScreen() {
         profilePic: pfpUrl,
       }
     });
-    
+    console.log("navigating to stack");
     router.push('/stack' as RelativePathString);
   };
 
