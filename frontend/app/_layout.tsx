@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from '../_context/AuthContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/constants/supabase';
 import { useFonts } from "expo-font";
+import { TabBarProvider } from './(tabs)/profile/tabBarContext';
 import React from 'react';
 export const unstable_settings = { initialRouteName: 'signupProcess/signupPage' };
 
@@ -34,10 +35,12 @@ function RootStack() {
       router.replace('/(tabs)/profile');
     }else {
     if (!session) {
+      router.dismissAll();
       router.replace('/signupProcess/signupPage');
     } else if (!profileComplete) {
       router.push('/signupProcess/profileSetup');
     } else {
+      router.dismissAll();
       router.replace('/(tabs)/profile');
     }}
     
@@ -53,7 +56,7 @@ function RootStack() {
   }
 
   return (
-
+    <TabBarProvider>
     <Stack screenOptions={{ headerShown: false }}>
       {/* Signup Page */}
       <Stack.Screen
@@ -188,6 +191,11 @@ function RootStack() {
         }}
       />
     </Stack>
+<<<<<<< Updated upstream
+=======
+    </TabBarProvider>
+
+>>>>>>> Stashed changes
   );
 }
 

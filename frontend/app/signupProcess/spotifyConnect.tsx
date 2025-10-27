@@ -11,6 +11,11 @@ export default function SpotifyConnect() {
   const { signingUp, setSigningUp } = useAuth();
 
   const handleNext = () => {
+<<<<<<< Updated upstream
+=======
+    setProfileComplete(true);
+    router.dismissAll();
+>>>>>>> Stashed changes
     router.replace("../profile");
     /*this will fix but not yet (needs some more work)*/
     /*

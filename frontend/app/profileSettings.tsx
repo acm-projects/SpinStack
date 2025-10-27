@@ -6,6 +6,7 @@ import Feather from "react-native-vector-icons/Feather";
 import { useRouter } from "expo-router";
 import Bubble from '../assets/other/bubble.svg';
 import { AutoSizeText, ResizeTextMode } from 'react-native-auto-size-text'; // import these
+const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
 export default function ProfileSettings() {
   const { width } = Dimensions.get("window");
@@ -14,6 +15,17 @@ export default function ProfileSettings() {
   const { user, pfpUrl, setPfpUrl } = useAuth();
   const IMAGE_SIZE = width * 0.2;
   const router = useRouter();
+<<<<<<< Updated upstream
+=======
+  const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
+
+
+  const handleSignOut = async () => {
+    logout();
+    router.dismissAll();
+    router.replace("/signupProcess/signupPage" as RelativePathString);
+  };
+>>>>>>> Stashed changes
 
   useEffect(() => {
     if (!user?.id) return;
@@ -37,7 +49,11 @@ export default function ProfileSettings() {
         if (userData?.pfp_url) {
           try {
             const res = await fetch(
+<<<<<<< Updated upstream
               `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
+=======
+              `https://nonfraudulently-photoemissive-syreeta.ngrok-free.dev/api/upload/download-url/${userData.pfp_url}`
+>>>>>>> Stashed changes
             );
             if (res.ok) {
               const { downloadURL } = await res.json();
