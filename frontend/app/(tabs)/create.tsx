@@ -1,12 +1,11 @@
 // app/(tabs)/create.tsx
 import React, { useState, useEffect } from "react";
-import { View, Text, Pressable, Image, FlatList, StyleSheet, ActivityIndicator, Alert, TextInput } from "react-native";
+import { View, Text, Pressable, Image, FlatList, StyleSheet, ActivityIndicator, Alert, TextInput, Keyboard, TouchableWithoutFeedback } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { TextInput, FlatList,} from "react-native";
-import {moms} from '../../components/demoMoment'
 import { useMomentStore } from "../stores/useMomentStore";
 import { supabase } from "@/constants/supabase";
+
 
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
@@ -27,6 +26,7 @@ interface TopHitTrack extends SpotifyTrack {
   momentCount: number;
 }
 
+
 export default function TestSpotify() {
   return (
     <SafeAreaView
@@ -34,7 +34,7 @@ export default function TestSpotify() {
         display: "flex",
         alignItems: "center",
         flex: 1,
-        backgroundColor: '#FFF0E2'
+        backgroundColor: '#FFF0E2',
       }}
     >
       <Text style={{ color: "black", fontSize: 30, fontWeight: "500", fontFamily: 'Luxurious Roman' }}>
@@ -56,8 +56,8 @@ function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [loadingTopHits, setLoadingTopHits] = useState(true);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  
 
-  // Helper function to extract Spotify track ID
   const extractTrackId = (songUrl: string): string | null => {
     if (!songUrl) return null;
 
@@ -81,7 +81,6 @@ function SearchPage() {
     fetchTopHits();
   }, []);
 
-  // Auto-search when user types
   useEffect(() => {
     if (searchTimeout) {
       clearTimeout(searchTimeout);
@@ -244,71 +243,103 @@ function SearchPage() {
     }
   };
 
-  const filteredData = moms.filter(item => {
-      if (!search.trim()) return true;//show all if empty
-      const lowerQuery = search.toLowerCase();
-      return (
-          item.title.toLowerCase().includes(lowerQuery)
-      );
-  });
+  const showTopHits = !search.trim();
+  const showSearchResults = !!search.trim() && results.length > 0;
+
+  const renderTrack = ({ item, index }: { item: SpotifyTrack | TopHitTrack; index: number }) => (
+    <Pressable
+      onPress={() => {
+        const moment = {
+          id: item.id,
+          title: item.name,
+          artist: item.artists.map((a) => a.name).join(", "),
+          length: Math.floor(item.duration_ms / 1000),
+          songStart: 0,
+          songDuration: 30 / Math.floor(item.duration_ms / 1000),
+          album: { uri: item.album.images[0]?.url },
+          waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
+        };
+        setSelectedMoment(moment);
+        router.push({ pathname: "/createProcess/momentProcess" });
+      }}
+    >
+      <View style={styles2.songRow}>
+        <Text style={styles2.rank}>{index + 1}</Text>
+        <View style={styles2.songInfo}>
+          <Text style={styles2.songTitle} numberOfLines={1}>
+            {item.name}
+          </Text>
+          <Text style={styles2.songArtist} numberOfLines={1} ellipsizeMode="tail">
+            {item.artists.map((a) => a.name).join(", ")}
+          </Text>
+          {'momentCount' in item && (
+            <Text style={styles2.momentCount}>
+              {item.momentCount} moment{item.momentCount !== 1 ? 's' : ''} created
+            </Text>
+          )}
+        </View>
+        {item.album.images[0]?.url && (
+          <Image source={{ uri: item.album.images[0].url }} style={styles2.albumArt} />
+        )}
+      </View>
+    </Pressable>
+  );
 
   return (
-    <SafeAreaView style={styles2.container} edges={['top']}>
-      {/* Search Bar */}
-      <View style={styles2.searchContainer}>
-        <TextInput
-          style={styles2.searchInput}
-          placeholder="Search..."
-          placeholderTextColor="#333c42"
-          value={search}
-          onChangeText={setSearch}
-        />
-      </View>
-
-      {/* Section Title */}
-      {showTopHits ? (
-        <Text style={styles2.sectionTitle}>Top Hits This Week</Text>
-      ) : (
-        <Text style={styles2.sectionTitle}>Select a Song</Text>
-      )}
-
-      {/* Loading State */}
-      {loading || (loadingTopHits && !search.trim()) ? (
-        <ActivityIndicator size="large" color="#39868F" style={styles2.loader} />
-      ) : showTopHits ? (
-        /* Top Hits List */
-        <FlatList
-          data={topHits}
-          contentContainerStyle={styles2.listContainer}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => renderTrack({ item, index })}
-        />
-      ) : showSearchResults ? (
-        /* Search Results List */
-        <FlatList
-          data={results}
-          contentContainerStyle={styles2.listContainer}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => renderTrack({ item, index })}
-        />
-      ) : (
-        /* Empty State */
-        <View style={styles2.emptyContainer}>
-          <Text style={styles2.emptyText}>
-            {search.trim() ? "No results found" : "Top hits will appear here"}
-          </Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <SafeAreaView style={[styles2.container]}>
+        <View style={[styles2.searchContainer]}>
+          <TextInput
+            style={styles2.searchInput}
+            placeholder="Search..."
+            placeholderTextColor="#333c42"
+            value={search}
+            onChangeText={setSearch}
+          />
         </View>
-      )}
-    </SafeAreaView>
+
+        {showTopHits ? (
+          <Text style={styles2.sectionTitle}>Top Hits This Week</Text>
+        ) : (
+          <Text style={styles2.sectionTitle}>Select a Song</Text>
+        )}
+
+        {loading || (loadingTopHits && !search.trim()) ? (
+          <ActivityIndicator size="large" color="#39868F" style={styles2.loader} />
+        ) : showTopHits ? (
+          <FlatList
+            data={topHits}
+            contentContainerStyle={styles2.listContainer}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item, index }) => renderTrack({ item, index })}
+            keyboardShouldPersistTaps="handled"
+          />
+        ) : showSearchResults ? (
+          <FlatList
+            data={results}
+            contentContainerStyle={styles2.listContainer}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item, index }) => renderTrack({ item, index })}
+            keyboardShouldPersistTaps="handled"
+          />
+        ) : (
+          <View style={styles2.emptyContainer}>
+            <Text style={styles2.emptyText}>
+              {search.trim() ? "No results found" : "Top hits will appear here"}
+            </Text>
+          </View>
+        )}
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 }
 
 const styles2 = StyleSheet.create({
   container: {
-    flex: 0.925,
+    flex: 1,
     backgroundColor: "#FFF0E2",
     paddingHorizontal: 16,
-    paddingTop: 0,
+    marginBottom: '6%',
   },
   searchContainer: {
     backgroundColor: "#8DD2CA",

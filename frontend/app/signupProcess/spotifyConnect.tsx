@@ -8,9 +8,11 @@ import Bubble from '../../assets/other/bubble.svg';
 import Feather from '@expo/vector-icons/Feather';
 
 export default function SpotifyConnect() {
-  const { signingUp, setSigningUp } = useAuth();
+  const { user, setProfileComplete } = useAuth();
 
   const handleNext = () => {
+    setProfileComplete(true);
+    router.dismissAll();
     router.replace("../profile");
     /*this will fix but not yet (needs some more work)*/
     /*

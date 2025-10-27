@@ -16,6 +16,23 @@ import { supabase } from "@/constants/supabase";
 
 const POLAROID_WIDTH = 150;
 const POLAROID_HEIGHT = 200;
+const POLAROID_URL = require("@/assets/images/polaroidFrame.webp");
+const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
+
+interface Profile {
+    id: string;
+    username: string;
+    bio: string;
+    pfp_url: string | null;
+}
+
+interface ContentItem {
+    id: string;
+    cover_url: string;
+    title: string;
+    description: string;
+    created_at: string;
+}
 
 export default function FriendProfile() {
     const router = useRouter();

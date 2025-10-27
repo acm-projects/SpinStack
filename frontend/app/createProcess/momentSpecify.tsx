@@ -1,65 +1,74 @@
-import React, { useState, useRef, useEffect} from 'react';
-import { StyleSheet, View, Image, Text, TouchableOpacity, useWindowDimensions} from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { StyleSheet, View, Image, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {Moment} from '../../components/momentInfo'
+import { Moment } from '../../components/momentInfo';
 import Bubble from '../../assets/other/bubble.svg';
 import Feather from '@expo/vector-icons/Feather';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import EvilIcons from '@expo/vector-icons/EvilIcons';
 
-// seconds
-const momentLength = 30;
-
-export default function MomentSpecifyView({ moment, scrollFunc}: { moment: Moment, scrollFunc: (page: number) => void}) {
+export default function MomentSpecifyView({ moment, scrollFunc }: { moment: Moment, scrollFunc: (page: number) => void }) {
   const src = require('../../assets/images/stack.png');
   const vinylImg = require('../../assets/images/vinyl.png');
   const { width } = useWindowDimensions();
-  
+
+  const bubbleHeight = 0.12533245892 * width;
+
   return (
     <View style={{ width, justifyContent: 'center', alignItems: 'center' }}>
       <SafeAreaView
-        style={[StyleSheet.absoluteFill, { justifyContent: 'flex-start', alignItems: 'center', marginTop: 120, gap: 50}]}
+        style={[StyleSheet.absoluteFill, { flex: 1, justifyContent: 'flex-start', alignItems: 'center', gap: 0.5*bubbleHeight}]}
         edges={['top', 'left', 'right']}
-      >   
-        <View style={{ alignItems: 'flex-end', width: '100%', height: 75}}>
-          <TouchableOpacity onPress={() => scrollFunc(0)} style={{ position: 'absolute', alignItems: 'center', marginRight: 50, marginTop: -30}}>
-            <Bubble width={50} height={50} />
-            <View style={{ marginTop: -40 }}>
-              <Feather name="arrow-left" size={30} color="black" />
+      >
+        <View style={{ alignItems: 'flex-start', height: 2.5 * bubbleHeight, width: '100%', flexDirection: 'row', justifyContent: 'space-between', marginLeft: 1.5 * bubbleHeight, marginTop: 2 * bubbleHeight}}>
+          <TouchableOpacity onPress={() => scrollFunc(0)} style={{ alignItems: 'center' }}>
+            <View style={{ position: 'absolute', alignItems: 'center'}}>
+              <Bubble width={bubbleHeight} height = {bubbleHeight}/>
+              <View style={{ marginTop: '-80%' }}> 
+                <Feather name="arrow-left" size={0.6 * bubbleHeight} color="black" />
+              </View>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity style={{ position: 'absolute', alignItems: 'center', marginRight: 130, marginTop: 0}}>
-            <Bubble width={75} height={75} />
-            <View style={{ marginTop: -60 }}>
-              <AntDesign name="comment" size={40} color="black" />
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity style={{ position: 'absolute', alignItems: 'center', marginRight: 40, marginTop: 50}}>
-            <Bubble width={100} height={100} />
-            <View style={{ marginTop: -85 }}>
-              <EvilIcons name="image" size={80} color="black" />
-            </View>
-          </TouchableOpacity>
+
+          <View style={{ flexDirection: 'row', gap: bubbleHeight, height: bubbleHeight, width: 2.75 * bubbleHeight, marginLeft: -2.75* bubbleHeight,}}>
+            <TouchableOpacity style={{ alignItems: 'center' }}>
+              <View style={{ position: 'absolute', alignItems: 'center' }}>
+                <Bubble width={1.5*bubbleHeight} height={1.5*bubbleHeight} />
+                <View style={{ marginTop: '-80%' }}>
+                  <AntDesign name="comment" size={0.53333* 1.5 * bubbleHeight} color="black" />
+                </View>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ alignItems: 'center', marginTop: 1.2 * bubbleHeight}}>
+              <View style={{ position: 'absolute', alignItems: 'center' }}>
+                <Bubble width={2*bubbleHeight} height={2*bubbleHeight} />
+                <View style={{ marginTop:'-80%' }}>
+                  <EvilIcons name="image" size={0.8 * 2 * bubbleHeight} color="black" />
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
 
+        {/* Content */}
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-            <View style={{ alignItems: 'center', width: '100%'}}>
-              <View style={{width: '70%', aspectRatio: 1, justifyContent: "center", alignItems: "center"}}>
-                <View style={[{justifyContent: "center", alignItems: "center"}]}>
-                  <Image 
+            <View style={{ alignItems: 'center', width: '100%' }}>
+              <View style={{ width: '70%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <View style={[{ justifyContent: 'center', alignItems: 'center' }]}>
+                  <Image
                     source={moment.album}
-                    style={{width: '40%', aspectRatio: 1, height: undefined}}
+                    style={{ width: '40%', aspectRatio: 1, height: undefined }}
                   />
-                  <Image 
+                  <Image
                     source={vinylImg}
-                    style={{width: '100%', aspectRatio: 1, height: undefined, position: "absolute"}}
+                    style={{ width: '100%', aspectRatio: 1, height: undefined, position: 'absolute' }}
                   />
                 </View>
               </View>
               <View style={{ width: 350, justifyContent: 'center', alignItems: 'center', marginTop: 30 }}>
-                <View style={{ marginLeft: 10}}>
-                  <Text style={{ fontSize: 30, fontFamily: 'Jacques Francois', color: '#333C42'}}>
+                <View style={{ marginLeft: 10 }}>
+                  <Text style={{ fontSize: 30, fontFamily: 'Jacques Francois', color: '#333C42' }}>
                     {moment.title} - {moment.artist}
                   </Text>
                 </View>
@@ -67,9 +76,10 @@ export default function MomentSpecifyView({ moment, scrollFunc}: { moment: Momen
             </View>
           </View>
         </View>
-          
-        <View style={{width: '100%', justifyContent: 'flex-start', alignItems: 'center'}}>
-          <TouchableOpacity 
+
+        {/* Next Button */}
+        <View style={{ width: '100%', justifyContent: 'flex-start', alignItems: 'center' }}>
+          <TouchableOpacity
             style={{
               backgroundColor: '#39868F',
               borderRadius: 10,

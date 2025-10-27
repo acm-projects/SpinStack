@@ -135,6 +135,27 @@ export default function SearchPage() {
           return;
         }
 
+        // Fetch download URLs for profile pictures
+        const usersWithPfp = await Promise.all(
+          (users || []).map(async (user) => {
+            let pfp = null;
+            if (user.pfp_url) {
+              try {
+                const res = await fetch(
+                  `https://nonfraudulently-photoemissive-syreeta.ngrok-free.dev/api/upload/download-url/${user.pfp_url}`
+                );
+                if (res.ok) {
+                  const { downloadURL } = await res.json();
+                  pfp = downloadURL;
+                }
+              } catch (err) {
+                console.error("Failed to fetch pfp for user:", user.id, err);
+              }
+            }
+            return { ...user, pfp_url: pfp };
+          })
+        );
+
         setResults({
           users: users || [],
         });
