@@ -160,9 +160,14 @@ function Masonry({ data, spacing = 8, columns = 2, router, onPressMore }: Masonr
           <View
             style={{
               position: "absolute",
-              top: "47%",
-              left: "49%",
-              transform: [{ translateX: -10 }, { translateY: -10 }],
+              top: "50%",
+              left: "50%",
+              transform: [{ translateX: -14 }, { translateY: -14 }],
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 1,
+              shadowRadius: 4,
+              elevation: 5, // Android shadow
             }}
           >
             <Feather name="play" size={28} color="white" />
