@@ -8,6 +8,8 @@ import {
   Pressable,
   Dimensions,
   ActivityIndicator,
+  Modal,
+  TouchableOpacity,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as Font from "expo-font";
@@ -40,19 +42,20 @@ type MasonryProps = {
   spacing?: number;
   columns?: number;
   router: any;
+  onPressMore?: (item: MasonryItem) => void;
 };
 
 // 🧱 Masonry Component
-function Masonry({ data, spacing = 8, columns = 2, router }: MasonryProps) {
+function Masonry({ data, spacing = 8, columns = 2, router, onPressMore }: MasonryProps) {
   const [cols, setCols] = useState<MasonryItem[][]>([]);
 
   useEffect(() => {
-    const withHeights = data.map((item) => ({
+    const withHeights = data.map((item: any) => ({
       ...item,
       height: Math.random() * 50 + 180,
     }));
 
-    const nextCols: MasonryItem[][] = Array.from({ length: columns }, () => []);
+    const nextCols: any[][] = Array.from({ length: columns }, () => []);
     const colHeights = new Array(columns).fill(0);
 
     for (const item of withHeights) {
@@ -66,7 +69,7 @@ function Masonry({ data, spacing = 8, columns = 2, router }: MasonryProps) {
 
   const colWidth = (width - spacing * (columns + 1)) / columns;
 
-  const renderItem = (item: MasonryItem) => (
+  const renderItem = (item: any) => (
     <View
       key={item.id}
       style={{
@@ -96,7 +99,11 @@ function Masonry({ data, spacing = 8, columns = 2, router }: MasonryProps) {
             <Text style={styles.time}>{item.time}</Text>
           </View>
         </Pressable>
-        <Feather name="more-horizontal" size={20} color="#555" />
+        {item.type === "moment" && (
+          <Pressable onPress={() => onPressMore?.(item)}>
+            <Feather name="more-horizontal" size={20} color="#555" />
+          </Pressable>
+        )}
       </View>
 
       {/* Image - Different rendering for stacks vs moments */}
@@ -163,7 +170,6 @@ function Masonry({ data, spacing = 8, columns = 2, router }: MasonryProps) {
         </View>
       )}
 
-      {/* Caption */}
       {item.caption ? (
         <Text style={styles.caption}>{item.caption}</Text>
       ) : null}
@@ -194,6 +200,10 @@ function Masonry({ data, spacing = 8, columns = 2, router }: MasonryProps) {
 export default function HomeScreen() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [activeFilter, setActiveFilter] = useState("For You");
+  const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const [addToStackVisible, setAddToStackVisible] = useState(false);
+  const [userStacks, setUserStacks] = useState<any[]>([]);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
   const [friends, setFriends] = useState<string[]>([]);
   const [albums, setAlbums] = useState<MasonryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -206,6 +216,57 @@ export default function HomeScreen() {
     });
     setFontsLoaded(true);
   };
+
+  const fetchUserStacks = async () => {
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      if (!token) return;
+
+      const res = await fetch(`${NGROK_URL}/api/stacks`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const stacks = await res.json();
+        setUserStacks(stacks);
+      } else {
+        console.error("Failed to fetch stacks:", await res.text());
+      }
+    } catch (err) {
+      console.error("Error fetching user stacks:", err);
+    }
+  };
+
+  const addMomentToStack = async (stackId: string) => {
+    if (!selectedItem) return;
+
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      if (!token) return;
+
+      const res = await fetch(`${NGROK_URL}/api/stacks/${stackId}/moments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ momentId: selectedItem.id }),
+      });
+
+      if (res.ok) {
+        setAddToStackVisible(false);
+        alert("Moment added to stack!");
+      } else {
+        const err = await res.json();
+        console.error("Failed to add moment:", err);
+        alert(err.error || "Failed to add moment");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
 
   const getCurrentUserId = async (): Promise<string | null> => {
     const { data: { user }, error } = await supabase.auth.getUser();
@@ -259,7 +320,7 @@ export default function HomeScreen() {
       return coverPath;
     }
 
-    // Otherwise, fetch from your API
+    // Otherwise, fetch from API
     try {
       const res = await fetch(`${NGROK_URL}/api/upload/download-url/${coverPath}`);
       if (res.ok) {
@@ -392,17 +453,28 @@ export default function HomeScreen() {
     );
   }
 
+  const handleMorePress = (item: MasonryItem) => {
+    setSelectedItem(item);
+    fetchUserStacks(); // load latest stacks
+    setAddToStackVisible(true);
+  };
+
+
+
   return (
-    <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 100 }}>
+    <View style={{ flex: 1, backgroundColor: "#FFF0E2" }}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>SpinStack</Text>
-        <Pressable style={styles.bellIcon}>
+        <Pressable
+          onPress={() => setNotificationsVisible(true)}
+          style={styles.bellIcon}
+        >
           <Feather name="bell" size={28} color="#333C42" />
         </Pressable>
       </View>
 
-      {/* Profile Scroll */}
+      {/* Profiles */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -436,14 +508,84 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      {/* Masonry Feed */}
-      {albums.length > 0 ? (
-        <Masonry data={albums} spacing={10} columns={2} router={router} />
-      ) : (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <Text style={styles.username}>No content available</Text>
+      {/* Feed */}
+      <View style={{ flex: 1 }}>
+        <Masonry data={albums} spacing={10} columns={2} router={router} onPressMore={handleMorePress} />
+      </View>
+      {/* Notifications Popup */}
+      <Modal
+        visible={notificationsVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setNotificationsVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.friendsPopup}>
+            <View style={styles.popupHeader}>
+              <Text style={styles.popupTitle}>Notifications</Text>
+              <Pressable onPress={() => setNotificationsVisible(false)}>
+                <Feather name="x" size={26} color="#333C42" />
+              </Pressable>
+            </View>
+            <View style={styles.popupContent}>
+              <Text style={{ color: "#333C42", fontFamily: "Jacques Francois" }}>
+                No notifications yet 📭
+              </Text>
+            </View>
+          </View>
         </View>
-      )}
+      </Modal>
+
+      {/* ➕ Add to Stack Popup */}
+      <Modal
+        visible={addToStackVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAddToStackVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.friendsPopup}>
+            <View style={styles.popupHeader}>
+              <Text style={styles.popupTitle}>Add to Stack</Text>
+              <Pressable onPress={() => setAddToStackVisible(false)}>
+                <Feather name="x" size={26} color="#333C42" />
+              </Pressable>
+            </View>
+
+            <View style={styles.popupContent}>
+
+              <View style={{ flexDirection: "row", alignItems: "flex-start", }} >
+
+
+                <ScrollView style={{ width: "100%" }}>
+                  {userStacks.length === 0 ? (
+                    <Text style={{ textAlign: "center", color: "#333C42", fontFamily: "Jacques Francois" }}>
+                      No stacks yet
+                    </Text>
+                  ) : (
+                    userStacks.map(stack => (
+                      <TouchableOpacity
+                        key={stack.id}
+                        style={styles.stackOption}
+                        onPress={() => addMomentToStack(stack.id)}
+                      >
+                        <Feather name="folder" size={20} color="#333C42" />
+                        <Text style={styles.stackText}>{stack.title}</Text>
+                      </TouchableOpacity>
+                    ))
+                  )}
+                </ScrollView>
+
+              </View>
+              <TouchableOpacity style={styles.newStackButton}>
+                <Feather name="plus" size={18} color="#333C42" />
+                <Text style={styles.newStackText}>Create New Stack</Text>
+              </TouchableOpacity>
+
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -468,11 +610,10 @@ const styles = StyleSheet.create({
     marginLeft: 78,
   },
   profileScroll: {
-    flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 15,
     marginTop: 10,
-    paddingBottom: 60,
+    maxHeight: 80, // Add this to prevent it from expanding
     backgroundColor: "#FFF0E2",
   },
   profileCircle: {
@@ -533,5 +674,64 @@ const styles = StyleSheet.create({
     color: "#333C42",
     fontFamily: "Jacques Francois",
     textAlign: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  friendsPopup: {
+    width: "85%",
+    backgroundColor: "#FFF0E2",
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5,
+    marginBottom: 200,
+  },
+  popupHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  popupTitle: {
+    fontFamily: "Luxurious Roman",
+    fontSize: 22,
+    color: "#333C42",
+  },
+  popupContent: {
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: 100,
+  },
+  // ➕ Add-to-Stack styles
+  stackOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomColor: "#ddd",
+    borderBottomWidth: 1,
+    width: "200%",
+  },
+  stackText: {
+    marginLeft: 10,
+    fontFamily: "Jacques Francois",
+    color: "#333C42",
+    fontSize: 16,
+  },
+  newStackButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 20,
+  },
+  newStackText: {
+    marginLeft: 6,
+    color: "#333C42",
+    fontFamily: "Jacques Francois",
+    fontSize: 15,
   },
 });

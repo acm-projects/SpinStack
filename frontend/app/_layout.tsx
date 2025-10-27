@@ -17,38 +17,39 @@ function RootStack() {
   const colorScheme = useColorScheme();
   const router = useRouter();
   const { session, loading, profileComplete, checkingProfile } = useAuth(); // Added 'loading' from AuthContext
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [fontsLoaded] = useFonts({
+    "Luxurious Roman": require("@/fonts/LuxuriousRoman-Regular.ttf"),
+    "Jacques Francois": require("@/fonts/JacquesFrancois-Regular.ttf"),
+  });
 
-  // --------------- FORCE SIGN-OUT FOR TESTING (Optional - comment out when done testing) ---------------
-  /* useEffect(() => {
-    const forceLogout = async () => {
-      await logout();
-    };
-    forceLogout();
-  }, []); // Empty array means it only runs once on mount
-  */
-
-  // --------------- REDIRECT LOGIC ---------------
   useEffect(() => {
-    if (loading || checkingProfile) return;
+    // Minimum delay to avoid flash
+    const timer = setTimeout(() => setInitialLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (loading || checkingProfile || initialLoading || !fontsLoaded) return;
 
     if (!session) {
       router.replace('/signupProcess/signupPage');
     } else if (!profileComplete) {
-      router.push('/signupProcess/profileSetup');
+      router.replace('/signupProcess/profileSetup');
     } else {
       router.replace('/(tabs)/profile');
     }
+  }, [loading, checkingProfile, initialLoading, session, profileComplete, fontsLoaded]);
 
-  }, [loading, checkingProfile, session, profileComplete]);
-
-  //Loading spinner while AuthContext checks for existing session
-  if (loading || checkingProfile) {
+  // Show loading until both auth state and fonts are ready
+  if (loading || checkingProfile || initialLoading || !fontsLoaded) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
-        <ActivityIndicator size="large" color="white" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffffff' }}>
+        <ActivityIndicator size="large" color="black" />
       </View>
     );
   }
+
 
   return (
 
