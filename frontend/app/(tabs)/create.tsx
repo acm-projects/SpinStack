@@ -6,7 +6,6 @@ import { router } from "expo-router";
 import { useMomentStore } from "../stores/useMomentStore";
 import { supabase } from "@/constants/supabase";
 
-
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
 interface SpotifyTrack {

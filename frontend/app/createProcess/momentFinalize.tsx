@@ -20,7 +20,7 @@ export default function MomentFinalizeView({ moment, scrollFunc, height }: { mom
         edges={['top', 'left', 'right']}
       >
         {/* Back Button & Action Row */}
-        <View style={{ alignItems: 'flex-start', width: '100%', height: 2.5*bubbleHeight, flexDirection: 'row', justifyContent: 'flex-start', paddingLeft: 0.65 * bubbleHeight, marginTop: 2 * bubbleHeight}}>
+        <View style={{ alignItems: 'flex-start', width: '100%', height: 1*bubbleHeight, flexDirection: 'row', justifyContent: 'flex-start', paddingLeft: 0.65 * bubbleHeight, marginTop: 2 * bubbleHeight}}>
           <TouchableOpacity onPress={() => scrollFunc(1)} style={{ alignItems: 'center' }}>
             <View style={{ position: 'absolute', alignItems: 'center'}}>
               <Bubble width={bubbleHeight} height = {bubbleHeight}/>
@@ -55,9 +55,9 @@ export default function MomentFinalizeView({ moment, scrollFunc, height }: { mom
                   />
                 </View>
               </View>
-              <View style={{ width: 350, justifyContent: 'center', alignItems: 'center', marginTop: 30 }}>
-                <View style={{ marginLeft: 10 }}>
-                  <Text style={{ fontSize: 30, fontFamily: 'Jacques Francois', fontWeight: 'bold', color: '#333C42' }}>
+              <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', marginTop: 0.6*bubbleHeight }}>
+                <View style={{ marginLeft: 0.2*bubbleHeight }}>
+                  <Text style={{ fontSize: 0.6*bubbleHeight, fontFamily: 'Jacques Francois', fontWeight: 'bold', color: '#333C42' }}>
                     {moment.title} - {moment.artist}
                   </Text>
                 </View>
