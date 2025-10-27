@@ -124,3 +124,82 @@ export const clearSpotifyTokens = async (): Promise<void> => {
     console.error('Error clearing tokens:', error);
   }
 };
+
+/**
+ * Playback control functions
+ */
+const API_BASE = "https://api.spotify.com/v1";
+
+const spotifyApi = async (token: string, path: string, init?: RequestInit) => {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(init?.headers || {}),
+    },
+  });
+  return res;
+};
+
+export const playTrack = async (
+  token: string,
+  trackId: string,
+  startMs: number = 0
+): Promise<boolean> => {
+  try {
+    const trackUri = `spotify:track:${trackId}`;
+    const res = await spotifyApi(token, "/me/player/play", {
+      method: "PUT",
+      body: JSON.stringify({
+        uris: [trackUri],
+        position_ms: startMs,
+      }),
+    });
+
+    return res.ok || res.status === 204;
+  } catch (error) {
+    console.error("Error playing track:", error);
+    return false;
+  }
+};
+
+export const pauseTrack = async (token: string): Promise<boolean> => {
+  try {
+    const res = await spotifyApi(token, "/me/player/pause", {
+      method: "PUT",
+    });
+    return res.ok || res.status === 204;
+  } catch (error) {
+    console.error("Error pausing track:", error);
+    return false;
+  }
+};
+
+export const seekToPosition = async (
+  token: string,
+  positionMs: number
+): Promise<boolean> => {
+  try {
+    const res = await spotifyApi(token, `/me/player/seek?position_ms=${positionMs}`, {
+      method: "PUT",
+    });
+    return res.ok || res.status === 204;
+  } catch (error) {
+    console.error("Error seeking:", error);
+    return false;
+  }
+};
+
+export const getPlaybackState = async (token: string): Promise<any | null> => {
+  try {
+    const res = await spotifyApi(token, "/me/player");
+    if (res.status === 204) return null; // No active playback
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (error) {
+    console.error("Error getting playback state:", error);
+    return null;
+  }
+};
