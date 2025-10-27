@@ -52,6 +52,7 @@ export default function SearchPage() {
   }>({});
   const [loading, setLoading] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  
 
   // Auto-search when user types
   useEffect(() => {
@@ -142,7 +143,7 @@ export default function SearchPage() {
             if (user.pfp_url) {
               try {
                 const res = await fetch(
-                  `https://nonfraudulently-photoemissive-syreeta.ngrok-free.dev/api/upload/download-url/${user.pfp_url}`
+                  `${nUrl}/api/upload/download-url/${user.pfp_url}`
                 );
                 if (res.ok) {
                   const { downloadURL } = await res.json();

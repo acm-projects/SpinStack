@@ -48,7 +48,7 @@ export default function FriendProfile() {
     const [viewMode, setViewMode] = useState<"moments" | "stacks">("moments");
     const { id, fromProfile } = useLocalSearchParams<{ id: string; fromProfile?: string }>();
     const cameFromProfile = fromProfile === 'true'; // convert back to boolean
-
+    const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
     const POLAROID_URL = require("@/assets/images/polaroidFrame.webp");
 
@@ -73,7 +73,7 @@ export default function FriendProfile() {
                 let pfp = null;
                 if (data.pfp_url) {
                     const res = await fetch(
-                        `https://cayson-mouthiest-kieran.ngrok-free.dev/api/upload/download-url/${data.pfp_url}`
+                        `${nUrl}/api/upload/download-url/${data.pfp_url}`
                     );
                     if (res.ok) {
                         const { downloadURL } = await res.json();
