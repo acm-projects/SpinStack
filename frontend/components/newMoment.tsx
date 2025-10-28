@@ -54,6 +54,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
           useNativeDriver: true,
         })
       );
+      
       loop.start();
     } else {
       spinAnim.stopAnimation();
