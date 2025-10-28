@@ -118,6 +118,10 @@ export default function momentProcess() {
       // Build the Spotify URL from the track ID
       const songUrl = `https://open.spotify.com/track/${moment.id}`;
 
+      // Get the custom description and cover URL if they were set
+      const customDescription = (moment as any).tempDescription || `${moment.artist}`;
+      const customCoverUrl = (moment as any).tempCoverUrl || moment.album.uri || null;
+
       const response = await fetch(`${nUrl}/api/moments`, {
         method: "POST",
         headers: {
@@ -129,9 +133,9 @@ export default function momentProcess() {
           song_url: songUrl,
           start_time: startTimeSeconds,
           duration: durationSeconds,
-          cover_url: moment.album.uri || null,
+          cover_url: customCoverUrl,
           visibility: true,
-          description: `${moment.artist}` // Store artist as description for now
+          description: customDescription
         }),
       });
 
@@ -153,7 +157,6 @@ export default function momentProcess() {
             text: "OK",
             onPress: () => {
               clearMoment();
-              //router.dismissAll();
               router.replace('/(tabs)/profile');
             }
           }
@@ -183,7 +186,7 @@ export default function momentProcess() {
     if (page === 10) {
       const success = await saveMomentToDatabase();
       if (!success) return; // Don't navigate if save failed
-      //return; // saveMomentToDatabase handles navigation
+      return; // saveMomentToDatabase handles navigation
     }
 
     // Animate scroll manually
