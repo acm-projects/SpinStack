@@ -30,9 +30,17 @@ export default function MomentView({ data }: { data: MomentInfo }) {
   const [token, setToken] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Track current moment to detect changes - use a unique key
+  const currentMomentKey = useRef<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isActiveRef = useRef(false);
+  const cleanupExecutedRef = useRef(false);
 
-  const playbackSession = useRef(Math.random());
+  // Generate unique key for moment (includes start time to differentiate same songs)
+  const getMomentKey = (momentData: typeof data.moment) => {
+    return `${momentData.id}_${momentData.songStart}_${momentData.songDuration}`;
+  };
 
   // Vinyl animation loop
   useEffect(() => {
@@ -61,7 +69,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
     outputRange: ['360deg', '0deg'],
   });
 
-  // 🧭 Fix (2): Initialize token safely and defer playback until both token + focus are ready
+  // Initialize token on mount
   useEffect(() => {
     const initSpotify = async () => {
       try {
@@ -89,87 +97,149 @@ export default function MomentView({ data }: { data: MomentInfo }) {
 
     // Cleanup on unmount
     return () => {
+      console.log("🗑️ Component unmounting - final cleanup");
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
       }
-      if (token) {
-        pausePlayback(token).catch(console.error);
-      }
+      spinAnim.stopAnimation();
     };
   }, []);
 
-  // 🧭 Fix (4): Use focus effect to control playback lifecycle safely
+  // Cleanup function to stop playback
+  const cleanup = React.useCallback(async (cleanupToken: string | null) => {
+    if (cleanupExecutedRef.current) {
+      console.log("🔄 Cleanup already executed, skipping");
+      return;
+    }
+    
+    console.log("🛑 Executing cleanup");
+    cleanupExecutedRef.current = true;
+    isActiveRef.current = false;
+
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+
+    if (cleanupToken) {
+      await pausePlayback(cleanupToken).catch(console.error);
+    }
+
+    spinAnim.stopAnimation();
+    setIsPlaying(false);
+  }, []);
+
+  // Detect moment changes and cleanup immediately
+  useEffect(() => {
+    if (!data?.moment?.id) return;
+
+    const newMomentKey = getMomentKey(data.moment);
+    const momentChanged = currentMomentKey.current !== null && currentMomentKey.current !== newMomentKey;
+    
+    if (momentChanged) {
+      console.log(`🔄 Moment changed from ${currentMomentKey.current} to ${newMomentKey}`);
+      console.log(`   Title: ${data.moment.title}, Start: ${data.moment.songStart}, Duration: ${data.moment.songDuration}`);
+      
+      // IMMEDIATELY stop playback and clear intervals
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+      
+      setIsPlaying(false);
+      setIsLoading(true);
+      spinAnim.stopAnimation();
+      
+      // Pause playback asynchronously
+      if (token) {
+        pausePlayback(token).catch(console.error);
+      }
+      
+      // Reset flags for new moment
+      cleanupExecutedRef.current = false;
+      isActiveRef.current = false;
+    }
+    
+    // Update current moment key
+    currentMomentKey.current = newMomentKey;
+  }, [data?.moment?.id, data?.moment?.songStart, data?.moment?.songDuration, token]);
+
+  // Handle focus/unfocus with proper cleanup
   useFocusEffect(
     React.useCallback(() => {
-      console.log("🎧 MomentView focused");
+      const momentKey = data?.moment ? getMomentKey(data.moment) : null;
+      console.log("🎧 MomentView focused for:", data?.moment?.title, "Key:", momentKey);
+      isActiveRef.current = true;
+      
+      // Only reset cleanup flag if this is truly a new focus (not just re-render)
+      if (cleanupExecutedRef.current) {
+        cleanupExecutedRef.current = false;
+      }
 
-      let didCancel = false;
+      let startTimeout: NodeJS.Timeout | null = null;
 
-      // Wait briefly to ensure token and Spotify device are ready
-      const delayedStart = setTimeout(async () => {
-        if (didCancel || !token) return;
-
-        // Always stop any lingering playback session before starting new one
-        await pausePlayback(token).catch(() => {});
-        await startPlayback(token);
-      }, 300);
+      if (token && data?.moment?.id) {
+        // Wait longer for cleanup and devices to be ready
+        startTimeout = setTimeout(async () => {
+          if (isActiveRef.current && !cleanupExecutedRef.current) {
+            console.log("🎯 Starting playback after delay for:", data.moment.title);
+            console.log("   Start time:", data.moment.songStart, "Duration:", data.moment.songDuration);
+            await startPlayback(token);
+          }
+        }, 800);
+      } else {
+        setIsLoading(false);
+      }
 
       return () => {
-        console.log("🛑 MomentView unfocused – stopping playback and clearing intervals");
-        didCancel = true;
-        clearTimeout(delayedStart);
-
-        if (pollingRef.current) {
-          clearInterval(pollingRef.current);
-          pollingRef.current = null;
+        console.log("🛑 MomentView unfocused from:", data?.moment?.title);
+        
+        if (startTimeout) {
+          clearTimeout(startTimeout);
         }
 
-        if (token) {
-          pausePlayback(token).catch(console.error);
-        }
-
-        spinAnim.stopAnimation();
-        setIsPlaying(false);
+        // CRITICAL: Actually call cleanup when losing focus
+        cleanup(token);
       };
-    }, [token])
+    }, [token, data?.moment?.id, data?.moment?.songStart, data?.moment?.songDuration, data?.moment?.title, cleanup])
   );
 
   // --- Spotify API helpers ---
-  const api = async (token: string, path: string, init?: RequestInit) => {
+  const api = async (spotifyToken: string, path: string, init?: RequestInit) => {
     const res = await fetch(`${API_BASE}${path}`, {
       ...init,
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${spotifyToken}`,
         ...(init?.headers || {}),
       },
     });
     return res;
   };
 
-  const getDevices = async (token: string): Promise<Device[]> => {
-    const res = await api(token, "/me/player/devices");
+  const getDevices = async (spotifyToken: string): Promise<Device[]> => {
+    const res = await api(spotifyToken, "/me/player/devices");
     if (!res.ok) throw new Error(`devices: ${res.status}`);
     const deviceData = await res.json();
     return deviceData.devices as Device[];
   };
 
-  const transferPlayback = async (token: string, deviceId: string) => {
-    await api(token, "/me/player", {
+  const transferPlayback = async (spotifyToken: string, deviceId: string) => {
+    await api(spotifyToken, "/me/player", {
       method: "PUT",
       body: JSON.stringify({ device_ids: [deviceId], play: false }),
     });
   };
 
-  const seekTo = async (token: string, ms: number) => {
-    await api(token, `/me/player/seek?position_ms=${ms}`, { method: "PUT" });
+  const seekTo = async (spotifyToken: string, ms: number) => {
+    await api(spotifyToken, `/me/player/seek?position_ms=${ms}`, { method: "PUT" });
   };
 
-  const pausePlayback = async (token: string) => {
+  const pausePlayback = async (spotifyToken: string) => {
     try {
-      await api(token, "/me/player/pause", { method: "PUT" });
+      await api(spotifyToken, "/me/player/pause", { method: "PUT" });
       console.log("⏸ Playback paused");
     } catch (error) {
       console.error("Error pausing playback:", error);
@@ -178,9 +248,13 @@ export default function MomentView({ data }: { data: MomentInfo }) {
 
   // --- Main playback logic ---
   const startPlayback = async (spotifyToken: string) => {
+    if (!isActiveRef.current) {
+      console.log("⚠️ Component not active, skipping playback");
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const thisSession = playbackSession.current;
 
       const trackUri = `spotify:track:${data.moment.id}`;
       const startMs = Math.floor(data.moment.songStart * 1000);
@@ -208,6 +282,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
 
         await transferPlayback(spotifyToken, target.id);
         await new Promise((r) => setTimeout(r, 800));
+        
         res = await api(
           spotifyToken,
           `/me/player/play?device_id=${encodeURIComponent(target.id)}`,
@@ -223,6 +298,12 @@ export default function MomentView({ data }: { data: MomentInfo }) {
         throw new Error(`Play error ${res.status}: ${txt}`);
       }
 
+      if (!isActiveRef.current) {
+        console.log("⚠️ Component became inactive during setup");
+        await pausePlayback(spotifyToken);
+        return;
+      }
+
       console.log("✅ Playback started");
       setIsPlaying(true);
       setIsLoading(false);
@@ -231,7 +312,14 @@ export default function MomentView({ data }: { data: MomentInfo }) {
       if (pollingRef.current) clearInterval(pollingRef.current);
 
       pollingRef.current = setInterval(async () => {
-        if (playbackSession.current !== thisSession) return; // stale instance
+        if (!isActiveRef.current) {
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+          return;
+        }
+
         try {
           const playbackRes = await api(spotifyToken, "/me/player");
           if (playbackRes.status === 204 || !playbackRes.ok) return;
@@ -254,7 +342,6 @@ export default function MomentView({ data }: { data: MomentInfo }) {
     }
   };
 
-  // --- UI below unchanged ---
   if (!data) {
     return (
       <View style={{ flex: 1, backgroundColor: '#FFF0E2', justifyContent: 'center', alignItems: 'center' }}>
