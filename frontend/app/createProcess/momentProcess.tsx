@@ -1,4 +1,4 @@
-// app/createProcess/momentProcess.tsx - Updated with database save functionality
+// app/createProcess/momentProcess.tsx - Updated with proper navigation handling
 import React, { useEffect } from 'react';
 import BottomL from '../../assets/other/Bottom_L.svg';
 import TopL from '../../assets/other/Top_L.svg';
@@ -21,7 +21,7 @@ const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
 function bg1(width: number, height: number) {
   return (
-    <View style={{width: width, height: height, backgroundColor: "#FFF0E2"}}>
+    <View style={{ width: width, height: height, backgroundColor: "#FFF0E2" }}>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', height: 143, width: '100%' }}>
           <TopL />
@@ -36,12 +36,12 @@ function bg1(width: number, height: number) {
 
 function bg2(width: number, height: number) {
   return (
-    <View style={{width: width, height: height, backgroundColor: "#FFF0E2"}}>
+    <View style={{ width: width, height: height, backgroundColor: "#FFF0E2" }}>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'flex-start', height: 162.1, width: '100%' }}>
-          <TopM/>
+          <TopM />
         </View>
-        <View style={{aspectRatio: 0.83888, width: '101%', marginTop: 331}}>
+        <View style={{ aspectRatio: 0.83888, width: '101%', marginTop: 331 }}>
           <BottomM width="100%" height="100%" />
         </View>
       </View>
@@ -51,10 +51,10 @@ function bg2(width: number, height: number) {
 
 function bg3(width: number, height: number) {
   return (
-    <View style={{width: width, height: height, backgroundColor: "#FFF0E2"}}>
+    <View style={{ width: width, height: height, backgroundColor: "#FFF0E2" }}>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-between' }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', height: '100%', width: '100%'}}>
-          <BottomR width = "100%" height = "100%"/>
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', height: '100%', width: '100%' }}>
+          <BottomR width="100%" height="100%" />
         </View>
       </View>
     </View>
@@ -84,16 +84,6 @@ export default function momentProcess() {
     }
   }, [user]);
 
-  if (!moment) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF0E2' }}>
-        <Text style={{ fontFamily: 'Jacques Francois', fontSize: 18, color: '#333C42' }}>
-          No moment selected
-        </Text>
-      </View>
-    );
-  }
-
   const src = require('../../assets/images/stack.png');
   const { width, height } = useWindowDimensions();
   const scrollRef = useRef<Animated.ScrollView>(null);
@@ -105,6 +95,8 @@ export default function momentProcess() {
       Alert.alert("Error", "You must be signed in to create a moment");
       return false;
     }
+
+    if(!moment) return false;
 
     if (saving) return false;
 
@@ -118,12 +110,7 @@ export default function momentProcess() {
         Alert.alert("Error", "You are not signed in");
         return false;
       }
-
-      // Calculate start time and duration based on the moment's start/end values
-      const startTimeSeconds = Math.floor(moment.start * moment.length);
-      const endTimeSeconds = Math.floor(moment.end * moment.length);
-      const durationSeconds = endTimeSeconds - startTimeSeconds;
-
+      
       // Build the Spotify URL from the track ID
       const songUrl = `https://open.spotify.com/track/${moment.id}`;
 
@@ -136,8 +123,8 @@ export default function momentProcess() {
         body: JSON.stringify({
           title: moment.title,
           song_url: songUrl,
-          start_time: startTimeSeconds,
-          duration: durationSeconds,
+          start_time: Math.floor(moment.songStart),
+          duration: Math.floor(moment.songDuration),
           cover_url: moment.album.uri || null,
           visibility: true,
           description: `${moment.artist}` // Store artist as description for now
@@ -153,7 +140,7 @@ export default function momentProcess() {
       }
 
       console.log("Moment created successfully:", resp);
-      
+
       Alert.alert(
         "Success!",
         "Your moment has been created",
@@ -162,6 +149,7 @@ export default function momentProcess() {
             text: "OK",
             onPress: () => {
               clearMoment();
+              //router.dismissAll();
               router.replace('/(tabs)/profile');
             }
           }
@@ -180,12 +168,18 @@ export default function momentProcess() {
 
   // Button powered page navigation
   const goToPage = async (page: number) => {
+    // Handle back navigation from first page
+    if (page === -1) {
+      router.back();
+      return;
+    }
+
     // If going from page 2 (MomentFinalize) to page 0 (which would be completing the flow)
     // Save the moment to the database
-    if (page === 0) {
+    if (page === 10) {
       const success = await saveMomentToDatabase();
       if (!success) return; // Don't navigate if save failed
-      return; // saveMomentToDatabase handles navigation
+      //return; // saveMomentToDatabase handles navigation
     }
 
     // Animate scroll manually
@@ -210,6 +204,16 @@ export default function momentProcess() {
   useEffect(() => {
     return () => clearMoment(); // Clear when unmounting
   }, []);
+
+  if (!moment) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF0E2' }}>
+        <Text style={{ fontFamily: 'Jacques Francois', fontSize: 18, color: '#333C42' }}>
+          No moment selected
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -237,10 +241,10 @@ export default function momentProcess() {
         justifyContent: 'space-evenly',
         alignItems: 'center'
       }}>
-        <View style={{ justifyContent: 'flex-start' }}>
-          <View style={{ width: '90%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+        <View style={{ justifyContent: 'flex-start', alignItems: 'center'}}>
+          <View style={{ width: '95%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
             <View
-              style={{ width: '80%', marginHorizontal: 30, borderWidth: 3, height: 20, borderRadius: 10, position: 'absolute' }}
+              style={{ width: '90%', marginHorizontal: 30, borderWidth: 3, height: 10, borderRadius: 10, position: 'absolute' }}
               onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}
             >
               {headerWidth > 0 && (
@@ -259,13 +263,13 @@ export default function momentProcess() {
               )}
             </View>
 
-            <View style={{ backgroundColor: 'black', width: 60, height: 60, justifyContent: 'center', alignItems: 'center', borderRadius: 100, borderWidth: 3 }}>
-              <FontAwesome5 name="music" size={30} color="#8DD2CA" />
+            <View style={{ backgroundColor: 'black', width: 40, height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 100, borderWidth: 3 }}>
+              <FontAwesome5 name="music" size={20} color="#8DD2CA" />
             </View>
-            <View style={{ backgroundColor: 'white', width: 60, height: 60, justifyContent: 'center', alignItems: 'center', borderRadius: 100, borderWidth: 3 }}>
-              <Ionicons name="text" size={40} color="black" />
+            <View style={{ backgroundColor: 'white', width: 40, height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 100, borderWidth: 3 }}>
+              <Ionicons name="text" size={20} color="black" />
             </View>
-            <Image source={src} style={{ width: 60, height: 60 }} />
+            <Image source={src} style={{ width: 40, height: 40 }} />
           </View>
         </View>
       </View>

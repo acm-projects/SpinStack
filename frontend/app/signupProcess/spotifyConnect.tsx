@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { View, Image, Text, StyleSheet, Pressable, ImageBackground } from "react-native";
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert } from "react-native";
 import { router, useRouter } from 'expo-router';
 import { useAuth } from "@/_context/AuthContext";
+import { authenticateSpotify, hasSpotifyAuth, clearSpotifyTokens } from '../utils/spotifyAuth';
 
 import OpeningSplash from '../../assets/other/openingSplash.svg';
 import Bubble from '../../assets/other/bubble.svg';
@@ -9,17 +10,89 @@ import Feather from '@expo/vector-icons/Feather';
 
 export default function SpotifyConnect() {
   const { user, setProfileComplete } = useAuth();
+  const [isConnected, setIsConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isConnecting, setIsConnecting] = useState(false);
 
+  // Check if already connected on mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const connected = await hasSpotifyAuth();
+        setIsConnected(connected);
+      } catch (error) {
+        console.error("Error checking Spotify connection:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkConnection();
+  }, []);
+
+  const handleConnectSpotify = async () => {
+    try {
+      setIsConnecting(true);
+      const token = await authenticateSpotify();
+      
+      if (token) {
+        setIsConnected(true);
+        Alert.alert(
+          "Success! 🎉",
+          "Your Spotify account has been connected.",
+          [{ text: "OK" }]
+        );
+      } else {
+        Alert.alert(
+          "Connection Failed",
+          "Unable to connect to Spotify. Please try again.",
+          [{ text: "OK" }]
+        );
+      }
+    } catch (error) {
+      console.error("Spotify connection error:", error);
+      Alert.alert(
+        "Error",
+        "An error occurred while connecting to Spotify.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    Alert.alert(
+      "Disconnect Spotify?",
+      "You'll need to reconnect to play moments.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Disconnect",
+          style: "destructive",
+          onPress: async () => {
+            await clearSpotifyTokens();
+            setIsConnected(false);
+            Alert.alert("Disconnected", "Your Spotify account has been disconnected.");
+          }
+        }
+      ]
+    );
+  };
 
   const handleNext = () => {
     setProfileComplete(true);
+    router.dismissAll();
     router.replace("../profile");
-    /*this will fix but not yet (needs some more work)*/
-    /*
-    setTimeout(() => {
-    router.dismissAll(); //dismiss all previous screens
-  }, 100);*/
   };
+
+  if (isLoading) {
+    return (
+      <View style={[StyleSheet.absoluteFill, { flex: 1, backgroundColor: '#FFF0E2', justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#333C42" />
+      </View>
+    );
+  }
+
   return (
     <View style={[StyleSheet.absoluteFill, { flex: 1 }]}>
       <View
@@ -34,6 +107,7 @@ export default function SpotifyConnect() {
       >
         <OpeningSplash width="100%" height="100%" style={{ marginTop: -30 }} />
       </View>
+
       <View style={{ marginBottom: 10, marginLeft: 10, paddingTop: 70 }}>
         <Pressable onPress={() => router.back()}>
           <View style={{ marginBottom: 60, marginLeft: 10 }}>
@@ -44,19 +118,50 @@ export default function SpotifyConnect() {
               </View>
             </View>
           </View>
-
         </Pressable>
       </View>
+
       <View style={styles.container}>
         <Text style={styles.title}>Connect to Spotify</Text>
 
-        <Pressable style={styles.Sbutton} onPress={() => { /* future functionality */ }}>
-          <Text style={styles.SbuttonText}>Connect with Spotify</Text>
-        </Pressable>
+        {isConnected ? (
+          <View style={{ alignItems: 'center', gap: 20 }}>
+            <View style={{ backgroundColor: '#8DD2CA', padding: 15, borderRadius: 10, borderWidth: 2, borderColor: '#333C42' }}>
+              <Text style={{ fontFamily: 'Jacques Francois', fontSize: 16, color: '#333C42', textAlign: 'center' }}>
+                ✓ Spotify Connected
+              </Text>
+            </View>
+            
+            <Pressable 
+              style={[styles.spotifyButton, { backgroundColor: '#FF6B6B' }]} 
+              onPress={handleDisconnect}
+            >
+              <Text style={[styles.spotifyButtonText, { color: 'white' }]}>
+                Disconnect
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable 
+            style={styles.spotifyButton} 
+            onPress={handleConnectSpotify}
+            disabled={isConnecting}
+          >
+            {isConnecting ? (
+              <ActivityIndicator color="black" />
+            ) : (
+              <Text style={styles.spotifyButtonText}>
+                Connect with Spotify
+              </Text>
+            )}
+          </Pressable>
+        )}
+
         <Pressable onPress={handleNext}>
           <View style={{ backgroundColor: "#333c42", width: 352, padding: 10, borderRadius: 8 }}>
-            <Text style={{ color: "white", fontFamily: "Jacques Francois", textAlign: "center", fontSize: 16 }}>Next</Text>
-
+            <Text style={{ color: "white", fontFamily: "Jacques Francois", textAlign: "center", fontSize: 16 }}>
+              Next
+            </Text>
           </View>
         </Pressable>
       </View>
@@ -70,7 +175,6 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     alignItems: "center",
     padding: 0,
-
   },
   title: {
     color: "#333C42",
@@ -80,31 +184,19 @@ const styles = StyleSheet.create({
     marginBottom: 458,
     fontFamily: "Luxurious Roman"
   },
-  Sbutton: {
+  spotifyButton: {
     backgroundColor: "#1DB954",
     paddingVertical: 15,
     paddingHorizontal: 40,
     borderRadius: 10,
-    marginBottom: 30
+    marginBottom: 30,
+    minWidth: 250,
+    alignItems: 'center',
   },
-  SbuttonText: {
+  spotifyButtonText: {
     color: "black",
     fontSize: 18,
     fontWeight: "500",
-    fontFamily: "Jacques Francois"
-  },
-  button: {
-    justifyContent: 'center',
-    backgroundColor: '#333C42',
-    borderRadius: 10,
-    width: '90%',
-    height: '8%',
-  },
-  buttonText: {
-    color: "white",
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
     fontFamily: "Jacques Francois"
   },
 });
