@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { AuthProvider, useAuth } from '@/_context/AuthContext';
 import { HapticTab } from '@/components/haptic-tab';
 import { Colors } from '@/constants/theme';
@@ -7,13 +7,17 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
-import { View, Dimensions, Image, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
-import { demoMoment, demoMoments, demoGroups } from '../../components/demoMoment';
-import * as ImageManipulator from 'expo-image-manipulator';
+import { View, Dimensions, Image, ActivityIndicator, Text, TouchableOpacity} from 'react-native';
+import { demoMoments, demoGroups } from '../../components/demoMoment';
 import Bottom from '@/assets/other/Group 9.svg';
 import { supabase } from '@/constants/supabase';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+
+
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
+
+import { useTabBar } from './profile/tabBarContext';
+
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -24,6 +28,11 @@ export default function TabLayout() {
   const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
   const { user, pfpUrl, setPfpUrl } = useAuth();
+
+  const {tabHeight, setTabHeight} = useTabBar();
+
+  const ICON_SIZE = useMemo(() => tabHeight * 0.29|| 24, [tabHeight]);
+  const PROFILE_SIZE = useMemo(() => tabHeight * 0.33 || 28, [tabHeight]);
 
   // ---------------- Fetch user profile pic ----------------
   useEffect(() => {
@@ -82,27 +91,34 @@ export default function TabLayout() {
       <View
         style={{
           width: '100%',
-          height: 120,
+          aspectRatio: 3.62344538,
           position: 'absolute',
           left: 0,
           bottom: -8,
           right: 0,
           backgroundColor: 'transparent',
           justifyContent: 'flex-end',
+          //borderWidth: 3,
+        }}
+        onLayout={(e) => {
+          const layoutHeight = e.nativeEvent.layout.height;
+          if (layoutHeight > 0 && tabHeight !== layoutHeight) {
+            setTabHeight(layoutHeight);
+          }
         }}
       >
         <Bottom width="100%" height="100%" />
         <View
           style={{
             position: 'absolute',
-            bottom: 25,
+            bottom: 0,
             flexDirection: 'row',
             justifyContent: 'space-around',
             alignItems: 'flex-end',
-            gap: 40,
             width: '100%',
-            marginLeft: 18,
-            marginBottom: 15,
+            gap: ICON_SIZE,
+            marginLeft: ICON_SIZE,
+            marginBottom: ICON_SIZE,
           }}
         >
           {state.routes.map((route, index) => {
@@ -131,7 +147,7 @@ export default function TabLayout() {
               });
 
             return (
-              <View key={route.key} style={{ alignItems: 'center' }}>
+              <View key={route.key} style={{ justifyContent: 'center', alignItems: 'center'}}>
                 <TouchableOpacity onPress={onPress}>{icon}</TouchableOpacity>
               </View>
             );
@@ -153,16 +169,6 @@ export default function TabLayout() {
           tabBarButton: HapticTab,
         }}
       >
-        {/* <Tabs.Screen
-          name="stack"
-          initialParams={{ momentInfo: demoMoment }}
-          options={{
-            title: 'Home',
-            tabBarIcon: ({ color }) => (
-              <FontAwesome6 name="house" size={24} color="hsla(0, 0%, 67%, 1.00)" />
-            ),
-          }}
-        /> */}
 
         <Tabs.Screen
           name="home2"
@@ -172,9 +178,8 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => (
               <FontAwesome6
                 name="house"
-                size={30}
+                size = {ICON_SIZE}
                 color="hsla(0, 0%, 67%, 1.00)"
-                style={{ marginLeft: 6 }}
               />
             ),
           }}
@@ -187,7 +192,7 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => (
               <FontAwesome6
                 name="magnifying-glass"
-                size={30}
+                size = {ICON_SIZE}
                 color="hsla(0, 0%, 67%, 1.00)"
               />
             ),
@@ -202,10 +207,9 @@ export default function TabLayout() {
               <Image
                 source={createPic}
                 style={{
-                  width: 55,
-                  height: 55,
+                  width: 1.9*ICON_SIZE,
+                  height: 1.9*ICON_SIZE,
                   borderRadius: 50,
-
                 }}
               />
             ),
@@ -218,21 +222,15 @@ export default function TabLayout() {
           options={{
             title: ' ',
             tabBarIcon: ({ color }) => (
-              <View style={{ marginRight: -10 }}>
+              <View>
                 <Ionicons
                   name="people-sharp"
-                  size={35}
+                  size = {ICON_SIZE}
                   color="hsla(0, 0%, 67%, 1.00)"
                 />
               </View>
 
             ),
-          }}
-        />
-        <Tabs.Screen
-          name="index"
-          options={{
-            href: null, // This hides it from the tab bar
           }}
         />
         <Tabs.Screen
@@ -242,9 +240,6 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => (
               <View
                 style={{
-                  width: 0,   // fixed width for the tab icon
-                  height: 35,  // fixed height
-                  marginLeft: 0,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -252,11 +247,12 @@ export default function TabLayout() {
                 <Image
                   source={pfpUrl ? { uri: pfpUrl } : require("../../assets/images/profile.png")}
                   style={{
-                    width: 35,
-                    height: 35,
-                    borderRadius: 50,
+                    width: PROFILE_SIZE,
+                    height: PROFILE_SIZE,
+                    borderRadius: PROFILE_SIZE/2,
                     borderWidth: 1,
                     borderColor: 'white',
+                    resizeMode: 'cover',
                   }}
                 />
               </View>

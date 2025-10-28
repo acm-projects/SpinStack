@@ -81,6 +81,7 @@ export default function SpotifyConnect() {
 
   const handleNext = () => {
     setProfileComplete(true);
+    router.dismissAll();
     router.replace("../profile");
   };
 

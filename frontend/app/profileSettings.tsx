@@ -6,7 +6,6 @@ import Feather from "react-native-vector-icons/Feather";
 import { RelativePathString, useRouter } from "expo-router";
 import Bubble from '../assets/other/bubble.svg';
 import { AutoSizeText, ResizeTextMode } from 'react-native-auto-size-text'; // import these
-const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
 export default function ProfileSettings() {
   const { width } = Dimensions.get("window");

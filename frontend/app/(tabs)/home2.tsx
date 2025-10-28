@@ -14,6 +14,7 @@ import * as Font from "expo-font";
 import { supabase } from "@/constants/supabase";
 import { useRouter, RelativePathString } from "expo-router";
 import { useMomentInfoStore } from "../stores/useMomentInfoStore";
+import { useTabBar } from './profile/tabBarContext';
 
 const { width } = Dimensions.get("window");
 const POLAROID_WIDTH = 150;
@@ -218,6 +219,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const setSelectedMomentInfo = useMomentInfoStore((s) => s.setSelectedMomentInfo);
+  const { tabHeight } = useTabBar();
 
   const loadFonts = async () => {
     await Font.loadAsync({
@@ -396,7 +398,8 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 100 }}>
+    <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 0.747663551 * tabHeight }}>
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>SpinStack</Text>
         <Pressable style={styles.bellIcon}>

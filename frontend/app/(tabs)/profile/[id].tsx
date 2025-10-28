@@ -19,7 +19,7 @@ import { useMomentInfoStore } from "../../stores/useMomentInfoStore";
 
 const POLAROID_WIDTH = 150;
 const POLAROID_HEIGHT = 200;
-const POLAROID_URL = require("@/assets/images/polaroidFrame.webp");
+const POLAROID_URL = require("@/assets/images/polaroidFrame.webp"); 
 const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
 
 interface Profile {
@@ -57,6 +57,9 @@ export default function FriendProfile() {
     const [loadingMoments, setLoadingMoments] = useState(true);
     const [loadingStacks, setLoadingStacks] = useState(true);
     const [viewMode, setViewMode] = useState<"moments" | "stacks">("moments");
+
+    const POLAROID_URL = require("@/assets/images/polaroidFrame.webp");
+
 
     const [friendsModalVisible, setFriendsModalVisible] = useState(false);
     const [friendsList, setFriendsList] = useState<Profile[]>([]);
@@ -101,14 +104,24 @@ export default function FriendProfile() {
 
             if (error) throw error;
 
-            const pfp = await fetchProfilePictureUrl(data.pfp_url);
-            setProfile({ ...data, pfp_url: pfp });
-        } catch (err) {
-            console.error("Failed to load profile", err);
-        } finally {
-            setLoadingProfile(false);
-        }
-    };
+                let pfp = null;
+                if (data.pfp_url) {
+                    const res = await fetch(
+                        `${nUrl}/api/upload/download-url/${data.pfp_url}`
+                    );
+                    if (res.ok) {
+                        const { downloadURL } = await res.json();
+                        pfp = downloadURL;
+                    }
+                }
+
+                setProfile({ ...data, pfp_url: pfp });
+            } catch (err) {
+                console.error("Failed to load profile", err);
+            } finally {
+                setLoadingProfile(false);
+            }
+        };
 
     const fetchMoments = async () => {
         if (!id) return;

@@ -31,12 +31,13 @@ export default function ProfileScreen() {
   const [username, setUsername] = useState<string>("Loading...");
   const [bio, setBio] = useState<string>("");
   const [numFriends, setNumFriends] = useState<number>(0);
-  const [fontsLoaded, setFontsLoaded] = useState(false);
   const [moments, setMoments] = useState<any[]>([]);
   const [stacks, setStacks] = useState<any[]>([]);
   const [loadingMoments, setLoadingMoments] = useState(true);
   const [loadingStacks, setLoadingStacks] = useState(true);
   const [viewMode, setViewMode] = useState<"moments" | "stacks">("moments");
+  const [spotifyToken, setSpotifyToken] = useState<string | null>(null);
+  const [authorizingSpotify, setAuthorizingSpotify] = useState(false);
 
   const [friendsModalVisible, setFriendsModalVisible] = useState(false);
   const [friendsList, setFriendsList] = useState<any[]>([]);
@@ -399,6 +400,57 @@ export default function ProfileScreen() {
             <Feather name="settings" size={30} color="#333C42" />
           </Pressable>
         </View>
+      </View>
+      
+      {/* Spotify Authorization Button */}
+      <View style={{ width: "90%", alignItems: "center", marginTop: 15 }}>
+        {spotifyToken ? (
+          <Pressable
+            onPress={handleDisconnectSpotify}
+            style={{
+              backgroundColor: "#FF6B6B",
+              paddingVertical: 8,
+              paddingHorizontal: 20,
+              borderRadius: 8,
+              borderWidth: 2,
+              borderColor: "#333C42",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <Feather name="x-circle" size={18} color="#FFF0E2" />
+            <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois", fontSize: 14 }}>
+              Disconnect Spotify
+            </Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={handleConnectSpotify}
+            disabled={authorizingSpotify}
+            style={{
+              backgroundColor: "#1DB954",
+              paddingVertical: 8,
+              paddingHorizontal: 20,
+              borderRadius: 8,
+              borderWidth: 2,
+              borderColor: "#333C42",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              opacity: authorizingSpotify ? 0.6 : 1,
+            }}
+          >
+            {authorizingSpotify ? (
+              <ActivityIndicator size="small" color="#FFF0E2" />
+            ) : (
+              <Feather name="music" size={18} color="#FFF0E2" />
+            )}
+            <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois", fontSize: 14 }}>
+              {authorizingSpotify ? "Connecting..." : "Connect Spotify"}
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       {/* Spotify Connection Button */}
