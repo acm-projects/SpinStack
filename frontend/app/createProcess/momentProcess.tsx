@@ -16,6 +16,20 @@ import { useMomentStore } from "../stores/useMomentStore";
 import { supabase } from '@/constants/supabase';
 import { useAuth } from '@/_context/AuthContext';
 import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+
+import { useFocusEffect } from '@react-navigation/native';
+
+const API_BASE = "https://api.spotify.com/v1";
+
+type Device = {
+  id: string;
+  is_active: boolean;
+  name: string;
+  type: string;
+  is_restricted: boolean;
+};
+
 
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
@@ -62,6 +76,7 @@ function bg3(width: number, height: number) {
 }
 
 export default function momentProcess() {
+  console.log('MOMENT PROCESS PAGE MOUNTED');
   const moment = useMomentStore((s) => s.selectedMoment);
   const clearMoment = useMomentStore((s) => s.clearMoment);
   const { user } = useAuth();
@@ -205,6 +220,159 @@ export default function momentProcess() {
     return () => clearMoment(); // Clear when unmounting
   }, []);
 
+  //----------Spotify integration ----------------------
+  const [token, setToken] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isActiveRef = useRef(false);
+
+  const api = async (spotifyToken: string, path: string, init?: RequestInit) => {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${spotifyToken}`,
+        ...(init?.headers || {}),
+      },
+    });
+    return res;
+  };
+
+  const getDevices = async (spotifyToken: string): Promise<Device[]> => {
+    const res = await api(spotifyToken, "/me/player/devices");
+    if (!res.ok) throw new Error(`devices: ${res.status}`);
+    const deviceData = await res.json();
+    return deviceData.devices as Device[];
+  };
+
+  const transferPlayback = async (spotifyToken: string, deviceId: string) => {
+    await api(spotifyToken, "/me/player", {
+      method: "PUT",
+      body: JSON.stringify({ device_ids: [deviceId], play: false }),
+    });
+  };
+
+  const seekTo = async (spotifyToken: string, ms: number) => {
+    await api(spotifyToken, `/me/player/seek?position_ms=${ms}`, { method: "PUT" });
+  };
+
+  useEffect(() => {
+  const initSpotify = async () => {
+    try {
+      const storedToken = await SecureStore.getItemAsync('spotifyToken');
+      if (!storedToken) {
+        Alert.alert(
+          "Spotify Not Connected",
+          "Please connect your Spotify account in Settings."
+        );
+        setIsLoading(false);
+        return;
+      }
+      setToken(storedToken);
+    } catch (err) {
+      console.error("Error initializing Spotify:", err);
+      Alert.alert("Error", "Failed to initialize Spotify playback");
+      setIsLoading(false);
+    }
+  };
+  initSpotify();
+
+  return () => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  };
+}, []);
+
+
+const playAt = async (start: number, duration: number) => {
+  if (!token || !moment) return;
+  try {
+    setIsLoading(true);
+    const trackUri = `spotify:track:${moment.id}`;
+    const startMs = Math.floor(start * 1000);
+    const endMs = Math.floor((start + duration) * 1000);
+
+    let res = await api(token, "/me/player/play", {
+      method: "PUT",
+      body: JSON.stringify({ uris: [trackUri], position_ms: startMs }),
+    });
+
+    // Handle if no active Spotify device
+    if (res.status === 404 || res.status === 403 || res.status === 202) {
+      const devices = await getDevices(token);
+      const target = devices.find((d) => d.is_active) || devices[0];
+      if (!target) throw new Error("No active Spotify devices found.");
+      await transferPlayback(token, target.id);
+      await new Promise((r) => setTimeout(r, 800));
+      await api(token, `/me/player/play?device_id=${target.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ uris: [trackUri], position_ms: startMs }),
+      });
+    }
+
+    setIsPlaying(true);
+    setIsLoading(false);
+
+    // clear any previous loop interval
+    if (pollingRef.current) clearInterval(pollingRef.current);
+
+    // Set up the loop — automatically restart when playback passes endMs
+    pollingRef.current = setInterval(async () => {
+      try {
+        const playbackRes = await api(token, "/me/player");
+        if (!playbackRes.ok) return;
+        const playbackData = await playbackRes.json();
+        const pos = playbackData.progress_ms ?? 0;
+        if (pos > endMs) {
+          await seekTo(token, startMs);
+        }
+      } catch (err) {
+        console.error("Error polling playback:", err);
+      }
+    }, 500);
+  } catch (err: any) {
+    console.error("Playback error:", err);
+    Alert.alert("Playback Error", err.message);
+    setIsLoading(false);
+  }
+};
+
+const pausePlayback = async () => {
+  if (!token) return;
+  try {
+    await api(token, "/me/player/pause", { method: "PUT" });
+    setIsPlaying(false);
+  } catch (err) {
+    console.error("Error pausing playback:", err);
+  }
+};
+
+useFocusEffect(
+  React.useCallback(() => {
+    isActiveRef.current = true;
+
+    if (token && moment) {
+      // start playback automatically
+      playAt(moment.songStart, moment.songDuration).catch(console.error);
+    }
+
+    return () => {
+      isActiveRef.current = false;
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, [token, moment])
+);
+
+
+
+  
   if (!moment) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF0E2' }}>
@@ -286,8 +454,12 @@ export default function momentProcess() {
           { useNativeDriver: false }
         )}
       >
-        <MomentPick moment={moment} scrollFunc={goToPage} />
-        <MomentSpecify moment={moment} scrollFunc={goToPage} height={height} />
+        <MomentPick 
+          moment={moment} 
+          scrollFunc={goToPage}
+          playAt={playAt}
+        />
+        <MomentSpecify moment={moment} scrollFunc={goToPage}/>
         <MomentFinalize moment={moment} scrollFunc={goToPage} height={height} />
       </Animated.ScrollView>
 

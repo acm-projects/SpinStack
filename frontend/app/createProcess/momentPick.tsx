@@ -8,7 +8,15 @@ import Bubble from '../../assets/other/bubble.svg';
 
 const MAX_DURATION_SECONDS = 30;
 
-export default function MomentPickView({ moment, scrollFunc }: { moment: Moment, scrollFunc: (page: number) => void }) {
+export default function MomentPickView({
+  moment,
+  scrollFunc,
+  playAt
+}: {
+  moment: Moment;
+  scrollFunc: (page: number) => void;
+  playAt: (start: number, duration: number) => void;
+}) {
   const src = require('../../assets/images/stack.png');
   const { width } = useWindowDimensions();
   const [waveWidth, setWaveWidth] = useState(0);
@@ -124,6 +132,7 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
         startX.flattenOffset();
         updateStartPosition(startX.__getValue());
         restartAnimation();
+        playAt(mStart * moment.length, (mEnd - mStart) * moment.length);
       },
     })
   ).current;
@@ -143,6 +152,8 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
         endX.flattenOffset();
         updateEndPosition(endX.__getValue());
         restartAnimation();
+
+        playAt(mStart * moment.length, (mEnd - mStart) * moment.length);
       },
     })
   ).current;
