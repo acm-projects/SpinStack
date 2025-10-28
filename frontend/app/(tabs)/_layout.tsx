@@ -31,8 +31,8 @@ export default function TabLayout() {
 
   const {tabHeight, setTabHeight} = useTabBar();
 
-  const ICON_SIZE = useMemo(() => tabHeight * 0.29|| 24, [tabHeight]);
-  const PROFILE_SIZE = useMemo(() => tabHeight * 0.33 || 28, [tabHeight]);
+  const ICON_SIZE = useMemo(() => tabHeight * 0.295 || 24, [tabHeight]);
+  const PROFILE_SIZE = useMemo(() => tabHeight * 0.37 || 28, [tabHeight]);
 
   // ---------------- Fetch user profile pic ----------------
   useEffect(() => {
@@ -115,9 +115,9 @@ export default function TabLayout() {
             flexDirection: 'row',
             justifyContent: 'space-around',
             alignItems: 'flex-end',
-            width: '100%',
+            width: '90%',
             gap: ICON_SIZE,
-            marginLeft: ICON_SIZE,
+            marginLeft: 0.975 *ICON_SIZE,
             marginBottom: ICON_SIZE,
           }}
         >
@@ -176,11 +176,14 @@ export default function TabLayout() {
           options={{
             title: ' ',
             tabBarIcon: ({ color }) => (
-              <FontAwesome6
-                name="house"
-                size = {ICON_SIZE}
-                color="hsla(0, 0%, 67%, 1.00)"
-              />
+              <View>
+                <FontAwesome6
+                  name="house"
+                  size = {ICON_SIZE}
+                  color="hsla(0, 0%, 67%, 1.00)"
+                />
+              </View>
+              
             ),
           }}
         />
@@ -190,11 +193,14 @@ export default function TabLayout() {
           options={{
             title: ' ',
             tabBarIcon: ({ color }) => (
-              <FontAwesome6
-                name="magnifying-glass"
-                size = {ICON_SIZE}
-                color="hsla(0, 0%, 67%, 1.00)"
-              />
+              <View>
+                <FontAwesome6
+                  name="magnifying-glass"
+                  size = {ICON_SIZE}
+                  color="hsla(0, 0%, 67%, 1.00)"
+                />
+              </View>
+              
             ),
           }}
         />
@@ -210,6 +216,7 @@ export default function TabLayout() {
                   width: 1.9*ICON_SIZE,
                   height: 1.9*ICON_SIZE,
                   borderRadius: 50,
+                  borderWidth: 1
                 }}
               />
             ),
@@ -225,7 +232,7 @@ export default function TabLayout() {
               <View>
                 <Ionicons
                   name="people-sharp"
-                  size = {ICON_SIZE}
+                  size = {1.2*ICON_SIZE}
                   color="hsla(0, 0%, 67%, 1.00)"
                 />
               </View>

@@ -69,6 +69,11 @@ export default function MomentView({ data }: { data: MomentInfo }) {
     outputRange: ['360deg', '0deg'],
   });
 
+  useEffect(() => {
+    spinAnim.setValue(0);
+  }, [data.moment.id]);
+
+
   // Initialize token on mount
   useEffect(() => {
     const initSpotify = async () => {
