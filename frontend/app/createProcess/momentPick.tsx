@@ -150,7 +150,8 @@ const [token, setToken] = useState<string | null>(null);
 
       let startTimeout: NodeJS.Timeout | null = null;
 
-      if (token && moment?.id) {
+      // ✅ Only start playback if token exists, moment exists, AND duration is valid
+      if (token && moment?.id && currentDuration > 0 && currentDuration <= MAX_DURATION_SECONDS) {
         // Wait longer for cleanup and devices to be ready
         startTimeout = setTimeout(async () => {
           if (isActiveRef.current && !cleanupExecutedRef.current) {
@@ -159,6 +160,8 @@ const [token, setToken] = useState<string | null>(null);
             await startPlayback(token);
           }
         }, 800);
+      } else if (moment?.id && (currentDuration <= 0 || currentDuration > MAX_DURATION_SECONDS)) {
+        console.log("❌ Skipping playback - invalid duration:", currentDuration);
       }
 
       return () => {
@@ -171,7 +174,7 @@ const [token, setToken] = useState<string | null>(null);
         // CRITICAL: Actually call cleanup when losing focus
         cleanup(token);
       };
-    }, [token,moment?.id, moment?.songStart, moment?.songDuration, moment?.title, cleanup])
+    }, [token, moment?.id, moment?.songStart, moment?.songDuration, moment?.title, currentDuration, cleanup])
   );
 
   // --- Spotify API helpers ---
@@ -234,6 +237,13 @@ const [token, setToken] = useState<string | null>(null);
   const startPlayback = async (spotifyToken: string) => {
     if (!isActiveRef.current) {
       console.log("⚠️ Component not active, skipping playback");
+      return;
+    }
+
+    // ✅ Check if duration is valid before starting playback
+    if (currentDuration <= 0 || currentDuration > MAX_DURATION_SECONDS) {
+      console.log("❌ Invalid duration, not starting playback:", currentDuration);
+      setIsPlaying(false);
       return;
     }
 
@@ -409,46 +419,65 @@ const updateEndPosition = (value: number) => {
   };
 
   // Pan responder for start slider
-  const panStart = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        startX.setOffset(startX.__getValue());
-        startX.setValue(0);
-      },
-      onPanResponderMove: (_, gesture) => {
-        startX.setValue(gesture.dx);
-      },
-      onPanResponderRelease: () => {
-        startX.flattenOffset();
-        const newStart = updateStartPosition(startX.__getValue());
+const panStart = useRef(
+  PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onPanResponderGrant: () => {
+      startX.setOffset(startX.__getValue());
+      startX.setValue(0);
+    },
+    onPanResponderMove: (_, gesture) => {
+      startX.setValue(gesture.dx);
+    },
+    onPanResponderRelease: () => {
+      startX.flattenOffset();
+      const newStart = updateStartPosition(startX.__getValue());
+
+      // ✅ Only allow seek and playback restart if duration is valid
+      if (currentDuration > 0 && currentDuration <= MAX_DURATION_SECONDS) {
         if (token) debouncedSeek(token, newStart * moment.length * 1000);
         restartAnimation();
         setIsPlaying(true);
-      },
-    })
-  ).current;
+      } else {
+        // ❌ Duration is invalid - pause playback completely
+        if (token) pausePlayback(token);
+        pauseAnimation();
+        setIsPlaying(false);
+      }
+    },
+  })
+).current;
 
-  // Pan responder for end slider
-  const panEnd = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        endX.setOffset(endX.__getValue());
-        endX.setValue(0);
-      },
-      onPanResponderMove: (_, gesture) => {
-        endX.setValue(gesture.dx);
-      },
-      onPanResponderRelease: () => {
-        endX.flattenOffset();
-        const newEnd = updateEndPosition(endX.__getValue());
+// Pan responder for end slider
+const panEnd = useRef(
+  PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onPanResponderGrant: () => {
+      endX.setOffset(endX.__getValue());
+      endX.setValue(0);
+    },
+    onPanResponderMove: (_, gesture) => {
+      endX.setValue(gesture.dx);
+    },
+    onPanResponderRelease: () => {
+      endX.flattenOffset();
+      const newEnd = updateEndPosition(endX.__getValue());
+
+      // ✅ Only allow seek and playback restart if duration is valid
+      if (currentDuration > 0 && currentDuration <= MAX_DURATION_SECONDS) {
         if (token) debouncedSeek(token, mStart * moment.length * 1000);
         restartAnimation();
         setIsPlaying(true);
-      },
-    })
-  ).current;
+      } else {
+        // ❌ Duration is invalid - pause playback completely
+        if (token) pausePlayback(token);
+        pauseAnimation();
+        setIsPlaying(false);
+      }
+    },
+  })
+).current;
+
 
 
   // Sync Animated values with state
