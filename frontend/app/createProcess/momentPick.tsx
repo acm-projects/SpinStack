@@ -77,37 +77,45 @@ export default function MomentPickView({
   });
   
   const updateStartPosition = (value: number) => {
-    if (waveWidth > 0) {
-      const newStart = Math.max(0, Math.min(value / waveWidth, 1));
-      
-      
-      // Ensure we don't exceed max duration or overlap with mEnd
-      if (newStart >= mEnd) {
-        setStart(Math.max(0, mEnd - 0.01));
-      } else {
-        setStart(newStart);
-      }
+  if (waveWidth > 0) {
+    const newStart = Math.max(0, Math.min(value / waveWidth, 1));
+    let finalStart = newStart;
 
-      setCurrentDuration((mEnd - newStart) * moment.length);
+    if (newStart >= mEnd) {
+      finalStart = Math.max(0, mEnd - 0.01);
+      setStart(finalStart);
+    } else {
+      setStart(finalStart);
     }
-  };
 
-  // Update end position
-  const updateEndPosition = (value: number) => {
-    if (waveWidth > 0) {
-      const newEnd = Math.min(1, Math.max(value / waveWidth, 0));
-      
-      
-      // Ensure we don't exceed max duration or overlap with start
-      if (newEnd <= mStart) {
-        setEnd(Math.min(1, mStart + 0.01));
-      } else {
-        setEnd(newEnd);
-      }
+    const newDuration = (mEnd - finalStart) * moment.length;
+    setCurrentDuration(newDuration);
 
-      setCurrentDuration((newEnd - mStart) * moment.length);
+    // 👇 Always call playAt() with *updated* start/end values
+    playAt(finalStart * moment.length, newDuration);
+  }
+};
+
+const updateEndPosition = (value: number) => {
+  if (waveWidth > 0) {
+    const newEnd = Math.min(1, Math.max(value / waveWidth, 0));
+    let finalEnd = newEnd;
+
+    if (newEnd <= mStart) {
+      finalEnd = Math.min(1, mStart + 0.01);
+      setEnd(finalEnd);
+    } else {
+      setEnd(finalEnd);
     }
-  };
+
+    const newDuration = (finalEnd - mStart) * moment.length;
+    setCurrentDuration(newDuration);
+
+    // 👇 Always call playAt() with *updated* start/end values
+    playAt(mStart * moment.length, newDuration);
+  }
+};
+
 
   // Handle waveform layout
   const onWaveLayout = (e: any) => {
@@ -131,8 +139,7 @@ export default function MomentPickView({
       onPanResponderRelease: () => {
         startX.flattenOffset();
         updateStartPosition(startX.__getValue());
-        restartAnimation();
-        playAt(mStart * moment.length, (mEnd - mStart) * moment.length);
+      restartAnimation();
       },
     })
   ).current;
@@ -152,8 +159,6 @@ export default function MomentPickView({
         endX.flattenOffset();
         updateEndPosition(endX.__getValue());
         restartAnimation();
-
-        playAt(mStart * moment.length, (mEnd - mStart) * moment.length);
       },
     })
   ).current;
