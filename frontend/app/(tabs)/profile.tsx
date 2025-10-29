@@ -100,7 +100,7 @@ export default function ProfileScreen() {
       // Store token
       await SecureStore.setItemAsync('spotifyToken', session.accessToken);
       setSpotifyConnected(true);
-      
+
       Alert.alert(
         "Success! 🎉",
         "Your Spotify account has been connected.",
@@ -300,8 +300,8 @@ export default function ProfileScreen() {
   };
 
   const stackExists = useNavigationState(state =>
-      state.routes.some(route => route.name === 'stack')
-    );
+    state.routes.some(route => route.name === 'stack')
+  );
 
   const handleMomentPress = async (moment: any) => {
     console.log(moment);
@@ -327,6 +327,7 @@ export default function ProfileScreen() {
     setSelectedMomentInfo({
       moment: {
         id: trackId || moment.id,
+        spotifyId: trackId || null,
         title: moment.title,
         artist: moment.description || "Unknown Artist",
         songStart: moment.start_time || 0,
@@ -341,7 +342,8 @@ export default function ProfileScreen() {
       }
     });
 
-    
+
+
 
     if (true) {
       console.log("Replacing existing /stack screen");
@@ -355,8 +357,16 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={{ flexDirection: "row", width: "100%", justifyContent: "center", alignItems: "center", paddingLeft: 0 }}>
+      <View style={{ flexDirection: "row", width: "100%", justifyContent: "center", alignItems: "center", paddingLeft: 110 }}>
         <Text style={styles.header}>Profile</Text>
+
+        <View style={{ marginLeft: 85, }}>
+          <Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
+            <Feather name="settings" size={30} color="#333C42" />
+          </Pressable>
+
+        </View>
+
       </View>
 
       <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5, paddingHorizontal: 20 }}>
@@ -396,9 +406,7 @@ export default function ProfileScreen() {
             </Text>
           </Pressable>
 
-          <Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
-            <Feather name="settings" size={30} color="#333C42" />
-          </Pressable>
+
         </View>
       </View>
 
@@ -484,7 +492,7 @@ export default function ProfileScreen() {
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={{ paddingBottom: 100 }}
                 renderItem={({ item }) => (
-                  <Pressable 
+                  <Pressable
                     style={{ flex: 1, margin: 6, alignItems: "center" }}
                     onPress={() => handleMomentPress(item)}
                   >

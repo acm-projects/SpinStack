@@ -36,10 +36,10 @@ router.post("/", async (req, res) => {
     }
 
     try {
-        // Check if moment exists
+        // Check if moment exists and get its owner
         const { data: moment, error: momentError } = await supabaseAdmin
             .from("moments")
-            .select("id")
+            .select("id, user_id")
             .eq("id", moment_id)
             .single();
 
@@ -47,7 +47,7 @@ router.post("/", async (req, res) => {
             return res.status(404).json({ error: "Moment not found" });
         }
 
-        // Check if user already liked this moment
+        // Prevent duplicate likes
         const { data: existingLike, error: checkError } = await supabaseAdmin
             .from("likes_moments")
             .select("id")
@@ -55,8 +55,7 @@ router.post("/", async (req, res) => {
             .eq("moment_id", moment_id)
             .maybeSingle();
 
-        if (checkError && checkError.code !== 'PGRST116') throw checkError;
-
+        if (checkError && checkError.code !== "PGRST116") throw checkError;
         if (existingLike) {
             return res.status(409).json({ error: "Moment already liked by this user" });
         }
@@ -69,8 +68,22 @@ router.post("/", async (req, res) => {
             .single();
 
         if (error) throw error;
+
+        // Create a notification for the moment owner
+        await supabaseAdmin.from("notifications").insert([
+            {
+                user_id: moment.user_id,          // receiver = owner of the moment
+                sender_id: user.id,               // sender = liker
+                type: "like",
+                content: `${user.username || "Someone"} liked your moment!`,
+                is_read: false,
+            },
+        ]);
+
+        // Return success
         res.status(201).json(data);
     } catch (err) {
+        console.error("❌ Error in /likes_moments:", err);
         res.status(500).json({ error: err.message });
     }
 });

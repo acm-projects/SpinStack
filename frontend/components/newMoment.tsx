@@ -30,7 +30,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
   const [token, setToken] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Track current moment to detect changes - use a unique key
   const currentMomentKey = useRef<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -39,7 +39,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
 
   // Generate unique key for moment (includes start time to differentiate same songs)
   const getMomentKey = (momentData: typeof data.moment) => {
-    return `${momentData.id}_${momentData.songStart}_${momentData.songDuration}`;
+    return `${momentData.spotifyId}_${momentData.songStart}_${momentData.songDuration}`;
   };
 
   // Vinyl animation loop
@@ -54,7 +54,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
           useNativeDriver: true,
         })
       );
-      
+
       loop.start();
     } else {
       spinAnim.stopAnimation();
@@ -72,7 +72,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
 
   useEffect(() => {
     spinAnim.setValue(0);
-  }, [data.moment.id]);
+  }, [data.moment.spotifyId]);
 
 
   // Initialize token on mount
@@ -118,7 +118,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
       console.log("🔄 Cleanup already executed, skipping");
       return;
     }
-    
+
     console.log("🛑 Executing cleanup");
     cleanupExecutedRef.current = true;
     isActiveRef.current = false;
@@ -138,38 +138,38 @@ export default function MomentView({ data }: { data: MomentInfo }) {
 
   // Detect moment changes and cleanup immediately
   useEffect(() => {
-    if (!data?.moment?.id) return;
+    if (!data?.moment?.spotifyId) return;
 
     const newMomentKey = getMomentKey(data.moment);
     const momentChanged = currentMomentKey.current !== null && currentMomentKey.current !== newMomentKey;
-    
+
     if (momentChanged) {
       console.log(`🔄 Moment changed from ${currentMomentKey.current} to ${newMomentKey}`);
       console.log(`   Title: ${data.moment.title}, Start: ${data.moment.songStart}, Duration: ${data.moment.songDuration}`);
-      
+
       // IMMEDIATELY stop playback and clear intervals
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
       }
-      
+
       setIsPlaying(false);
       setIsLoading(true);
       spinAnim.stopAnimation();
-      
+
       // Pause playback asynchronously
       if (token) {
         pausePlayback(token).catch(console.error);
       }
-      
+
       // Reset flags for new moment
       cleanupExecutedRef.current = false;
       isActiveRef.current = false;
     }
-    
+
     // Update current moment key
     currentMomentKey.current = newMomentKey;
-  }, [data?.moment?.id, data?.moment?.songStart, data?.moment?.songDuration, token]);
+  }, [data?.moment?.spotifyId, data?.moment?.songStart, data?.moment?.songDuration, token]);
 
   // Handle focus/unfocus with proper cleanup
   useFocusEffect(
@@ -177,7 +177,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
       const momentKey = data?.moment ? getMomentKey(data.moment) : null;
       console.log("🎧 MomentView focused for:", data?.moment?.title, "Key:", momentKey);
       isActiveRef.current = true;
-      
+
       // Only reset cleanup flag if this is truly a new focus (not just re-render)
       if (cleanupExecutedRef.current) {
         cleanupExecutedRef.current = false;
@@ -200,7 +200,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
 
       return () => {
         console.log("🛑 MomentView unfocused from:", data?.moment?.title);
-        
+
         if (startTimeout) {
           clearTimeout(startTimeout);
         }
@@ -208,7 +208,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
         // CRITICAL: Actually call cleanup when losing focus
         cleanup(token);
       };
-    }, [token, data?.moment?.id, data?.moment?.songStart, data?.moment?.songDuration, data?.moment?.title, cleanup])
+    }, [token, data?.moment?.spotifyId, data?.moment?.songStart, data?.moment?.songDuration, data?.moment?.title, cleanup])
   );
 
   // --- Spotify API helpers ---
@@ -262,7 +262,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
     try {
       setIsLoading(true);
 
-      const trackUri = `spotify:track:${data.moment.id}`;
+      const trackUri = `spotify:track:${data.moment.spotifyId}`;
       const startMs = Math.floor(data.moment.songStart * 1000);
       const endMs = Math.floor((data.moment.songStart + data.moment.songDuration) * 1000);
 
@@ -288,7 +288,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
 
         await transferPlayback(spotifyToken, target.id);
         await new Promise((r) => setTimeout(r, 800));
-        
+
         res = await api(
           spotifyToken,
           `/me/player/play?device_id=${encodeURIComponent(target.id)}`,
@@ -445,7 +445,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
           </View>
 
           <View style={[{ flexDirection: 'row', alignItems: "center", justifyContent: "flex-end", marginBottom: 20, marginRight: 15 }]}>
-            <LikeButton />
+            <LikeButton momentId={data.moment.id} />
           </View>
         </View>
       </SafeAreaView>
