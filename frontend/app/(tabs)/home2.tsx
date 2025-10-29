@@ -15,12 +15,14 @@ import { Feather } from "@expo/vector-icons";
 import * as Font from "expo-font";
 import { supabase } from "@/constants/supabase";
 import { useRouter, RelativePathString } from "expo-router";
+import { useMomentInfoStore } from "../stores/useMomentInfoStore";
+import { useTabBar } from './profile/tabBarContext';
 
 const { width } = Dimensions.get("window");
 const POLAROID_WIDTH = 150;
 const POLAROID_HEIGHT = 200;
 const POLAROID_URL = require("@/assets/images/polaroidFrame.webp");
-const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL
+const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
 
 const profiles = Array.from({ length: 10 }).map((_, i) => ({ id: i.toString() }));
 
@@ -35,6 +37,20 @@ type MasonryItem = {
   cover_url?: string | null;
   type?: 'moment' | 'stack';
   userId?: string;
+  momentData?: {
+    id: string;
+    title: string;
+    artist: string;
+    songStart: number;
+    songDuration: number;
+    length: number;
+    album: any;
+    waveform: number[];
+  };
+  userData?: {
+    name: string;
+    profilePic: string | null;
+  };
 };
 
 type MasonryProps = {
@@ -43,10 +59,10 @@ type MasonryProps = {
   columns?: number;
   router: any;
   onPressMore?: (item: MasonryItem) => void;
+  setSelectedMomentInfo: (momentInfo: any) => void;
 };
 
-// 🧱 Masonry Component
-function Masonry({ data, spacing = 8, columns = 2, router, onPressMore }: MasonryProps) {
+function Masonry({ data, spacing = 8, columns = 2, router, onPressMore, setSelectedMomentInfo }: MasonryProps) {
   const [cols, setCols] = useState<MasonryItem[][]>([]);
 
   useEffect(() => {
@@ -69,6 +85,17 @@ function Masonry({ data, spacing = 8, columns = 2, router, onPressMore }: Masonr
 
   const colWidth = (width - spacing * (columns + 1)) / columns;
 
+  const handleMomentPress = (item: MasonryItem) => {
+    if (item.type === 'moment' && item.momentData && item.userData) {
+      setSelectedMomentInfo({
+        moment: item.momentData,
+        user: item.userData
+      });
+
+      router.push('/stack' as RelativePathString);
+    }
+  };
+
   const renderItem = (item: any) => (
     <View
       key={item.id}
@@ -79,11 +106,9 @@ function Masonry({ data, spacing = 8, columns = 2, router, onPressMore }: Masonr
         overflow: "hidden",
       }}
     >
-      {/* Header */}
       <View style={styles.cardHeader}>
         <Pressable
           onPress={() => {
-            console.log("Profile pressed, userId:", item.userId);
             if (item.userId) {
               router.push(`/profile/${item.userId}` as RelativePathString);
             }
@@ -106,74 +131,81 @@ function Masonry({ data, spacing = 8, columns = 2, router, onPressMore }: Masonr
         )}
       </View>
 
-      {/* Image - Different rendering for stacks vs moments */}
-      {item.type === 'stack' ? (
-        // Stack with polaroid frame
-        <View style={{
-          width: "100%",
-          height: item.height,
-          justifyContent: "center",
-          alignItems: "center",
-          position: "relative",
-        }}>
-          <Image
-            source={item.src}
-            style={{
-              width: POLAROID_WIDTH * 0.88,
-              height: POLAROID_HEIGHT * 0.88,
-              borderRadius: 8,
-            }}
-            resizeMode="cover"
-          />
-          <Image
-            source={POLAROID_URL}
-            style={{
-              width: POLAROID_WIDTH,
-              height: POLAROID_HEIGHT,
-              position: "absolute",
-              resizeMode: "contain",
-            }}
-          />
-          <View
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: [{ translateX: -14 }, { translateY: -14 }],
-            }}
-          >
-            <Feather name="play" size={28} color="white" />
+      <Pressable onPress={() => handleMomentPress(item)}>
+        {item.type === 'stack' ? (
+          <View style={{
+            width: "100%",
+            height: item.height,
+            justifyContent: "center",
+            alignItems: "center",
+            position: "relative",
+          }}>
+            <Image
+              source={item.src}
+              style={{
+                width: POLAROID_WIDTH * 0.88,
+                height: POLAROID_HEIGHT * 0.88,
+                borderRadius: 8,
+              }}
+              resizeMode="cover"
+            />
+            <Image
+              source={POLAROID_URL}
+              style={{
+                width: POLAROID_WIDTH,
+                height: POLAROID_HEIGHT,
+                position: "absolute",
+                resizeMode: "contain",
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: [{ translateX: -14 }, { translateY: -14 }],
+                shadowColor: "#000",
+                shadowOpacity: 1,
+                shadowRadius: 5,
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 6,
+              }}
+            >
+              <Feather name="play" size={28} color="white" />
+            </View>
+
+
           </View>
-        </View>
-      ) : (
-        // Regular moment image
-        <View>
-          <Image
-            source={item.src}
-            style={{
-              width: "100%",
-              height: item.height,
-              borderRadius: 16,
-            }}
-            resizeMode="cover"
-          />
-          <View
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: [{ translateX: -14 }, { translateY: -14 }],
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 1,
-              shadowRadius: 4,
-              elevation: 5, // Android shadow
-            }}
-          >
-            <Feather name="play" size={28} color="white" />
+        ) : (
+          <View>
+            <Image
+              source={item.src}
+              style={{
+                width: "100%",
+                height: item.height,
+                borderRadius: 16,
+              }}
+              resizeMode="cover"
+            />
+            <View
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: [{ translateX: -14 }, { translateY: -14 }],
+                shadowColor: "#000",
+                shadowOpacity: 1,
+                shadowRadius: 5,
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 6,
+              }}
+            >
+              <Feather name="play" size={28} color="white" />
+            </View>
+
           </View>
-        </View>
-      )}
+        )}
+      </Pressable>
 
       {item.caption ? (
         <Text style={styles.caption}>{item.caption}</Text>
@@ -212,7 +244,11 @@ export default function HomeScreen() {
   const [friends, setFriends] = useState<string[]>([]);
   const [albums, setAlbums] = useState<MasonryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [friendRequests, setFriendRequests] = useState<any[]>([]);
+
   const router = useRouter();
+  const setSelectedMomentInfo = useMomentInfoStore((s) => s.setSelectedMomentInfo);
+  const { tabHeight } = useTabBar();
 
   const loadFonts = async () => {
     await Font.loadAsync({
@@ -221,6 +257,79 @@ export default function HomeScreen() {
     });
     setFontsLoaded(true);
   };
+
+  const acceptFriendRequest = async (notificationId: string, senderId: string) => {
+    const userId = await getCurrentUserId();
+    if (!userId) return;
+
+    try {
+      // Add to friends table
+      await supabase.from("friends").insert([
+        { user_id: userId, friend_id: senderId },
+        { user_id: senderId, friend_id: userId }
+      ]);
+
+      // Mark notification as read
+      await supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("id", notificationId);
+
+      // Remove locally
+      setFriendRequests((prev) => prev.filter(n => n.id !== notificationId));
+
+      alert("Friend request accepted!");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
+  const declineFriendRequest = async (notificationId: string) => {
+    try {
+      await supabase.from("notifications").update({ read: true }).eq("id", notificationId);
+
+      setFriendRequests((prev) => prev.filter(n => n.id !== notificationId));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
+  const fetchFriendRequests = async () => {
+    const userId = await getCurrentUserId();
+    if (!userId) return;
+
+    const { data, error } = await supabase
+      .from("notifications")
+      .select(`
+      id,
+      sender_id,
+      type,
+      content,
+      created_at,
+      users!notifications_sender_id_fkey(id, username, pfp_url)
+    `)
+      .eq("user_id", userId)
+      .eq("is_read", false);
+
+    if (error) {
+      console.error("Error fetching notifications:", error);
+      return;
+    }
+
+    // Fetch actual profile picture URLs
+    const processedData = await Promise.all(
+      (data || []).map(async (notif) => {
+        const profileUrl = await fetchProfilePictureUrl(notif.users.pfp_url);
+        return { ...notif, users: { ...notif.users, profileUrl } };
+      })
+    );
+
+    setFriendRequests(processedData);
+  };
+
+
 
   const fetchUserStacks = async () => {
     try {
@@ -300,7 +409,6 @@ export default function HomeScreen() {
     }
   };
 
-  // Helper function to fetch profile picture URL
   const fetchProfilePictureUrl = async (pfpPath: string | null): Promise<string | null> => {
     if (!pfpPath) return null;
 
@@ -316,11 +424,9 @@ export default function HomeScreen() {
     return null;
   };
 
-  // Helper function to fetch cover image URL
   const fetchCoverImageUrl = async (coverPath: string | null): Promise<string | null> => {
     if (!coverPath) return null;
 
-    // If it's already a full URL (http/https), return it directly
     if (coverPath.startsWith('http://') || coverPath.startsWith('https://')) {
       return coverPath;
     }
@@ -338,7 +444,6 @@ export default function HomeScreen() {
     return null;
   };
 
-  // Calculate time ago
   const getTimeAgo = (timestamp: string): string => {
     const now = new Date();
     const created = new Date(timestamp);
@@ -352,12 +457,16 @@ export default function HomeScreen() {
     return `${diffDays} days ago`;
   };
 
-  // Fetch all moments and stacks with user data
+  const extractTrackId = (songUrl: string): string | null => {
+    if (!songUrl) return null;
+    const match = songUrl.match(/track\/([a-zA-Z0-9]+)/);
+    return match ? match[1] : null;
+  };
+
   const fetchAllContent = async () => {
     try {
       setLoading(true);
 
-      // Fetch moments with user info
       const { data: momentsData, error: momentsError } = await supabase
         .from("moments")
         .select(`
@@ -367,13 +476,15 @@ export default function HomeScreen() {
           description,
           created_at,
           user_id,
+          song_url,
+          start_time,
+          duration,
           users!inner(id, username, pfp_url)
         `)
         .order("created_at", { ascending: false });
 
       if (momentsError) throw momentsError;
 
-      // Fetch stacks with user info
       const { data: stacksData, error: stacksError } = await supabase
         .from("stacks")
         .select(`
@@ -389,7 +500,6 @@ export default function HomeScreen() {
 
       if (stacksError) throw stacksError;
 
-      // Combine and format data
       const allContent = [
         ...(momentsData || []).map(item => ({ ...item, type: 'moment' as const })),
         ...(stacksData || []).map(item => ({ ...item, type: 'stack' as const }))
@@ -403,19 +513,17 @@ export default function HomeScreen() {
         return true;
       });
 
-      // Sort by created_at
       filteredContent.sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
-      // Process each item to get URLs
       const processedAlbums = await Promise.all(
         filteredContent.map(async (item) => {
           const userData = Array.isArray(item.users) ? item.users[0] : item.users;
           const pfpUrl = await fetchProfilePictureUrl(userData?.pfp_url);
           const coverUrl = await fetchCoverImageUrl(item.cover_url);
 
-          return {
+          const baseItem = {
             id: item.id,
             src: coverUrl ? { uri: coverUrl } : require("@/assets/images/album1.jpeg"),
             user: userData?.username || "Unknown User",
@@ -426,6 +534,30 @@ export default function HomeScreen() {
             type: item.type,
             userId: item.user_id,
           };
+
+          if (item.type === 'moment') {
+            const trackId = extractTrackId(item.song_url);
+            return {
+              ...baseItem,
+              momentData: {
+                id: item.id, // DB UUID 
+                spotifyId: trackId || null,
+                title: item.title,
+                artist: item.description || "Unknown Artist",
+                songStart: item.start_time || 0,
+                songDuration: item.duration || 30,
+                length: 180,
+                album: coverUrl ? { uri: coverUrl } : require("@/assets/images/album1.jpeg"),
+                waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
+              },
+              userData: {
+                name: userData?.username || "Unknown User",
+                profilePic: pfpUrl,
+              }
+            };
+          }
+
+          return baseItem;
         })
       );
 
@@ -472,11 +604,15 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>SpinStack</Text>
         <Pressable
-          onPress={() => setNotificationsVisible(true)}
+          onPress={() => {
+            fetchFriendRequests();
+            setNotificationsVisible(true);
+          }}
           style={styles.bellIcon}
         >
           <Feather name="bell" size={28} color="#333C42" />
         </Pressable>
+
       </View>
 
       {/* Profiles */}
@@ -490,7 +626,6 @@ export default function HomeScreen() {
         ))}
       </ScrollView>
 
-      {/* Filters */}
       <View style={styles.filterContainer}>
         {["Friends", "For You"].map((filter) => (
           <Pressable
@@ -513,10 +648,7 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      {/* Feed */}
-      <View style={{ flex: 1 }}>
-        <Masonry data={albums} spacing={10} columns={2} router={router} onPressMore={handleMorePress} />
-      </View>
+
       {/* Notifications Popup */}
       <Modal
         visible={notificationsVisible}
@@ -533,10 +665,43 @@ export default function HomeScreen() {
               </Pressable>
             </View>
             <View style={styles.popupContent}>
-              <Text style={{ color: "#333C42", fontFamily: "Jacques Francois" }}>
-                No notifications yet 📭
-              </Text>
+              {friendRequests.length === 0 ? (
+                <Text style={{ color: "#333C42", fontFamily: "Jacques Francois" }}>
+                  No notifications yet 📭
+                </Text>
+              ) : (
+                <ScrollView style={{ width: "100%" }}>
+                  {friendRequests.map((req) => (
+                    <View key={req.id} style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                      <Image
+                        source={req.users.profileUrl ? { uri: req.users.profileUrl } : require("@/assets/images/profile.png")}
+                        style={{ width: 40, height: 40, borderRadius: 20, marginRight: 10 }}
+                      />
+                      <Text style={{ flex: 1, fontFamily: "Jacques Francois", color: "#333C42" }}>
+                        {req.type === "friend_request"
+                          ? `${req.users.username} sent you a friend request`
+                          : req.type === "like"
+                            ? `${req.users.username} liked your moment`
+                            : req.message}
+                      </Text>
+
+                      {req.type === "friend_request" && (
+                        <>
+                          <Pressable onPress={() => acceptFriendRequest(req.id, req.sender_id)}>
+                            <Text style={{ color: "green", marginRight: 10 }}>Accept</Text>
+                          </Pressable>
+                          <Pressable onPress={() => declineFriendRequest(req.id)}>
+                            <Text style={{ color: "red" }}>Decline</Text>
+                          </Pressable>
+                        </>
+                      )}
+                    </View>
+                  ))}
+
+                </ScrollView>
+              )}
             </View>
+
           </View>
         </View>
       </Modal>
@@ -558,17 +723,14 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.popupContent}>
-
-              <View style={{ flexDirection: "row", alignItems: "flex-start", }} >
-
-
+              <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
                 <ScrollView style={{ width: "100%" }}>
                   {userStacks.length === 0 ? (
                     <Text style={{ textAlign: "center", color: "#333C42", fontFamily: "Jacques Francois" }}>
                       No stacks yet
                     </Text>
                   ) : (
-                    userStacks.map(stack => (
+                    userStacks.map((stack) => (
                       <TouchableOpacity
                         key={stack.id}
                         style={styles.stackOption}
@@ -580,17 +742,33 @@ export default function HomeScreen() {
                     ))
                   )}
                 </ScrollView>
-
               </View>
+
               <TouchableOpacity style={styles.newStackButton}>
                 <Feather name="plus" size={18} color="#333C42" />
                 <Text style={styles.newStackText}>Create New Stack</Text>
               </TouchableOpacity>
-
             </View>
           </View>
         </View>
       </Modal>
+
+      {/* Feed Section */}
+      {albums.length > 0 ? (
+        <Masonry
+          data={albums}
+          spacing={10}
+          columns={2}
+          router={router}
+          onPressMore={handleMorePress}
+          setSelectedMomentInfo={setSelectedMomentInfo}
+        />
+      ) : (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <Text style={styles.username}>No content available</Text>
+        </View>
+      )}
+
     </View>
   );
 }
@@ -615,10 +793,11 @@ const styles = StyleSheet.create({
     marginLeft: 78,
   },
   profileScroll: {
+    flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 15,
     marginTop: 10,
-    maxHeight: 80, // Add this to prevent it from expanding
+    paddingBottom: 60,
     backgroundColor: "#FFF0E2",
   },
   profileCircle: {

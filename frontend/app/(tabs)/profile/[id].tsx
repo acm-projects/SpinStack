@@ -15,6 +15,7 @@ import Feather from "react-native-vector-icons/Feather";
 import { useRouter, useLocalSearchParams, RelativePathString } from "expo-router";
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from "@/constants/supabase";
+import { useMomentInfoStore } from "../../stores/useMomentInfoStore";
 
 const POLAROID_WIDTH = 150;
 const POLAROID_HEIGHT = 200;
@@ -34,16 +35,19 @@ interface ContentItem {
     title: string;
     description: string;
     created_at: string;
+    song_url?: string;
+    start_time?: number;
+    duration?: number;
 }
 
 export default function FriendProfile() {
     const router = useRouter();
     const { width } = Dimensions.get("window");
     const IMAGE_SIZE = width * 0.2;
+    const setSelectedMomentInfo = useMomentInfoStore((s) => s.setSelectedMomentInfo);
 
     const { id, fromProfile, originId } = useLocalSearchParams<{ id: string; fromProfile?: string; originId?: string }>();
     const cameFromProfile = fromProfile === 'true';
-    // Track the original profile we started from
     const originalProfileId = originId || (cameFromProfile ? 'main' : null);
 
     const [profile, setProfile] = useState<Profile | null>(null);
@@ -54,6 +58,9 @@ export default function FriendProfile() {
     const [loadingStacks, setLoadingStacks] = useState(true);
     const [viewMode, setViewMode] = useState<"moments" | "stacks">("moments");
 
+    const POLAROID_URL = require("@/assets/images/polaroidFrame.webp");
+
+
     const [friendsModalVisible, setFriendsModalVisible] = useState(false);
     const [friendsList, setFriendsList] = useState<Profile[]>([]);
     const [loadingFriends, setLoadingFriends] = useState(false);
@@ -62,7 +69,13 @@ export default function FriendProfile() {
 
     const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
-    // Helper function to fetch profile picture URL
+    // Helper function to extract Spotify track ID
+    const extractTrackId = (songUrl: string): string | null => {
+        if (!songUrl) return null;
+        const match = songUrl.match(/track\/([a-zA-Z0-9]+)/);
+        return match ? match[1] : null;
+    };
+
     const fetchProfilePictureUrl = async (pfpPath: string | null): Promise<string | null> => {
         if (!pfpPath) return null;
 
@@ -78,7 +91,6 @@ export default function FriendProfile() {
         return null;
     };
 
-    // Fetch profile data
     const fetchProfile = async () => {
         if (!id) return;
 
@@ -92,7 +104,17 @@ export default function FriendProfile() {
 
             if (error) throw error;
 
-            const pfp = await fetchProfilePictureUrl(data.pfp_url);
+            let pfp = null;
+            if (data.pfp_url) {
+                const res = await fetch(
+                    `${nUrl}/api/upload/download-url/${data.pfp_url}`
+                );
+                if (res.ok) {
+                    const { downloadURL } = await res.json();
+                    pfp = downloadURL;
+                }
+            }
+
             setProfile({ ...data, pfp_url: pfp });
         } catch (err) {
             console.error("Failed to load profile", err);
@@ -101,7 +123,6 @@ export default function FriendProfile() {
         }
     };
 
-    // Fetch moments
     const fetchMoments = async () => {
         if (!id) return;
 
@@ -109,7 +130,7 @@ export default function FriendProfile() {
             setLoadingMoments(true);
             const { data, error } = await supabase
                 .from("moments")
-                .select("id, cover_url, title, description, created_at")
+                .select("id, cover_url, title, description, created_at, song_url, start_time, duration")
                 .eq("user_id", id)
                 .order("created_at", { ascending: false });
 
@@ -122,7 +143,6 @@ export default function FriendProfile() {
         }
     };
 
-    // Fetch stacks
     const fetchStacks = async () => {
         if (!id) return;
 
@@ -143,14 +163,12 @@ export default function FriendProfile() {
         }
     };
 
-    // Fetch friends list with profile pictures
     const fetchFriendsList = async () => {
         if (!id) return;
 
         try {
             setLoadingFriends(true);
 
-            // Get friendships in both directions
             const { data: friendRows, error: friendError } = await supabase
                 .from("friends")
                 .select("user_id, friend_id")
@@ -158,12 +176,10 @@ export default function FriendProfile() {
 
             if (friendError) throw friendError;
 
-            // Extract friend IDs (excluding the viewed profile's own ID)
             const friendIds = friendRows
                 ?.map(row => row.user_id === id ? row.friend_id : row.user_id)
                 .filter(friendId => friendId !== id) || [];
 
-            // Fetch user info for friend IDs
             let friends: Profile[] = [];
             if (friendIds.length > 0) {
                 const { data: userData, error: userError } = await supabase
@@ -173,7 +189,6 @@ export default function FriendProfile() {
 
                 if (userError) throw userError;
 
-                // Fetch download URLs for profile pictures
                 if (userData) {
                     friends = await Promise.all(
                         userData.map(async (user) => {
@@ -187,7 +202,6 @@ export default function FriendProfile() {
             setFriendsList(friends);
             setNumFriends(friends.length);
 
-            // Check if current user is already friends with this profile
             const { data: currentUserData } = await supabase.auth.getUser();
             const currentUserId = currentUserData?.user?.id;
 
@@ -203,39 +217,58 @@ export default function FriendProfile() {
         }
     };
 
-    // Add friend functionality
-    const addFriend = async () => {
+    const sendFriendRequest = async () => {
         try {
-            const sessionData = await supabase.auth.getSession();
-            const currentUser = sessionData?.data?.session?.user;
-            const accessToken = sessionData?.data?.session?.access_token;
-
-            if (!currentUser || !accessToken) return;
-
-            const response = await fetch(`${nUrl}/api/friends`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({
-                    user_id: currentUser.id,
-                    friend_id: id,
-                }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error("Failed to add friend:", errorData);
+            const { data: sessionData } = await supabase.auth.getSession();
+            const currentUser = sessionData?.session?.user;
+            if (!currentUser) {
+                Alert.alert("Error", "You must be logged in to send friend requests.");
                 return;
             }
 
-            Alert.alert("Friend added!");
-            setIsFriend(true);
-            fetchFriendsList();
+            // Prevent sending to self
+            if (currentUser.id === id) {
+                Alert.alert("Error", "You can't send a friend request to yourself!");
+                return;
+            }
+
+            // Check for existing friend request
+            const { data: existingRequests, error: existingError } = await supabase
+                .from("notifications")
+                .select("*")
+                .eq("sender_id", currentUser.id)
+                .eq("user_id", id) // ✅ FIXED
+                .eq("type", "friend_request")
+                .maybeSingle();
+
+            if (existingError && existingError.code !== "PGRST116") throw existingError;
+            if (existingRequests) {
+                Alert.alert("Already Sent", "You’ve already sent a friend request.");
+                return;
+            }
+
+            // Insert new friend request notification
+            const { error } = await supabase.from("notifications").insert([
+                {
+                    sender_id: currentUser.id,
+                    user_id: id, // ✅ FIXED
+                    type: "friend_request",
+                    content: `${profile?.username || "Someone"} sent you a friend request.`, // ✅ 'content' not 'message'
+                },
+            ]);
+
+            if (error) throw error;
+
+            Alert.alert("Friend request sent!");
         } catch (err) {
-            console.error("Error adding friend:", err);
+            console.error("Error sending friend request:", err);
+            Alert.alert("Error", "Could not send friend request.");
         }
+    };
+
+
+    const addFriend = async () => {
+        await sendFriendRequest();
     };
 
     // Remove friend functionality
@@ -289,16 +322,12 @@ export default function FriendProfile() {
     };
 
 
-    // Handle back button navigation
     const handleBackPress = () => {
         if (originalProfileId === 'main') {
-            // Go back to user's own profile
             router.push('/profile');
         } else if (originalProfileId) {
-            // Go back to the original friend profile we started from
             router.push(`/profile/${originalProfileId}` as RelativePathString);
         } else {
-            // Default behavior - try to go back or go home
             if (router.canGoBack()) {
                 router.back();
             } else {
@@ -307,10 +336,8 @@ export default function FriendProfile() {
         }
     };
 
-    // Handle friend profile navigation
     const handleFriendPress = (friendId: string) => {
         setFriendsModalVisible(false);
-        // Pass along the origin so we can navigate back properly
         const origin = originalProfileId || id;
         router.push({
             pathname: `/profile/${friendId}` as RelativePathString,
@@ -318,14 +345,38 @@ export default function FriendProfile() {
         });
     };
 
-    // Initial data fetch
+    const handleMomentPress = (moment: ContentItem) => {
+        const trackId = extractTrackId(moment.song_url || '');
+
+        setSelectedMomentInfo({
+            moment: {
+                id: moment.id,           // DB moment ID stays here
+                spotifyId: trackId || null, // Spotify track ID separately
+                title: moment.title,
+                artist: moment.description || "Unknown Artist",
+                songStart: moment.start_time || 0,
+                songDuration: moment.duration || 30,
+                length: 180,
+                album: moment.cover_url
+                    ? { uri: moment.cover_url }
+                    : require("@/assets/images/album1.jpeg"),
+                waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
+            },
+            user: {
+                name: profile?.username || "Unknown User",
+                profilePic: profile?.pfp_url,
+            }
+        });
+
+        router.push('/stack' as RelativePathString);
+    };
+
     useEffect(() => {
         fetchProfile();
         fetchMoments();
         fetchStacks();
     }, [id]);
 
-    // Refetch friends list when screen comes into focus
     useFocusEffect(
         useCallback(() => {
             if (id) {
@@ -334,7 +385,6 @@ export default function FriendProfile() {
         }, [id])
     );
 
-    // Render loading state
     if (loadingProfile || !profile) {
         return (
             <View style={styles.centered}>
@@ -345,9 +395,11 @@ export default function FriendProfile() {
 
     const { username, bio, pfp_url } = profile;
 
-    // Render moment item
     const renderMoment = ({ item }: { item: ContentItem }) => (
-        <View style={{ flex: 1, margin: 6, alignItems: "center" }}>
+        <Pressable
+            style={{ flex: 1, margin: 6, alignItems: "center" }}
+            onPress={() => handleMomentPress(item)}
+        >
             <Image
                 source={{ uri: item.cover_url }}
                 style={{
@@ -366,10 +418,9 @@ export default function FriendProfile() {
                     {item.description}
                 </Text>
             </View>
-        </View>
+        </Pressable>
     );
 
-    // Render stack item
     const renderStack = ({ item }: { item: ContentItem }) => (
         <View style={styles.momentContainer}>
             <Image
@@ -397,7 +448,6 @@ export default function FriendProfile() {
         </View>
     );
 
-    // Render friend item
     const renderFriend = ({ item }: { item: Profile }) => (
         <Pressable
             style={styles.friendRow}
@@ -418,7 +468,6 @@ export default function FriendProfile() {
 
     return (
         <View style={styles.container}>
-            {/* Profile Row */}
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5, paddingHorizontal: 20 }}>
                 <Pressable onPress={handleBackPress}>
                     <Feather name="arrow-left" size={28} color="#333C42" />
@@ -462,8 +511,8 @@ export default function FriendProfile() {
                             paddingHorizontal: 8,
                             borderRadius: 8,
                             marginTop: 4,
-                            maxWidth: 90, // Limit width
-                            alignItems: "center", // Center text
+                            maxWidth: 90,
+                            alignItems: "center",
                         }}
                     >
                         <Text
@@ -471,12 +520,12 @@ export default function FriendProfile() {
                                 color: "#FFF0E2",
                                 fontFamily: "Jacques Francois",
                                 textAlign: "center",
-                                flexWrap: "wrap", // Allow wrapping
+                                flexWrap: "wrap",
                                 fontSize: 13,
                             }}
                             numberOfLines={2}
                         >
-                            {isFriend ? "Remove\nFriend" : "Add Friend"}
+                            {isFriend ? "Remove\nFriend" : "Add\nFriend"}
                         </Text>
                     </Pressable>
 
@@ -484,7 +533,6 @@ export default function FriendProfile() {
                 </View>
             </View>
 
-            {/* Content Section */}
             <View style={styles.content}>
                 <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8, width: "100%", justifyContent: "space-between", paddingHorizontal: 20 }}>
                     <View style={{ width: 28 }}></View>
@@ -496,9 +544,7 @@ export default function FriendProfile() {
                     </Pressable>
                 </View>
 
-                {/* Main Feed */}
                 <View style={{ flex: 1, width: "100%", paddingHorizontal: 15, paddingTop: 10 }}>
-                    {/* Moments */}
                     <View style={{ display: viewMode === "moments" ? "flex" : "none", flex: 1 }}>
                         {loadingMoments ? (
                             <View style={styles.loadingContainer}>
@@ -520,7 +566,6 @@ export default function FriendProfile() {
                         )}
                     </View>
 
-                    {/* Stacks */}
                     <View style={{ display: viewMode === "stacks" ? "flex" : "none", flex: 1 }}>
                         {loadingStacks ? (
                             <View style={styles.loadingContainer}>
@@ -544,7 +589,6 @@ export default function FriendProfile() {
                 </View>
             </View>
 
-            {/* Friends Modal */}
             <Modal
                 visible={friendsModalVisible}
                 transparent={true}

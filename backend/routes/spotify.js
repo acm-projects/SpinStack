@@ -102,7 +102,10 @@ router.get("/search", async (req, res) => {
 
 // GET track details by ID
 router.get("/track/:id", async (req, res) => {
+    console.log("are we failing right")
     const user = await verifyToken(req, res);
+    console.log("this is the user");
+    console.log(user);
     if (!user) return;
 
     try {

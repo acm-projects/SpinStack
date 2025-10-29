@@ -35,8 +35,7 @@ function GroupRow({ item, onPress }: { item: GroupInfo; onPress: () => void }) {
         <Text style={styles.dailyTitle}>{item.dailies[0].title}</Text>
       </View>
       <GroupProfile
-        pics={item.users.slice(0, 3).map(u => (typeof u.profilePic === 'string' ? { uri: u.profilePic } : u.profilePic))}
-      />
+        pics={item.users.slice(0, 3).map(u => (typeof u.profilePic === 'string' ? { uri: u.profilePic } : u.profilePic))} scale={0} />
     </TouchableOpacity>
   );
 }
