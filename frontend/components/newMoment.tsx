@@ -410,7 +410,8 @@ export default function MomentView({ data }: { data: MomentInfo }) {
                     end={(data.moment.songStart + data.moment.songDuration) / data.moment.length}
                     duration={data.moment.songDuration}
                     baseColor="#333C42"
-                    selectedColor="#87bd84"
+                    regionColor = "#6d976aff"
+                    selectedColor='#84DA7F'
                     anim={isPlaying}
                   />
                 </View>
