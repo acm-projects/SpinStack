@@ -214,9 +214,9 @@ const [token, setToken] = useState<string | null>(null);
     };
   }
 
-  // Debounced version of seekTo
+  // Debounced version of seekTo - increased wait time to reduce API calls
   const debouncedSeek = useRef(
-    debounce((spotifyToken: string, ms: number) => seekTo(spotifyToken, ms), 600)
+    debounce((spotifyToken: string, ms: number) => seekTo(spotifyToken, ms), 1000)
   ).current;
 
 
@@ -345,7 +345,10 @@ const [token, setToken] = useState<string | null>(null);
   // Slider positions as percentages (0-1)
   const [mStart, setStart] = useState(0);
   const [mEnd, setEnd] = useState(Math.min(MAX_DURATION_SECONDS / moment.length, 1));
-  const [currentDuration, setCurrentDuration] = useState((mEnd - mStart) * moment.length);
+  // ✅ Round to avoid floating point errors
+  const [currentDuration, setCurrentDuration] = useState(
+    Math.round((Math.min(MAX_DURATION_SECONDS / moment.length, 1) - 0) * moment.length * 10) / 10
+  );
   const startOffsetRef = useRef(0);
   const endOffsetRef = useRef(0);
 
@@ -379,9 +382,11 @@ const [token, setToken] = useState<string | null>(null);
       setStart(finalStart);
     }
 
-      setCurrentDuration((mEnd - newStart) * moment.length);
+      // ✅ Round to 1 decimal place to avoid floating point errors
+      const newDuration = Math.round((mEnd - newStart) * moment.length * 10) / 10;
+      setCurrentDuration(newDuration);
       moment.songStart = mStart * moment.length;
-      moment.songDuration = currentDuration;
+      moment.songDuration = newDuration;
       return newStart;
     }
 
@@ -402,8 +407,10 @@ const updateEndPosition = (value: number) => {
       setEnd(finalEnd);
     }
 
-      setCurrentDuration((newEnd - mStart) * moment.length);
-      moment.songDuration = currentDuration;
+      // ✅ Round to 1 decimal place to avoid floating point errors
+      const newDuration = Math.round((newEnd - mStart) * moment.length * 10) / 10;
+      setCurrentDuration(newDuration);
+      moment.songDuration = newDuration;
       return newEnd;
     }
 
@@ -425,6 +432,10 @@ const panStart = useRef(
     onPanResponderGrant: () => {
       startX.setOffset(startX.__getValue());
       startX.setValue(0);
+      // Pause playback while dragging to reduce API calls
+      if (token) pausePlayback(token);
+      pauseAnimation();
+      setIsPlaying(false);
     },
     onPanResponderMove: (_, gesture) => {
       startX.setValue(gesture.dx);
@@ -455,6 +466,10 @@ const panEnd = useRef(
     onPanResponderGrant: () => {
       endX.setOffset(endX.__getValue());
       endX.setValue(0);
+      // Pause playback while dragging to reduce API calls
+      if (token) pausePlayback(token);
+      pauseAnimation();
+      setIsPlaying(false);
     },
     onPanResponderMove: (_, gesture) => {
       endX.setValue(gesture.dx);
