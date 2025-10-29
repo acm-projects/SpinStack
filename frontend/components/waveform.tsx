@@ -4,7 +4,7 @@ import Svg, { Rect, Ellipse } from "react-native-svg";
 
 //specify types for some dumbahh reason
 //start and end are the relative starts and ends of the moments
-const Waveform = ({ data, height, start, end, baseColor='#ffffff', selectedColor = "#87bd84", anim=true, duration}: {data: number[], height: number, start: number, end: number, baseColor: ColorValue, selectedColor: ColorValue, anim: boolean, duration: number}) => {
+const Waveform = ({ data, height, start, end, baseColor='#ffffff', regionColor = "#87bd84", selectedColor = '#84DA7F', anim=true, duration}: {data: number[], height: number, start: number, end: number, baseColor: ColorValue, regionColor: ColorValue, selectedColor: ColorValue, anim: boolean, duration: number}) => {
     const [width, setWidth] = useState(0);
     const barWidth = width / data.length;
     const maxVal = Math.max(...data);
@@ -49,7 +49,7 @@ const Waveform = ({ data, height, start, end, baseColor='#ffffff', selectedColor
                 const pIndex = Math.trunc((start + (end - start) * progress) * data.length);
                 let color = (i >= sIndex && i <= fIndex) ? (selectedColor) : (baseColor);
                 if(anim && (i >= sIndex && i <= fIndex)) {
-                    color = (i < pIndex) ? ('#84DA7F') : (selectedColor);
+                    color = (i < pIndex) ? (selectedColor) : (regionColor);
                 }
                 return (
                     <React.Fragment key={i}>
