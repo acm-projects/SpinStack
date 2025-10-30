@@ -9,7 +9,6 @@ import { useProgressAnimation } from "../progressAnimation";
 import { useFocusEffect } from '@react-navigation/native';
 
 const MAX_DURATION_SECONDS = 30;
-
 const API_BASE = "https://api.spotify.com/v1";
 
 type Device = {
@@ -32,7 +31,7 @@ export default function MomentPickView({
   const [waveWidth, setWaveWidth] = useState(0);
 
   //----------Spotify integration ----------------------
-const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   
   // Track current moment to detect changes - use a unique key
@@ -40,6 +39,11 @@ const [token, setToken] = useState<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isActiveRef = useRef(false);
   const cleanupExecutedRef = useRef(false);
+
+  // NEW: Track last API call timestamps to prevent rate limiting
+  const lastPauseTime = useRef<number>(0);
+  const lastSeekTime = useRef<number>(0);
+  const MIN_API_INTERVAL = 500; // Minimum 500ms between API calls
 
   // Generate unique key for moment (includes start time to differentiate same songs)
   const getMomentKey = (momentData: typeof moment) => {
@@ -150,8 +154,9 @@ const [token, setToken] = useState<string | null>(null);
 
       let startTimeout: NodeJS.Timeout | null = null;
 
-      // ✅ Only start playback if token exists, moment exists, AND duration is valid
-      if (token && moment?.id && currentDuration > 0 && currentDuration <= MAX_DURATION_SECONDS) {
+      // ✅ Only start playback if token exists and moment exists
+      // Duration validation happens inside startPlayback
+      if (token && moment?.id) {
         // Wait longer for cleanup and devices to be ready
         startTimeout = setTimeout(async () => {
           if (isActiveRef.current && !cleanupExecutedRef.current) {
@@ -160,8 +165,6 @@ const [token, setToken] = useState<string | null>(null);
             await startPlayback(token);
           }
         }, 800);
-      } else if (moment?.id && (currentDuration <= 0 || currentDuration > MAX_DURATION_SECONDS)) {
-        console.log("❌ Skipping playback - invalid duration:", currentDuration);
       }
 
       return () => {
@@ -174,7 +177,7 @@ const [token, setToken] = useState<string | null>(null);
         // CRITICAL: Actually call cleanup when losing focus
         cleanup(token);
       };
-    }, [token, moment?.id, moment?.songStart, moment?.songDuration, moment?.title, currentDuration, cleanup])
+    }, [token, moment?.id, moment?.songStart, moment?.songDuration, moment?.title, cleanup])
   );
 
   // --- Spotify API helpers ---
@@ -205,27 +208,26 @@ const [token, setToken] = useState<string | null>(null);
     });
   };
 
-  // --- Debounce wrapper ---
-  function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
-    let timeout: NodeJS.Timeout;
-    return (...args: Parameters<T>) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), wait);
-    };
-  }
-
-  // Debounced version of seekTo - increased wait time to reduce API calls
-  const debouncedSeek = useRef(
-    debounce((spotifyToken: string, ms: number) => seekTo(spotifyToken, ms), 1000)
-  ).current;
-
-
+  // NEW: Rate-limited seek function
   const seekTo = async (spotifyToken: string, ms: number) => {
+    const now = Date.now();
+    if (now - lastSeekTime.current < MIN_API_INTERVAL) {
+      console.log("⏭️ Skipping seek - rate limited");
+      return;
+    }
+    lastSeekTime.current = now;
     await api(spotifyToken, `/me/player/seek?position_ms=${ms}`, { method: "PUT" });
   };
 
+  // NEW: Rate-limited pause function
   const pausePlayback = async (spotifyToken: string) => {
     try {
+      const now = Date.now();
+      if (now - lastPauseTime.current < MIN_API_INTERVAL) {
+        console.log("⏸️ Skipping pause - rate limited");
+        return;
+      }
+      lastPauseTime.current = now;
       await api(spotifyToken, "/me/player/pause", { method: "PUT" });
       console.log("⏸ Playback paused");
     } catch (error) {
@@ -235,6 +237,12 @@ const [token, setToken] = useState<string | null>(null);
 
   // --- Main playback logic ---
   const startPlayback = async (spotifyToken: string) => {
+    // ✅ Don't start playback if user is dragging
+    if (isDraggingRef.current) {
+      console.log("⏸️ User is dragging, skipping playback");
+      return;
+    }
+
     if (!isActiveRef.current) {
       console.log("⚠️ Component not active, skipping playback");
       return;
@@ -336,8 +344,6 @@ const [token, setToken] = useState<string | null>(null);
     }
   };
 
-
-
   // Slider positions in pixels
   const startX = useRef(new Animated.Value(0)).current;
   const endX = useRef(new Animated.Value(0)).current;
@@ -351,16 +357,20 @@ const [token, setToken] = useState<string | null>(null);
   );
   const startOffsetRef = useRef(0);
   const endOffsetRef = useRef(0);
+  const isDraggingRef = useRef(false);
 
-    // Progress bar animation
+  // NEW: Pending seek position to batch updates
+  const pendingSeekMs = useRef<number | null>(null);
+  const seekTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Progress bar animation
   const { progress, pauseAnimation, restartAnimation } = useProgressAnimation(
     isPlaying,
     moment.songDuration * 1000,
     [moment.id, moment.songStart, moment.songDuration]
   );
 
-  // Update start position4+
+  // Update start position
   startX.addListener(({ value }) => {
     updateStartPosition(value);
   });
@@ -371,46 +381,49 @@ const [token, setToken] = useState<string | null>(null);
   });
   
   const updateStartPosition = (value: number) => {
-  if (waveWidth > 0) {
-    const newStart = Math.max(0, Math.min(value / waveWidth, 1));
-    let finalStart = newStart;
+    if (waveWidth > 0) {
+      const newStart = Math.max(0, Math.min(value / waveWidth, 1));
+      let finalStart = newStart;
 
-    if (newStart >= mEnd) {
-      finalStart = Math.max(0, mEnd - 0.01);
-      setStart(finalStart);
-    } else {
-      setStart(finalStart);
-    }
+      if (newStart >= mEnd) {
+        finalStart = Math.max(0, mEnd - 0.01);
+        setStart(finalStart);
+      } else {
+        setStart(finalStart);
+      }
 
       // ✅ Round to 1 decimal place to avoid floating point errors
       const newDuration = Math.round((mEnd - newStart) * moment.length * 10) / 10;
       setCurrentDuration(newDuration);
       moment.songStart = mStart * moment.length;
       moment.songDuration = newDuration;
+      
+      // Store pending seek position instead of calling immediately
+      pendingSeekMs.current = Math.floor(newStart * moment.length * 1000);
+      
       return newStart;
     }
 
     return -1;
-
-    
   };
 
-const updateEndPosition = (value: number) => {
-  if (waveWidth > 0) {
-    const newEnd = Math.min(1, Math.max(value / waveWidth, 0));
-    let finalEnd = newEnd;
+  const updateEndPosition = (value: number) => {
+    if (waveWidth > 0) {
+      const newEnd = Math.min(1, Math.max(value / waveWidth, 0));
+      let finalEnd = newEnd;
 
-    if (newEnd <= mStart) {
-      finalEnd = Math.min(1, mStart + 0.01);
-      setEnd(finalEnd);
-    } else {
-      setEnd(finalEnd);
-    }
+      if (newEnd <= mStart) {
+        finalEnd = Math.min(1, mStart + 0.01);
+        setEnd(finalEnd);
+      } else {
+        setEnd(finalEnd);
+      }
 
       // ✅ Round to 1 decimal place to avoid floating point errors
       const newDuration = Math.round((newEnd - mStart) * moment.length * 10) / 10;
       setCurrentDuration(newDuration);
       moment.songDuration = newDuration;
+      
       return newEnd;
     }
 
@@ -425,75 +438,116 @@ const updateEndPosition = (value: number) => {
     endX.setValue(mEnd * w);
   };
 
+  // NEW: Batch seek calls to avoid rate limiting
+  const scheduleBatchedSeek = () => {
+    if (seekTimeoutRef.current) {
+      clearTimeout(seekTimeoutRef.current);
+    }
+
+    seekTimeoutRef.current = setTimeout(async () => {
+      if (pendingSeekMs.current !== null && token && isActiveRef.current) {
+        await seekTo(token, pendingSeekMs.current);
+        pendingSeekMs.current = null;
+      }
+    }, 1000); // Wait 1 second after user stops dragging before seeking
+  };
+
   // Pan responder for start slider
-const panStart = useRef(
-  PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onPanResponderGrant: () => {
-      startX.setOffset(startX.__getValue());
-      startX.setValue(0);
-      // Pause playback while dragging to reduce API calls
-      if (token) pausePlayback(token);
-      pauseAnimation();
-      setIsPlaying(false);
-    },
-    onPanResponderMove: (_, gesture) => {
-      startX.setValue(gesture.dx);
-    },
-    onPanResponderRelease: () => {
-      startX.flattenOffset();
-      const newStart = updateStartPosition(startX.__getValue());
-
-      // ✅ Only allow seek and playback restart if duration is valid
-      if (currentDuration > 0 && currentDuration <= MAX_DURATION_SECONDS) {
-        if (token) debouncedSeek(token, newStart * moment.length * 1000);
-        restartAnimation();
-        setIsPlaying(true);
-      } else {
-        // ❌ Duration is invalid - pause playback completely
-        if (token) pausePlayback(token);
+  const panStart = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        isDraggingRef.current = true;
+        startX.setOffset(startX.__getValue());
+        startX.setValue(0);
+        // Pause playback once when starting to drag
+        if (token && isPlaying) {
+          pausePlayback(token);
+        }
         pauseAnimation();
         setIsPlaying(false);
-      }
-    },
-  })
-).current;
+      },
+      onPanResponderMove: (_, gesture) => {
+        startX.setValue(gesture.dx);
+        // Don't make any API calls during dragging
+      },
+      onPanResponderRelease: () => {
+        startX.flattenOffset();
+        const newStart = updateStartPosition(startX.__getValue());
 
-// Pan responder for end slider
-const panEnd = useRef(
-  PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onPanResponderGrant: () => {
-      endX.setOffset(endX.__getValue());
-      endX.setValue(0);
-      // Pause playback while dragging to reduce API calls
-      if (token) pausePlayback(token);
-      pauseAnimation();
-      setIsPlaying(false);
-    },
-    onPanResponderMove: (_, gesture) => {
-      endX.setValue(gesture.dx);
-    },
-    onPanResponderRelease: () => {
-      endX.flattenOffset();
-      const newEnd = updateEndPosition(endX.__getValue());
+        // Schedule batched seek after user releases
+        if (currentDuration > 0 && currentDuration <= MAX_DURATION_SECONDS) {
+          scheduleBatchedSeek();
+          
+          // Wait for seek to complete before restarting
+          setTimeout(() => {
+            isDraggingRef.current = false;
+            restartAnimation();
+            setIsPlaying(true);
+          }, 1200); // Slightly longer than batch delay
+        } else {
+          isDraggingRef.current = false;
+          if (token) pausePlayback(token);
+          pauseAnimation();
+          setIsPlaying(false);
+        }
+      },
+    })
+  ).current;
 
-      // ✅ Only allow seek and playback restart if duration is valid
-      if (currentDuration > 0 && currentDuration <= MAX_DURATION_SECONDS) {
-        if (token) debouncedSeek(token, mStart * moment.length * 1000);
-        restartAnimation();
-        setIsPlaying(true);
-      } else {
-        // ❌ Duration is invalid - pause playback completely
-        if (token) pausePlayback(token);
+  // Pan responder for end slider
+  const panEnd = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        isDraggingRef.current = true;
+        endX.setOffset(endX.__getValue());
+        endX.setValue(0);
+        // Pause playback once when starting to drag
+        if (token && isPlaying) {
+          pausePlayback(token);
+        }
         pauseAnimation();
         setIsPlaying(false);
+      },
+      onPanResponderMove: (_, gesture) => {
+        endX.setValue(gesture.dx);
+        // Don't make any API calls during dragging
+      },
+      onPanResponderRelease: () => {
+        endX.flattenOffset();
+        const newEnd = updateEndPosition(endX.__getValue());
+
+        // Schedule batched seek after user releases
+        if (currentDuration > 0 && currentDuration <= MAX_DURATION_SECONDS) {
+          // Seek to start position since duration changed
+          pendingSeekMs.current = Math.floor(mStart * moment.length * 1000);
+          scheduleBatchedSeek();
+          
+          // Wait for seek to complete before restarting
+          setTimeout(() => {
+            isDraggingRef.current = false;
+            restartAnimation();
+            setIsPlaying(true);
+          }, 1200); // Slightly longer than batch delay
+        } else {
+          isDraggingRef.current = false;
+          if (token) pausePlayback(token);
+          pauseAnimation();
+          setIsPlaying(false);
+        }
+      },
+    })
+  ).current;
+
+  // Cleanup seek timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (seekTimeoutRef.current) {
+        clearTimeout(seekTimeoutRef.current);
       }
-    },
-  })
-).current;
-
-
+    };
+  }, []);
 
   // Sync Animated values with state
   useEffect(() => {
@@ -531,7 +585,6 @@ const panEnd = useRef(
 
   const [barWidth, setBarWidth] = useState(0);
   const barFactor = 180 / currentDuration;
-  console.log(barFactor);
 
   return (
     <View style={{ width, justifyContent: 'center', alignItems: 'center' }}>
