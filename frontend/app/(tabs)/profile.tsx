@@ -12,10 +12,10 @@ import {
   Alert,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
-import { RelativePathString, useRouter } from "expo-router";
+import { RelativePathString, useRouter, useFocusEffect } from "expo-router";
 import { supabase } from "@/constants/supabase";
 import { useAuth } from "@/_context/AuthContext";
-import { hasSpotifyAuth, authenticateSpotify } from "../utils/spotifyAuth";
+import { authenticateSpotify, hasSpotifyAuth, clearSpotifyTokens, getValidSpotifyToken } from "../utils/spotifyAuth";
 import { useMomentInfoStore } from "../stores/useMomentInfoStore";
 import * as Spotify from "@wwdrew/expo-spotify-sdk";
 import * as SecureStore from 'expo-secure-store';
@@ -57,53 +57,38 @@ export default function ProfileScreen() {
     return match ? match[1] : null;
   };
 
-  // Check Spotify connection status
-  useEffect(() => {
-    const checkSpotifyConnection = async () => {
-      try {
-        const storedToken = await SecureStore.getItemAsync('spotifyToken');
-        setSpotifyConnected(!!storedToken);
-      } catch (error) {
-        console.error("Error checking Spotify connection:", error);
-      }
-    };
-    checkSpotifyConnection();
-  }, []);
+  // Check Spotify connection status on mount and when focused
+  useFocusEffect(
+    React.useCallback(() => {
+      const checkSpotifyConnection = async () => {
+        const hasAuth = await hasSpotifyAuth();
+        setSpotifyConnected(hasAuth);
+        
+        if (hasAuth) {
+          console.log('✅ User has valid Spotify authentication');
+        }
+      };
+      checkSpotifyConnection();
+    }, [])
+  );
 
-  // Disconnect Spotify
-  const handleDisconnectSpotify = async () => {
-    try {
-      await SecureStore.deleteItemAsync('spotifyToken');
-      setSpotifyConnected(false);
-      Alert.alert("Disconnected", "Spotify has been disconnected");
-    } catch (err) {
-      console.error("Error disconnecting Spotify:", err);
-      Alert.alert("Error", "Failed to disconnect Spotify");
-    }
-  };
+  // Connect Spotify with proper token storage
   const handleConnectSpotify = async () => {
     try {
       setIsConnectingSpotify(true);
-      const session = await Spotify.Authenticate.authenticateAsync({
-        scopes: [
-          "user-read-currently-playing",
-          "user-read-playback-state",
-          "user-modify-playback-state",
-          "app-remote-control",
-        ],
-      });
-
-      if (!session?.accessToken) {
-        throw new Error("No access token received");
+      
+      // Use the updated authentication function
+      const token = await authenticateSpotify();
+      
+      if (!token) {
+        throw new Error("Failed to get access token");
       }
 
-      // Store token
-      await SecureStore.setItemAsync('spotifyToken', session.accessToken);
       setSpotifyConnected(true);
       
       Alert.alert(
         "Success! 🎉",
-        "Your Spotify account has been connected.",
+        "Your Spotify account has been connected. Your session will be maintained automatically.",
         [{ text: "OK" }]
       );
     } catch (error: any) {
@@ -115,6 +100,46 @@ export default function ProfileScreen() {
       );
     } finally {
       setIsConnectingSpotify(false);
+    }
+  };
+
+  // Disconnect Spotify
+  const handleDisconnectSpotify = async () => {
+    Alert.alert(
+      "Disconnect Spotify",
+      "Are you sure you want to disconnect your Spotify account?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Disconnect",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await clearSpotifyTokens();
+              setSpotifyConnected(false);
+              Alert.alert("Disconnected", "Spotify has been disconnected");
+            } catch (err) {
+              console.error("Error disconnecting Spotify:", err);
+              Alert.alert("Error", "Failed to disconnect Spotify");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Test token refresh (optional - for debugging)
+  const testTokenRefresh = async () => {
+    try {
+      const token = await getValidSpotifyToken();
+      if (token) {
+        Alert.alert("Success", "Token is valid and refreshed if needed");
+      } else {
+        Alert.alert("Error", "Failed to get valid token. Please reconnect.");
+      }
+    } catch (error) {
+      console.error("Token test error:", error);
+      Alert.alert("Error", "Failed to validate token");
     }
   };
 
@@ -131,7 +156,6 @@ export default function ProfileScreen() {
       return null;
     }
   };
-
 
   // Fetch user info
   useEffect(() => {
@@ -163,11 +187,9 @@ export default function ProfileScreen() {
               setPfpUrl(downloadURL);
             } else {
               console.error("Failed to fetch presigned URL:", res.status);
-              // Don't set pfpUrl if it fails, will use default
             }
           } catch (err) {
             console.error("Error fetching presigned URL:", err);
-            // Don't set pfpUrl if it fails, will use default
           }
         }
 
@@ -316,13 +338,12 @@ export default function ProfileScreen() {
     }
 
     const trackId = extractTrackId(moment.song_url);
-    const token = await SecureStore.getItemAsync('spotifyToken');
+    const token = await getValidSpotifyToken(); // Use the new token refresh function
 
     if (trackId && token) {
       const length = await getSpotifyTrackLength(trackId, token);
       if (length) moment.length = length;
     }
-
 
     setSelectedMomentInfo({
       moment: {
@@ -341,16 +362,12 @@ export default function ProfileScreen() {
       }
     });
 
-    
-
     if (true) {
       console.log("Replacing existing /stack screen");
       router.replace('/stack' as RelativePathString);
     } else {
       console.log("Pushing new /stack screen");
-      //router.push('/stack' as RelativePathString);
     }
-
   };
 
   return (
@@ -405,25 +422,44 @@ export default function ProfileScreen() {
       {/* Spotify Connection Button */}
       <View style={{ width: "90%", alignItems: "center", marginTop: 15 }}>
         {spotifyConnected ? (
-          <Pressable
-            onPress={handleDisconnectSpotify}
-            style={{
-              backgroundColor: "#1DB954",
-              paddingVertical: 8,
-              paddingHorizontal: 20,
-              borderRadius: 8,
-              borderWidth: 2,
-              borderColor: "#333C42",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <Feather name="check-circle" size={18} color="#FFF0E2" />
-            <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois", fontSize: 14 }}>
-              Spotify Connected (Tap to Disconnect)
-            </Text>
-          </Pressable>
+          <View style={{ width: '100%', alignItems: 'center', gap: 10 }}>
+            <Pressable
+              onPress={handleDisconnectSpotify}
+              style={{
+                backgroundColor: "#1DB954",
+                paddingVertical: 8,
+                paddingHorizontal: 20,
+                borderRadius: 8,
+                borderWidth: 2,
+                borderColor: "#333C42",
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <Feather name="check-circle" size={18} color="#FFF0E2" />
+              <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois", fontSize: 14 }}>
+                Spotify Connected (Tap to Disconnect)
+              </Text>
+            </Pressable>
+
+            {/* Optional: Debug button to test token refresh */}
+            {__DEV__ && (
+              <Pressable
+                onPress={testTokenRefresh}
+                style={{
+                  backgroundColor: "#333C42",
+                  paddingVertical: 6,
+                  paddingHorizontal: 15,
+                  borderRadius: 6,
+                }}
+              >
+                <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois", fontSize: 12 }}>
+                  Test Token Refresh
+                </Text>
+              </Pressable>
+            )}
+          </View>
         ) : (
           <Pressable
             onPress={handleConnectSpotify}
@@ -529,7 +565,7 @@ export default function ProfileScreen() {
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={{ paddingBottom: 100 }}
                 renderItem={({ item }) => (
-                  <View style={styles.momentContainer}>
+                  <View style={[styles.momentContainer, { width: POLAROID_WIDTH, height: POLAROID_HEIGHT }]}>
                     <Image
                       source={{ uri: item.cover_url }}
                       style={styles.coverImage}
@@ -616,9 +652,6 @@ export default function ProfileScreen() {
   );
 }
 
-const POLAROID_WIDTH = 150;
-const POLAROID_HEIGHT = 200;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -642,8 +675,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   momentContainer: {
-    width: POLAROID_WIDTH,
-    height: POLAROID_HEIGHT,
     position: "relative",
     margin: 10,
     justifyContent: "center",

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert } from "react-native";
 import { router, useRouter } from 'expo-router';
 import { useAuth } from "@/_context/AuthContext";
-import { authenticateSpotify, hasSpotifyAuth, clearSpotifyTokens } from '../utils/spotifyAuth';
+import { authenticateSpotify, hasSpotifyAuth, clearSpotifyTokens, getSpotifyUserId } from '../utils/spotifyAuth';
+import { supabase } from '@/constants/supabase';
 
 import OpeningSplash from '../../assets/other/openingSplash.svg';
 import Bubble from '../../assets/other/bubble.svg';
@@ -14,20 +15,44 @@ export default function SpotifyConnect() {
   const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
 
-  // Check if already connected on mount
+  // Check if this user has Spotify connected in database
   useEffect(() => {
     const checkConnection = async () => {
+      if (!user?.id) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const connected = await hasSpotifyAuth();
-        setIsConnected(connected);
+        // Check if user has spotify_user_id in database
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('spotify_user_id')
+          .eq('id', user.id)
+          .single();
+
+        if (error) throw error;
+
+        const hasSpotifyInDB = !!userData?.spotify_user_id;
+        
+        // If they have Spotify in DB, check if token is still valid
+        if (hasSpotifyInDB) {
+          const hasValidToken = await hasSpotifyAuth();
+          setIsConnected(hasValidToken);
+        } else {
+          // New user or no Spotify connection - clear any old tokens
+          await clearSpotifyTokens();
+          setIsConnected(false);
+        }
       } catch (error) {
         console.error("Error checking Spotify connection:", error);
+        setIsConnected(false);
       } finally {
         setIsLoading(false);
       }
     };
     checkConnection();
-  }, []);
+  }, [user?.id]);
 
   const handleConnectSpotify = async () => {
     try {
@@ -35,10 +60,25 @@ export default function SpotifyConnect() {
       const token = await authenticateSpotify();
       
       if (token) {
+        // Get Spotify user ID and save to database
+        const spotifyUserId = await getSpotifyUserId(token);
+        
+        if (spotifyUserId && user?.id) {
+          // Save Spotify user ID to database
+          const { error } = await supabase
+            .from('users')
+            .update({ spotify_user_id: spotifyUserId })
+            .eq('id', user.id);
+
+          if (error) {
+            console.error("Error saving Spotify user ID:", error);
+          }
+        }
+
         setIsConnected(true);
         Alert.alert(
           "Success! 🎉",
-          "Your Spotify account has been connected.",
+          "Your Spotify account has been connected. You can now play moments!",
           [{ text: "OK" }]
         );
       } else {
@@ -71,6 +111,15 @@ export default function SpotifyConnect() {
           style: "destructive",
           onPress: async () => {
             await clearSpotifyTokens();
+            
+            // Remove Spotify user ID from database
+            if (user?.id) {
+              await supabase
+                .from('users')
+                .update({ spotify_user_id: null })
+                .eq('id', user.id);
+            }
+            
             setIsConnected(false);
             Alert.alert("Disconnected", "Your Spotify account has been disconnected.");
           }
@@ -82,7 +131,25 @@ export default function SpotifyConnect() {
   const handleNext = () => {
     setProfileComplete(true);
     router.dismissAll();
-    router.replace("../profile");
+    router.replace("/(tabs)/profile");
+  };
+
+  const handleSkip = () => {
+    Alert.alert(
+      "Skip Spotify Connection?",
+      "You won't be able to play moments until you connect Spotify later in Settings.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Skip",
+          onPress: () => {
+            setProfileComplete(true);
+            router.dismissAll();
+            router.replace("/(tabs)/profile");
+          }
+        }
+      ]
+    );
   };
 
   if (isLoading) {
@@ -123,6 +190,10 @@ export default function SpotifyConnect() {
 
       <View style={styles.container}>
         <Text style={styles.title}>Connect to Spotify</Text>
+        
+        <Text style={styles.description}>
+          Connect your Spotify account to play and share your favorite music moments with friends
+        </Text>
 
         {isConnected ? (
           <View style={{ alignItems: 'center', gap: 20 }}>
@@ -157,13 +228,19 @@ export default function SpotifyConnect() {
           </Pressable>
         )}
 
-        <Pressable onPress={handleNext}>
-          <View style={{ backgroundColor: "#333c42", width: 352, padding: 10, borderRadius: 8 }}>
-            <Text style={{ color: "white", fontFamily: "Jacques Francois", textAlign: "center", fontSize: 16 }}>
-              Next
+        <View style={styles.buttonContainer}>
+          <Pressable onPress={handleNext} style={styles.nextButton}>
+            <Text style={styles.nextButtonText}>
+              {isConnected ? "Continue" : "Next"}
             </Text>
-          </View>
-        </Pressable>
+          </Pressable>
+
+          {!isConnected && (
+            <Pressable onPress={handleSkip}>
+              <Text style={styles.skipText}>Skip for now</Text>
+            </Pressable>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -174,15 +251,24 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 0,
     alignItems: "center",
-    padding: 0,
+    padding: 20,
   },
   title: {
     color: "#333C42",
     fontSize: 35,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 458,
+    marginBottom: 20,
     fontFamily: "Luxurious Roman"
+  },
+  description: {
+    color: "#333C42",
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 40,
+    fontFamily: "Jacques Francois",
+    paddingHorizontal: 20,
+    lineHeight: 24,
   },
   spotifyButton: {
     backgroundColor: "#1DB954",
@@ -192,11 +278,38 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     minWidth: 250,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: "#333C42",
   },
   spotifyButtonText: {
     color: "black",
     fontSize: 18,
     fontWeight: "500",
     fontFamily: "Jacques Francois"
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 40,
+    width: '100%',
+    alignItems: 'center',
+    gap: 15,
+  },
+  nextButton: {
+    backgroundColor: "#333c42",
+    width: 352,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  nextButtonText: {
+    color: "white",
+    fontFamily: "Jacques Francois",
+    fontSize: 16,
+  },
+  skipText: {
+    color: "#39868F",
+    fontFamily: "Jacques Francois",
+    fontSize: 14,
+    textDecorationLine: "underline",
   },
 });
