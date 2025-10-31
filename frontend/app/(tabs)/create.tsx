@@ -6,6 +6,8 @@ import { router } from "expo-router";
 import { moms } from '../../components/demoMoment'
 import { useMomentStore } from "../stores/useMomentStore";
 import { supabase } from "@/constants/supabase";
+import { useLocalSearchParams } from "expo-router";
+
 
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
@@ -28,6 +30,7 @@ interface TopHitTrack extends SpotifyTrack {
 
 
 export default function TestSpotify() {
+
   return (
     <SafeAreaView
       style={{
@@ -56,6 +59,8 @@ function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [loadingTopHits, setLoadingTopHits] = useState(true);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const { isStory } = useLocalSearchParams();
+  const isStoryMode = isStory === "true";
 
 
 
@@ -272,7 +277,10 @@ function SearchPage() {
           waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
         };
         setSelectedMoment(moment);
-        router.push({ pathname: "/createProcess/momentProcess" });
+        router.push({
+          pathname: "/createProcess/momentProcess",
+          params: { isStory: isStoryMode ? "true" : "false" },
+        });
       }}
     >
       <View style={styles2.songRow}>
@@ -315,6 +323,13 @@ function SearchPage() {
         ) : (
           <Text style={styles2.sectionTitle}>Select a Song</Text>
         )}
+
+        {isStoryMode && (
+          <Text style={{ color: "#39868F", fontSize: 14, marginTop: 4, textAlign: 'center' }}>
+            You are creating a story — it will disappear in 24 hours
+          </Text>
+        )}
+
 
         {loading || (loadingTopHits && !search.trim()) ? (
           <ActivityIndicator size="large" color="#39868F" style={styles2.loader} />

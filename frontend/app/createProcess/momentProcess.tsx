@@ -16,6 +16,7 @@ import { useMomentStore } from "../stores/useMomentStore";
 import { supabase } from '@/constants/supabase';
 import { useAuth } from '@/_context/AuthContext';
 import { useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
@@ -67,6 +68,8 @@ export default function momentProcess() {
   const { user } = useAuth();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const { isStory } = useLocalSearchParams();
+  const [isStoryMode, setIsStoryMode] = useState(isStory === "true");
 
   // Check if user is signed in
   useEffect(() => {
@@ -96,13 +99,14 @@ export default function momentProcess() {
       return false;
     }
 
-    if(!moment) return false;
+    if (!moment) return false;
 
     if (saving) return false;
 
     try {
       setSaving(true);
 
+      // Get Supabase session token
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
 
@@ -110,11 +114,15 @@ export default function momentProcess() {
         Alert.alert("Error", "You are not signed in");
         return false;
       }
-      
+
+      // Determine which table to insert into
+      const table = isStoryMode ? "story_moments" : "moments";
+
       // Build the Spotify URL from the track ID
       const songUrl = `https://open.spotify.com/track/${moment.id}`;
 
-      const response = await fetch(`${nUrl}/api/moments`, {
+      // Send POST request to backend
+      const response = await fetch(`${nUrl}/api/${table}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -133,6 +141,7 @@ export default function momentProcess() {
 
       const resp = await response.json();
 
+      // Handle errors from backend
       if (!response.ok) {
         console.error("Backend error:", resp);
         Alert.alert("Error", resp.error || "Failed to create moment");
@@ -141,18 +150,20 @@ export default function momentProcess() {
 
       console.log("Moment created successfully:", resp);
 
+      // Show success alert and navigate back to profile
       Alert.alert(
         "Success!",
-        "Your moment has been created",
+        isStoryMode
+          ? "Your story moment has been created and will disappear in 24 hours"
+          : "Your moment has been created",
         [
           {
             text: "OK",
             onPress: () => {
               clearMoment();
-              //router.dismissAll();
               router.replace('/(tabs)/profile');
-            }
-          }
+            },
+          },
         ]
       );
 
@@ -165,6 +176,7 @@ export default function momentProcess() {
       setSaving(false);
     }
   };
+
 
   // Button powered page navigation
   const goToPage = async (page: number) => {
@@ -241,7 +253,7 @@ export default function momentProcess() {
         justifyContent: 'space-evenly',
         alignItems: 'center'
       }}>
-        <View style={{ justifyContent: 'flex-start', alignItems: 'center'}}>
+        <View style={{ justifyContent: 'flex-start', alignItems: 'center' }}>
           <View style={{ width: '95%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
             <View
               style={{ width: '90%', marginHorizontal: 30, borderWidth: 3, height: 10, borderRadius: 10, position: 'absolute' }}
