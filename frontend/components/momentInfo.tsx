@@ -6,6 +6,7 @@ export default interface MomentInfo {
 }
 
 export interface Moment {
+    spotifyId: any;
     id: string,
     title: string,
     artist: string,
