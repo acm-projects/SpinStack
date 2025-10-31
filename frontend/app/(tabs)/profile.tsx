@@ -355,9 +355,16 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={{ flexDirection: "row", width: "100%", justifyContent: "center", alignItems: "center", paddingLeft: 0 }}>
+      <View style={{ flexDirection: "row", width: "100%", justifyContent: "center", alignItems: "center", paddingLeft: 120 }}>
         <Text style={styles.header}>Profile</Text>
+      <View style = {{ alignSelf: "center", marginLeft: 90 }}>
+        <Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
+            <Feather name="settings" size={30} color="#333C42" />
+          </Pressable>
       </View>
+      </View>
+
+      
 
       <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5, paddingHorizontal: 20 }}>
         <Image
@@ -368,7 +375,7 @@ export default function ProfileScreen() {
             borderRadius: IMAGE_SIZE / 2,
           }}
         />
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 }}>
+        <View style={{ flex: 1, alignItems: "flex-start", justifyContent: "center", paddingHorizontal: 10 }}>
           <Text style={{ fontSize: 20, fontFamily: "Jacques Francois", color: "#333C42", fontWeight: "500" }}
             numberOfLines={1} ellipsizeMode="tail">
             {username}
@@ -396,9 +403,7 @@ export default function ProfileScreen() {
             </Text>
           </Pressable>
 
-          <Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
-            <Feather name="settings" size={30} color="#333C42" />
-          </Pressable>
+    
         </View>
       </View>
 

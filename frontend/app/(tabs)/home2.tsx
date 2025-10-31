@@ -225,6 +225,9 @@ export default function HomeScreen() {
     await Font.loadAsync({
       "Luxurious Roman": require("@/fonts/LuxuriousRoman-Regular.ttf"),
       "Jacques Francois": require("@/fonts/JacquesFrancois-Regular.ttf"),
+      "Lato": require("@/fonts/Lato-Regular.ttf"),
+      "LatoBold": require("@/fonts/Lato-Bold.ttf"),
+      "LatoItalic": require("@/fonts/Lato-Italic.ttf")
     });
     setFontsLoaded(true);
   };
@@ -418,7 +421,7 @@ export default function HomeScreen() {
       </ScrollView>
 
       <View style={styles.filterContainer}>
-        {["Following", "For You"].map((filter) => (
+        {["Friends", "For You"].map((filter) => (
           <Pressable
             key={filter}
             style={[
@@ -463,7 +466,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontFamily: "Luxurious Roman",
+    fontFamily: "Lato",
     fontSize: 34,
     paddingTop: 60,
     marginLeft: 97,
@@ -505,7 +508,7 @@ const styles = StyleSheet.create({
   filterText: {
     color: "#afb2b3ff",
     fontSize: 18,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   filterTextActive: {
     color: "#333C42",
@@ -527,19 +530,19 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#333C42",
     fontSize: 14,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   time: {
     fontSize: 11,
     color: "#777",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   caption: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     fontSize: 12,
     color: "#333C42",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
     textAlign: "center",
   },
 });
