@@ -32,7 +32,7 @@ function ClickableTab({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity onPress={onPress} style={styles.iconTab}>
+    <TouchableOpacity onPress={onPress} style={{padding: 10,}}>
       <Feather
         name={icon}
         size={28}
@@ -44,6 +44,7 @@ function ClickableTab({
     </TouchableOpacity>
   );
 }
+
 
 // ======= GROUP ITEM =======
 function GroupClickTab({
@@ -279,9 +280,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 25,
-  },
-  iconTab: {
-    padding: 10,
   },
   searchBar: {
     position: 'absolute',

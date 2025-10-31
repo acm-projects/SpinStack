@@ -19,7 +19,7 @@ import { useMomentInfoStore } from "../../stores/useMomentInfoStore";
 
 const POLAROID_WIDTH = 150;
 const POLAROID_HEIGHT = 200;
-const POLAROID_URL = require("@/assets/images/polaroidFrame.webp"); 
+const POLAROID_URL = require("@/assets/images/polaroidFrame.webp");
 const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
 
 interface Profile {
@@ -104,24 +104,24 @@ export default function FriendProfile() {
 
             if (error) throw error;
 
-                let pfp = null;
-                if (data.pfp_url) {
-                    const res = await fetch(
-                        `${nUrl}/api/upload/download-url/${data.pfp_url}`
-                    );
-                    if (res.ok) {
-                        const { downloadURL } = await res.json();
-                        pfp = downloadURL;
-                    }
+            let pfp = null;
+            if (data.pfp_url) {
+                const res = await fetch(
+                    `${nUrl}/api/upload/download-url/${data.pfp_url}`
+                );
+                if (res.ok) {
+                    const { downloadURL } = await res.json();
+                    pfp = downloadURL;
                 }
-
-                setProfile({ ...data, pfp_url: pfp });
-            } catch (err) {
-                console.error("Failed to load profile", err);
-            } finally {
-                setLoadingProfile(false);
             }
-        };
+
+            setProfile({ ...data, pfp_url: pfp });
+        } catch (err) {
+            console.error("Failed to load profile", err);
+        } finally {
+            setLoadingProfile(false);
+        }
+    };
 
     const fetchMoments = async () => {
         if (!id) return;
@@ -217,7 +217,62 @@ export default function FriendProfile() {
         }
     };
 
+    const sendFriendRequest = async () => {
+        try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const currentUser = sessionData?.session?.user;
+            if (!currentUser) {
+                Alert.alert("Error", "You must be logged in to send friend requests.");
+                return;
+            }
+
+            // Prevent sending to self
+            if (currentUser.id === id) {
+                Alert.alert("Error", "You can't send a friend request to yourself!");
+                return;
+            }
+
+            // Check for existing friend request
+            const { data: existingRequests, error: existingError } = await supabase
+                .from("notifications")
+                .select("*")
+                .eq("sender_id", currentUser.id)
+                .eq("user_id", id) // ✅ FIXED
+                .eq("type", "friend_request")
+                .maybeSingle();
+
+            if (existingError && existingError.code !== "PGRST116") throw existingError;
+            if (existingRequests) {
+                Alert.alert("Already Sent", "You’ve already sent a friend request.");
+                return;
+            }
+
+            // Insert new friend request notification
+            const { error } = await supabase.from("notifications").insert([
+                {
+                    sender_id: currentUser.id,
+                    user_id: id, // ✅ FIXED
+                    type: "friend_request",
+                    content: `${profile?.username || "Someone"} sent you a friend request.`, // ✅ 'content' not 'message'
+                },
+            ]);
+
+            if (error) throw error;
+
+            Alert.alert("Friend request sent!");
+        } catch (err) {
+            console.error("Error sending friend request:", err);
+            Alert.alert("Error", "Could not send friend request.");
+        }
+    };
+
+
     const addFriend = async () => {
+        await sendFriendRequest();
+    };
+
+    // Remove friend functionality
+    const removeFriend = async () => {
         try {
             const sessionData = await supabase.auth.getSession();
             const currentUser = sessionData?.data?.session?.user;
@@ -225,31 +280,47 @@ export default function FriendProfile() {
 
             if (!currentUser || !accessToken) return;
 
-            const response = await fetch(`${nUrl}/api/friends`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({
-                    user_id: currentUser.id,
-                    friend_id: id,
-                }),
-            });
+            // Ask for confirmation before removal
+            Alert.alert(
+                "Remove Friend",
+                "Are you sure you want to remove this friend?",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                        text: "Yes, Remove",
+                        style: "destructive",
+                        onPress: async () => {
+                            const response = await fetch(`${nUrl}/api/friends`, {
+                                method: "DELETE",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    Authorization: `Bearer ${accessToken}`,
+                                },
+                                body: JSON.stringify({
+                                    user_id: currentUser.id,
+                                    friend_id: id,
+                                }),
+                            });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error("Failed to add friend:", errorData);
-                return;
-            }
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                console.error("Failed to remove friend:", errorData);
+                                Alert.alert("Error", "Could not remove friend.");
+                                return;
+                            }
 
-            Alert.alert("Friend added!");
-            setIsFriend(true);
-            fetchFriendsList();
+                            Alert.alert("Friend removed");
+                            setIsFriend(false);
+                            fetchFriendsList();
+                        },
+                    },
+                ]
+            );
         } catch (err) {
-            console.error("Error adding friend:", err);
+            console.error("Error removing friend:", err);
         }
     };
+
 
     const handleBackPress = () => {
         if (originalProfileId === 'main') {
@@ -276,16 +347,19 @@ export default function FriendProfile() {
 
     const handleMomentPress = (moment: ContentItem) => {
         const trackId = extractTrackId(moment.song_url || '');
-        
+
         setSelectedMomentInfo({
             moment: {
-                id: trackId || moment.id,
+                id: moment.id,           // DB moment ID stays here
+                spotifyId: trackId || null, // Spotify track ID separately
                 title: moment.title,
                 artist: moment.description || "Unknown Artist",
                 songStart: moment.start_time || 0,
                 songDuration: moment.duration || 30,
                 length: 180,
-                album: moment.cover_url ? { uri: moment.cover_url } : require("@/assets/images/album1.jpeg"),
+                album: moment.cover_url
+                    ? { uri: moment.cover_url }
+                    : require("@/assets/images/album1.jpeg"),
                 waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
             },
             user: {
@@ -293,7 +367,7 @@ export default function FriendProfile() {
                 profilePic: profile?.pfp_url,
             }
         });
-        
+
         router.push('/stack' as RelativePathString);
     };
 
@@ -322,7 +396,7 @@ export default function FriendProfile() {
     const { username, bio, pfp_url } = profile;
 
     const renderMoment = ({ item }: { item: ContentItem }) => (
-        <Pressable 
+        <Pressable
             style={{ flex: 1, margin: 6, alignItems: "center" }}
             onPress={() => handleMomentPress(item)}
         >
@@ -429,20 +503,33 @@ export default function FriendProfile() {
                             {numFriends} Friends
                         </Text>
                     </Pressable>
-                    {!isFriend && (
-                        <Pressable
-                            onPress={addFriend}
+                    <Pressable
+                        onPress={isFriend ? removeFriend : addFriend}
+                        style={{
+                            backgroundColor: isFriend ? "#B85C5C" : "#39868F",
+                            paddingVertical: 4,
+                            paddingHorizontal: 8,
+                            borderRadius: 8,
+                            marginTop: 4,
+                            maxWidth: 90,
+                            alignItems: "center",
+                        }}
+                    >
+                        <Text
                             style={{
-                                backgroundColor: "#39868F",
-                                paddingVertical: 4,
-                                paddingHorizontal: 8,
-                                borderRadius: 8,
-                                marginTop: 4,
+                                color: "#FFF0E2",
+                                fontFamily: "Jacques Francois",
+                                textAlign: "center",
+                                flexWrap: "wrap",
+                                fontSize: 13,
                             }}
+                            numberOfLines={2}
                         >
-                            <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois" }}>Add Friend</Text>
-                        </Pressable>
-                    )}
+                            {isFriend ? "Remove\nFriend" : "Add\nFriend"}
+                        </Text>
+                    </Pressable>
+
+
                 </View>
             </View>
 

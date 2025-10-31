@@ -19,6 +19,7 @@ export default function ProfileSettings() {
 
   const handleSignOut = async () => {
     logout();
+    router.dismissAll();
     router.replace("/signupProcess/signupPage" as RelativePathString);
   };
 
