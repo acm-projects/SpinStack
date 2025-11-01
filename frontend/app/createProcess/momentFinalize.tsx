@@ -57,7 +57,7 @@ export default function MomentFinalizeView({ moment, scrollFunc, height }: { mom
               </View>
               <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', marginTop: 0.6*bubbleHeight }}>
                 <View style={{ marginLeft: 0.2*bubbleHeight }}>
-                  <Text style={{ fontSize: 0.6*bubbleHeight, fontFamily: 'Jacques Francois', fontWeight: 'bold', color: '#333C42' }}>
+                  <Text style={{ fontSize: 0.6*bubbleHeight, fontFamily: 'Lato', fontWeight: 'bold', color: '#333C42' }}>
                     {moment.title} - {moment.artist}
                   </Text>
                 </View>
@@ -79,7 +79,7 @@ export default function MomentFinalizeView({ moment, scrollFunc, height }: { mom
             }}
             onPress={() => scrollFunc(10)}
           >
-            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10, fontFamily: 'Jacques Francois' }}>
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10, fontFamily: 'Lato' }}>
               Next
             </Text>
           </TouchableOpacity>

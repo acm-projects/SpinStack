@@ -180,7 +180,7 @@ export default function ProfileImageScreen() {
           }}>
             <Text style={{
               color: "white",
-              fontFamily: "Jacques Francois",
+              fontFamily: "Lato",
               textAlign: "center",
               fontSize: 16
             }}>Next</Text>
@@ -196,8 +196,8 @@ const styles = StyleSheet.create({
   title: {
     color: '#333C42',
     fontSize: 35,
-    fontFamily: "Luxurious Roman",
-    fontWeight: '600',
+    fontFamily: "Lato",
+    fontWeight: '700',
     textAlign: 'center',
     marginBottom: 75,
   },
