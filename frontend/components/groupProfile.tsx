@@ -5,8 +5,8 @@ const GroupProfile = ({pics, scale=1}: {pics: (ImageSourcePropType | null)[], sc
   //limit to 3 bc why not
   const displayedPics = pics.slice(0, 3);
 
-  const arrangementRadius = scale * 20;
-  const center = scale * 40; //offset of center
+  const arrangementRadius = scale * 16;
+  const center = scale * 30; //offset of center
 
   const size = scale * ((pics.length == 1) ? (60) : ((pics.length == 2) ? (50) : (40)));
 
