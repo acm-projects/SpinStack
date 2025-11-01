@@ -145,20 +145,20 @@ export default function SignUpPage() {
             <Text style={styles.titleText}>SpinStack</Text>
             <Text style={styles.baseText}>Getting Started</Text>
             <View style={{ width: "70%", paddingTop: 30 }}>
-              <Text style={{ color: "#333C42", paddingBottom: 20, fontFamily: "Jacques Francois", fontSize: 16, textAlign: "center" }}>
+              <Text style={{ color: "#333C42", paddingBottom: 20, fontFamily: "Lato", fontSize: 16, textAlign: "center" }}>
                 Create a SpinStack account with a username and password
               </Text>
             </View>
 
             <TextInput
-              style={[styles.input, { color: "#333C42", fontFamily: "Jacques Francois", backgroundColor: "#FFF0E2", borderWidth: 2, borderColor: "#333C42", marginTop: 0 }]}
+              style={[styles.input, { color: "#333C42", fontFamily: "Lato", backgroundColor: "#FFF0E2", borderWidth: 2, borderColor: "#333C42", marginTop: 0 }]}
               placeholder="Enter email"
               placeholderTextColor="#333C42"
               value={email}
               onChangeText={setEmail}
             />
             <TextInput
-              style={[styles.input, { color: "#", fontFamily: "Jacques Francois", backgroundColor: "#FFF0E2", borderWidth: 2, borderColor: "#333C42" }]}
+              style={[styles.input, { color: "#", fontFamily: "Lato", backgroundColor: "#FFF0E2", borderWidth: 2, borderColor: "#333C42" }]}
               placeholder="Enter password"
               placeholderTextColor="#333C42"
               secureTextEntry
@@ -167,14 +167,14 @@ export default function SignUpPage() {
             />
             <Pressable onPress={handleSignUp}>
               <View style={{ backgroundColor: "#333c42", width: 352, padding: 10, borderRadius: 8 }}>
-                <Text style={{ flex: 1, color: "white", fontFamily: "Jacques Francois", textAlign: "center", fontSize: 15 }}>Sign Up</Text>
+                <Text style={{ flex: 1, color: "white", fontFamily: "Lato", textAlign: "center", fontSize: 15 }}>Sign Up</Text>
 
               </View>
             </Pressable>
 
             <Pressable onPress={handleSignIn}>
               <View style={{ backgroundColor: "#333c42", width: 352, padding: 10, borderRadius: 8, marginTop: 10 }}>
-                <Text style={{ color: "white", fontFamily: "Jacques Francois", textAlign: "center", fontSize: 15 }}>Sign In</Text>
+                <Text style={{ color: "white", fontFamily: "Lato", textAlign: "center", fontSize: 15 }}>Sign In</Text>
 
               </View>
             </Pressable>
@@ -188,7 +188,7 @@ export default function SignUpPage() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: "center", padding: 20, paddingTop: 75 },
-  baseText: { color: "#333C42", paddingBottom: 50, fontFamily: "Jacques Francois", fontSize: 16 },
-  titleText: { fontSize: 35, fontFamily: "Luxurious Roman", color: "#333C42", paddingTop: 20 },
+  baseText: { color: "#333C42", paddingBottom: 50, fontFamily: "Lato", fontSize: 16 },
+  titleText: { fontSize: 35, fontFamily: "Lato", color: "#333C42", paddingTop: 20, fontWeight: 700 },
   input: { width: "100%", borderWidth: 1, borderColor: "#333C42", padding: 10, marginBottom: 10, borderRadius: 10 },
 });

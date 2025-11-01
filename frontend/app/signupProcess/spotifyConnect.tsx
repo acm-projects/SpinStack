@@ -127,7 +127,7 @@ export default function SpotifyConnect() {
         {isConnected ? (
           <View style={{ alignItems: 'center', gap: 20 }}>
             <View style={{ backgroundColor: '#8DD2CA', padding: 15, borderRadius: 10, borderWidth: 2, borderColor: '#333C42' }}>
-              <Text style={{ fontFamily: 'Jacques Francois', fontSize: 16, color: '#333C42', textAlign: 'center' }}>
+              <Text style={{ fontFamily: 'Lato', fontSize: 16, color: '#333C42', textAlign: 'center' }}>
                 ✓ Spotify Connected
               </Text>
             </View>
@@ -159,7 +159,7 @@ export default function SpotifyConnect() {
 
         <Pressable onPress={handleNext}>
           <View style={{ backgroundColor: "#333c42", width: 352, padding: 10, borderRadius: 8 }}>
-            <Text style={{ color: "white", fontFamily: "Jacques Francois", textAlign: "center", fontSize: 16 }}>
+            <Text style={{ color: "white", fontFamily: "Lato", textAlign: "center", fontSize: 16 }}>
               Next
             </Text>
           </View>
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 458,
-    fontFamily: "Luxurious Roman"
+    fontFamily: "Lato"
   },
   spotifyButton: {
     backgroundColor: "#1DB954",
@@ -197,6 +197,6 @@ const styles = StyleSheet.create({
     color: "black",
     fontSize: 18,
     fontWeight: "500",
-    fontFamily: "Jacques Francois"
+    fontFamily: "Lato"
   },
 });

@@ -37,7 +37,7 @@ export default function TestSpotify() {
         backgroundColor: '#FFF0E2',
       }}
     >
-      <Text style={{ color: "black", fontSize: 30, fontWeight: "500", fontFamily: 'Luxurious Roman' }}>
+      <Text style={{ color: "black", fontSize: 30, fontWeight: "700", fontFamily: 'Lato' }}>
         Create Your Moment
       </Text>
 
@@ -363,7 +363,7 @@ const styles2 = StyleSheet.create({
   },
   searchInput: {
     color: "#333C42",
-    fontFamily: 'Jacques Francois',
+    fontFamily: 'Lato',
     fontSize: 16,
   },
   sectionTitle: {
@@ -373,7 +373,7 @@ const styles2 = StyleSheet.create({
     marginTop: 15,
     marginBottom: 15,
     textAlign: "center",
-    fontFamily: 'Jacques Francois',
+    fontFamily: 'Lato',
   },
   songRow: {
     flexDirection: "row",
@@ -386,7 +386,7 @@ const styles2 = StyleSheet.create({
   rank: {
     color: "#333c42",
     fontSize: 20,
-    fontFamily: 'Jacques Francois',
+    fontFamily: 'Lato',
     width: 25,
     textAlign: 'center'
   },
@@ -396,12 +396,12 @@ const styles2 = StyleSheet.create({
   },
   songTitle: {
     color: "#333c42",
-    fontFamily: 'Jacques Francois',
+    fontFamily: 'Lato',
     fontSize: 16,
   },
   songArtist: {
     color: "#39868F",
-    fontFamily: 'Jacques Francois',
+    fontFamily: 'Lato',
     fontSize: 13,
   },
   momentCount: {
@@ -409,7 +409,7 @@ const styles2 = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
     fontWeight: "500",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   albumArt: {
     width: 40,
@@ -437,7 +437,7 @@ const styles2 = StyleSheet.create({
   emptyText: {
     color: "#39868F",
     fontSize: 16,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
     textAlign: "center",
   },
 });

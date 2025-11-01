@@ -669,7 +669,7 @@ export default function HomeScreen() {
             </View>
             <View style={styles.popupContent}>
               {friendRequests.length === 0 ? (
-                <Text style={{ color: "#333C42", fontFamily: "Jacques Francois" }}>
+                <Text style={{ color: "#333C42", fontFamily: "Lato" }}>
                   No notifications yet 📭
                 </Text>
               ) : (
@@ -680,7 +680,7 @@ export default function HomeScreen() {
                         source={req.users.profileUrl ? { uri: req.users.profileUrl } : require("@/assets/images/profile.png")}
                         style={{ width: 40, height: 40, borderRadius: 20, marginRight: 10 }}
                       />
-                      <Text style={{ flex: 1, fontFamily: "Jacques Francois", color: "#333C42" }}>
+                      <Text style={{ flex: 1, fontFamily: "Lato", color: "#333C42" }}>
                         {req.type === "friend_request"
                           ? `${req.users.username} sent you a friend request`
                           : req.type === "like"
@@ -729,7 +729,7 @@ export default function HomeScreen() {
               <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
                 <ScrollView style={{ width: "100%" }}>
                   {userStacks.length === 0 ? (
-                    <Text style={{ textAlign: "center", color: "#333C42", fontFamily: "Jacques Francois" }}>
+                    <Text style={{ textAlign: "center", color: "#333C42", fontFamily: "Lato" }}>
                       No stacks yet
                     </Text>
                   ) : (
@@ -789,6 +789,7 @@ const styles = StyleSheet.create({
     marginLeft: 97,
     alignSelf: "center",
     color: "#333C42",
+    fontWeight: 600
   },
   bellIcon: {
     alignSelf: "center",
@@ -886,7 +887,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   popupTitle: {
-    fontFamily: "Luxurious Roman",
+    fontFamily: "Lato",
     fontSize: 22,
     color: "#333C42",
   },
@@ -906,7 +907,7 @@ const styles = StyleSheet.create({
   },
   stackText: {
     marginLeft: 10,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
     color: "#333C42",
     fontSize: 16,
   },
@@ -918,7 +919,7 @@ const styles = StyleSheet.create({
   newStackText: {
     marginLeft: 6,
     color: "#333C42",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
     fontSize: 15,
   },
 });

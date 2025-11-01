@@ -200,7 +200,7 @@ export default function ProfileInfo() {
 const inputExtraStyle = {
   textAlignVertical: 'top' as const,
   color: '#333C42',
-  fontFamily: 'Jacques Francois',
+  fontFamily: 'Lato',
   backgroundColor: '#FFF0E2',
   borderWidth: 2,
   borderColor: '#333C42',
@@ -216,16 +216,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 30,
-    fontFamily: 'Jacques Francois',
+    fontFamily: 'Lato',
   },
   title2: {
     color: '#333C42',
     fontSize: 35,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
     marginBottom: 20,
     marginTop: -50,
-    fontFamily: 'Luxurious Roman',
+    fontFamily: 'Lato',
   },
   input: {
     backgroundColor: '#FFF0E2',
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderWidth: 1,
     borderColor: '#222',
-    fontFamily: 'Jacques Francois',
+    fontFamily: 'Lato',
   },
   button: {
     backgroundColor: '#333c42',
@@ -249,6 +249,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Jacques Francois',
+    fontFamily: 'Lato',
   },
 });

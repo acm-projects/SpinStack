@@ -208,7 +208,7 @@ export default function momentProcess() {
   if (!moment) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF0E2' }}>
-        <Text style={{ fontFamily: 'Jacques Francois', fontSize: 18, color: '#333C42' }}>
+        <Text style={{ fontFamily: 'Lato', fontSize: 18, color: '#333C42' }}>
           No moment selected
         </Text>
       </View>
@@ -309,7 +309,7 @@ export default function momentProcess() {
             borderWidth: 2,
             borderColor: '#333C42'
           }}>
-            <Text style={{ fontFamily: 'Jacques Francois', fontSize: 18, color: '#333C42' }}>
+            <Text style={{ fontFamily: 'Lato', fontSize: 18, color: '#333C42' }}>
               Creating your moment...
             </Text>
           </View>
