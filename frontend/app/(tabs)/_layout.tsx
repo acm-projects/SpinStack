@@ -90,10 +90,10 @@ export default function TabLayout() {
     return (
       <View
         style={{
-          width: '100%',
+          width: '101%',
           aspectRatio: 3.62344538,
           position: 'absolute',
-          left: 0,
+          left: -2,
           bottom: -8,
           right: 0,
           backgroundColor: 'transparent',

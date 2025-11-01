@@ -599,7 +599,7 @@ export default function HomeScreen() {
 
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FFF0E2" }}>
+    <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 0.747663551 * tabHeight}}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>SpinStack</Text>
