@@ -94,6 +94,9 @@ export default function MomentPickView({
     console.log("🛑 Executing cleanup");
     cleanupExecutedRef.current = true;
     isActiveRef.current = false;
+    
+    // CRITICAL: Reset dragging flag during cleanup
+    isDraggingRef.current = false;
 
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
@@ -401,6 +404,12 @@ export default function MomentPickView({
       // Store pending seek position instead of calling immediately
       pendingSeekMs.current = Math.floor(newStart * moment.length * 1000);
       
+      // Cancel any previous scheduled seeks - user is still adjusting
+      if (seekTimeoutRef.current) {
+        clearTimeout(seekTimeoutRef.current);
+        seekTimeoutRef.current = null;
+      }
+      
       return newStart;
     }
 
@@ -424,6 +433,12 @@ export default function MomentPickView({
       setCurrentDuration(newDuration);
       moment.songDuration = newDuration;
       
+      // Cancel any previous scheduled seeks - user is still adjusting
+      if (seekTimeoutRef.current) {
+        clearTimeout(seekTimeoutRef.current);
+        seekTimeoutRef.current = null;
+      }
+      
       return newEnd;
     }
 
@@ -438,7 +453,7 @@ export default function MomentPickView({
     endX.setValue(mEnd * w);
   };
 
-  // NEW: Batch seek calls to avoid rate limiting
+  // NEW: Batch seek calls to avoid rate limiting - increased delay
   const scheduleBatchedSeek = () => {
     if (seekTimeoutRef.current) {
       clearTimeout(seekTimeoutRef.current);
@@ -446,10 +461,11 @@ export default function MomentPickView({
 
     seekTimeoutRef.current = setTimeout(async () => {
       if (pendingSeekMs.current !== null && token && isActiveRef.current) {
+        console.log('📍 Executing batched seek to:', pendingSeekMs.current);
         await seekTo(token, pendingSeekMs.current);
         pendingSeekMs.current = null;
       }
-    }, 1000); // Wait 1 second after user stops dragging before seeking
+    }, 1500); // Increased to 1.5 seconds to ensure user has finished adjusting
   };
 
   // Pan responder for start slider
@@ -475,18 +491,19 @@ export default function MomentPickView({
         startX.flattenOffset();
         const newStart = updateStartPosition(startX.__getValue());
 
+        // IMMEDIATELY reset dragging flag on release
+        isDraggingRef.current = false;
+
         // Schedule batched seek after user releases
         if (currentDuration > 0 && currentDuration <= MAX_DURATION_SECONDS) {
           scheduleBatchedSeek();
           
-          // Wait for seek to complete before restarting
+          // Wait longer for seek to complete before restarting - increased delay
           setTimeout(() => {
-            isDraggingRef.current = false;
             restartAnimation();
             setIsPlaying(true);
-          }, 1200); // Slightly longer than batch delay
+          }, 1800); // Increased to 1.8 seconds (300ms after the seek call)
         } else {
-          isDraggingRef.current = false;
           if (token) pausePlayback(token);
           pauseAnimation();
           setIsPlaying(false);
@@ -518,20 +535,21 @@ export default function MomentPickView({
         endX.flattenOffset();
         const newEnd = updateEndPosition(endX.__getValue());
 
+        // IMMEDIATELY reset dragging flag on release
+        isDraggingRef.current = false;
+
         // Schedule batched seek after user releases
         if (currentDuration > 0 && currentDuration <= MAX_DURATION_SECONDS) {
           // Seek to start position since duration changed
           pendingSeekMs.current = Math.floor(mStart * moment.length * 1000);
           scheduleBatchedSeek();
           
-          // Wait for seek to complete before restarting
+          // Wait longer for seek to complete before restarting - increased delay
           setTimeout(() => {
-            isDraggingRef.current = false;
             restartAnimation();
             setIsPlaying(true);
-          }, 1200); // Slightly longer than batch delay
+          }, 1800); // Increased to 1.8 seconds (300ms after the seek call)
         } else {
-          isDraggingRef.current = false;
           if (token) pausePlayback(token);
           pauseAnimation();
           setIsPlaying(false);
