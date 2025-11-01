@@ -130,7 +130,7 @@ export default function SpotifyConnect() {
 
   const handleNext = () => {
     setProfileComplete(true);
-    router.dismissAll();
+    // Use replace with the full path to avoid navigation stack issues
     router.replace("/(tabs)/profile");
   };
 
@@ -144,7 +144,7 @@ export default function SpotifyConnect() {
           text: "Skip",
           onPress: () => {
             setProfileComplete(true);
-            router.dismissAll();
+            // Use replace with the full path to avoid navigation stack issues
             router.replace("/(tabs)/profile");
           }
         }

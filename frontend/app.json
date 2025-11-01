@@ -61,7 +61,7 @@
         "@wwdrew/expo-spotify-sdk",
         {
           "clientID": "97ee0c1cf15242f7a87bc82ecf59d39c",
-          "scheme": "myapp",
+          "scheme": "spinstack",
           "host": "authenticate"
         }
       ],
