@@ -6,14 +6,11 @@ import {useWindowDimensions} from 'react-native';
 import Waveform from './waveform';
 import {Moment} from './momentInfo';
 import {User} from './momentInfo';
-import Top from '@/assets/other/Group 7.svg';
-import Upper from '@/assets/other/Group 5.svg';
-import Lower from '@/assets/other/Group 8.svg';
+import Background from '@/assets/other/Moment Background(1).svg';
 import GroupProfile from './groupProfile';
 import RatingButton from './ui/ratingButton';
 import { useNavigation } from '@react-navigation/native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-
 import { RNSVGSvgIOS } from 'react-native-svg';
 import { DailyInfo } from './groupInfo';
 
@@ -30,6 +27,16 @@ export default function DailyView({ daily, users }: { daily: DailyInfo, users: U
     const vinylImg = require('../assets/images/vinyl.png');
     const spinAnim = useRef(new Animated.Value(0)).current;
     const [rating, setRating] = useState<number | null>(4);
+
+    const vinylSize = width * 0.97;
+
+    const vinylStyle = {
+        width: vinylSize,
+        height: vinylSize,
+        top: 0.475*height - vinylSize / 2,
+        left: width / 2 - vinylSize / 2,
+    };
+
 
     useEffect(() => {
     Animated.loop(
@@ -76,14 +83,8 @@ export default function DailyView({ daily, users }: { daily: DailyInfo, users: U
             <View style = {StyleSheet.absoluteFill}>
                 <View style = {{height: '100%', alignItems: 'center', justifyContent: "flex-start"}}>
                     <View style = {{width: '100%', height: 170}}>
-                        <RNSVGSvgIOS><Top/></RNSVGSvgIOS>
+                        <RNSVGSvgIOS><Background/></RNSVGSvgIOS>
                     </View>
-                    <View style={{marginLeft: 0 ,height:298}}>
-                            <RNSVGSvgIOS><Upper/></RNSVGSvgIOS>
-                        </View>
-                        <View style = {{marginLeft: 0, marginTop: -40, height: 298}}>
-                            <RNSVGSvgIOS><Lower/></RNSVGSvgIOS>
-                        </View>
                     
                 </View>
             </View>
@@ -91,7 +92,7 @@ export default function DailyView({ daily, users }: { daily: DailyInfo, users: U
                 
             
             
-            <SafeAreaView style = {[StyleSheet.absoluteFill]} edges = {['top', 'left', 'right']}>
+            <SafeAreaView style = {[StyleSheet.absoluteFill, {justifyContent: 'space-between', marginBottom: '15%'}]} edges = {['top', 'left', 'right', 'bottom']}>
                 <View style = {{justifyContent: 'flex-start'}}>
                     <View style = {{marginLeft: 20, marginHorizontal: 10, flexDirection: 'row', alignItems: 'flex-start', marginTop: -10}}>
                         <GroupProfile pics = {users.slice(0, 3).map(user => (typeof user.profilePic === "string"
@@ -101,7 +102,9 @@ export default function DailyView({ daily, users }: { daily: DailyInfo, users: U
                         <View style = {{marginLeft: 10, marginRight: 40, flexDirection: 'row', flex: 1}}>
                             <View style = {[{width: '100%', justifyContent: "center"}]}>
                                 <View style = {[{width: '100%', height: 5, borderRadius: 50, backgroundColor: '#333c42', marginTop: 7}]}/>
-                                <View style = {{marginTop: 30}}><Waveform data = {data.waveform} height = {25} start = {data.songStart / data.length} end = {(data.songStart + data.songDuration)/(data.length)} baseColor = "#333C42" selectedColor = "#87bd84" anim = {true}/></View>
+                                <View style = {{marginTop: 30}}><Waveform data = {data.waveform} height = {25} start = {data.songStart / data.length} end = {(data.songStart + data.songDuration)/(data.length)} baseColor="#333C42"
+                    regionColor = "#6d976aff"
+                    selectedColor='#84DA7F' duration = {daily.moment.songDuration} anim = {true}/></View>
                         
                             </View>
                         </View>
@@ -110,43 +113,39 @@ export default function DailyView({ daily, users }: { daily: DailyInfo, users: U
                         <Text style={[styles.texxt, {fontFamily: 'Luxurious Roman'}]}>{data.title}</Text>
                         <Text style={[styles.texxt, {fontSize: 15, fontFamily: 'Jacques Francois'}]}>{data.artist} </Text>
                     </View>
-                    
                 </View>
                 
+                {/* Absolutely centered spinning vinyl */}
+<View style={[{position: 'absolute',
+  width: vinylSize,
+  height: vinylSize,
+  justifyContent: 'center',
+  alignItems: 'center',
+  }, vinylStyle]}>
+  <Animated.View style={[styles.vinylWrapper, { transform: [{ rotate: spin }] }]}>
+    <View style={styles.vinylContent}>
+      <Image
+        source={typeof data.album === "string" ? { uri: data.album } : data.album}
+        style={styles.albumImage}
+      />
+      
+    </View>
+    <Image source={vinylImg} style={styles.vinylImage} />
+  </Animated.View>
+</View>
+
                 
-                <View style = {{flex: 0.87, alignContent: "center"}}>
-                    <View style = {[{flex: 1, justifyContent: "center", alignItems: "center"}]}>
-                        <Animated.View style = {{transform: [{rotate: spin}], position: 'relative', width: '100%'}}> 
-                            <View style = {[{justifyContent: "center", alignItems: "center"}]}>
-                                <Image 
-                                    source = {
-                                        typeof data.album === "string"
-                                        ? { uri: data.album }
-                                        : data.album
-                                    }
-                                    style = {{width: '40%', aspectRatio: 1, height: undefined}}
-                                />
-                                <Image 
-                                    source = {vinylImg}
-                                    style = {{width: '100%', aspectRatio: 1, height: undefined, position: "absolute"}}>
-                                </Image>
-                                
-                            </View>
-                        </Animated.View>
-                    </View>
                     
-                    
-                    <View style = {[{flexDirection: 'row', alignItems: "flex-start", justifyContent: "flex-end", marginRight: 15}]}>
-                        {[1,2,3,4,5].map((num) => (<RatingButton key = {num} value = {num} selected = {rating === num} onPress = {setRating}/>))}
-                        <View style = {{position: 'absolute', marginTop: 90, marginRight: 40}}>
-                            <TouchableOpacity onPress={handlePress}>
-                                <FontAwesome
-                                    name={'send'}
-                                    size={50}
-                                    color={sent ? '#5eb0d9ff' : 'gray'}
-                                />
-                            </TouchableOpacity>
-                        </View>
+                <View style = {[{flexDirection: 'row', alignItems: "flex-start", justifyContent: "flex-end", marginRight: '3%'}]}>
+                    {[1,2,3,4,5].map((num) => (<RatingButton key = {num} value = {num} selected = {rating === num} onPress = {setRating}/>))}
+                    <View style = {{position: 'absolute', marginTop: '20%', marginRight: '15%'}}>
+                        <TouchableOpacity onPress={handlePress}>
+                            <FontAwesome
+                                name={'send'}
+                                size={width/8.6}
+                                color={sent ? '#5eb0d9ff' : 'gray'}
+                            />
+                        </TouchableOpacity>
                     </View>
                 </View>
                 
@@ -168,5 +167,36 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         color: '#333C42'
-    }
+    },
+vinylWrapper: {
+  justifyContent: 'center',
+  alignItems: 'center',
+  width: '100%',
+  height: '100%',
+},
+
+vinylContent: {
+  justifyContent: 'center',
+  alignItems: 'center',
+  position: 'relative',
+  width: '100%',
+  height: '100%',
+  resizeMode: 'none'
+},
+
+albumImage: {
+  width: '40%',
+  aspectRatio: 1,
+  zIndex: 1,
+  height: undefined,
+},
+
+vinylImage: {
+  position: 'absolute',
+  width: '100%',
+  aspectRatio: 1,
+  height: undefined,
+  zIndex: 2,
+},
+
 })
