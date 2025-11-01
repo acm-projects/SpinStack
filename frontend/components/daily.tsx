@@ -28,12 +28,12 @@ export default function DailyView({ daily, users }: { daily: DailyInfo, users: U
     const spinAnim = useRef(new Animated.Value(0)).current;
     const [rating, setRating] = useState<number | null>(4);
 
-    const vinylSize = width * 0.97;
+    const vinylSize = width * 0.98;
 
     const vinylStyle = {
         width: vinylSize,
         height: vinylSize,
-        top: 0.475*height - vinylSize / 2,
+        top: 0.46*height - vinylSize / 2,
         left: width / 2 - vinylSize / 2,
     };
 
@@ -88,54 +88,50 @@ export default function DailyView({ daily, users }: { daily: DailyInfo, users: U
                     
                 </View>
             </View>
-            
                 
             
             
             <SafeAreaView style = {[StyleSheet.absoluteFill, {justifyContent: 'space-between', marginBottom: '15%'}]} edges = {['top', 'left', 'right', 'bottom']}>
                 <View style = {{justifyContent: 'flex-start'}}>
-                    <View style = {{marginLeft: 20, marginHorizontal: 10, flexDirection: 'row', alignItems: 'flex-start', marginTop: -10}}>
+                    <View style = {{marginLeft: 0.0465116279*width, marginHorizontal: 0.023255814*width, flexDirection: 'row', alignItems: 'flex-start', marginTop: -0.0107*height}}>
                         <GroupProfile pics = {users.slice(0, 3).map(user => (typeof user.profilePic === "string"
                                         ? { uri: user.profilePic }
                                         : user.profilePic))} scale={0.6} 
                                         />
-                        <View style = {{marginLeft: 10, marginRight: 40, flexDirection: 'row', flex: 1}}>
+                        <View style = {{marginLeft: 0.023255814*width, marginRight: 0.0930232558*width, flexDirection: 'row', flex: 1}}>
                             <View style = {[{width: '100%', justifyContent: "center"}]}>
-                                <View style = {[{width: '100%', height: 5, borderRadius: 50, backgroundColor: '#333c42', marginTop: 7}]}/>
-                                <View style = {{marginTop: 30}}><Waveform data = {data.waveform} height = {25} start = {data.songStart / data.length} end = {(data.songStart + data.songDuration)/(data.length)} baseColor="#333C42"
+                                <View style = {[{width: '100%', height: 0.00536480687*height, borderRadius: 50, backgroundColor: '#333c42', marginTop: 0.00751072961*height}]}/>
+                                <View style = {{marginTop: 0.0321888*height}}><Waveform data = {data.waveform} height = {0.058 * width} start = {data.songStart / data.length} end = {(data.songStart + data.songDuration)/(data.length)} baseColor="#333C42"
                     regionColor = "#6d976aff"
                     selectedColor='#84DA7F' duration = {daily.moment.songDuration} anim = {true}/></View>
                         
                             </View>
                         </View>
                     </View>
-                    <View style = {{marginLeft: 10}}>
+                    <View style = {{marginLeft: '2.3255814%'}}>
                         <Text style={[styles.texxt, {fontFamily: 'Luxurious Roman'}]}>{data.title}</Text>
                         <Text style={[styles.texxt, {fontSize: 15, fontFamily: 'Jacques Francois'}]}>{data.artist} </Text>
                     </View>
                 </View>
                 
                 {/* Absolutely centered spinning vinyl */}
-<View style={[{position: 'absolute',
-  width: vinylSize,
-  height: vinylSize,
-  justifyContent: 'center',
-  alignItems: 'center',
-  }, vinylStyle]}>
-  <Animated.View style={[styles.vinylWrapper, { transform: [{ rotate: spin }] }]}>
-    <View style={styles.vinylContent}>
-      <Image
-        source={typeof data.album === "string" ? { uri: data.album } : data.album}
-        style={styles.albumImage}
-      />
-      
-    </View>
-    <Image source={vinylImg} style={styles.vinylImage} />
-  </Animated.View>
-</View>
-
-                
-                    
+                <View style={[{position: 'absolute',
+                    width: vinylSize,
+                    height: vinylSize,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    }, vinylStyle]}>
+                    <Animated.View style={[styles.vinylWrapper, { transform: [{ rotate: spin }] }]}>
+                        <View style={styles.vinylContent}>
+                        <Image
+                            source={typeof data.album === "string" ? { uri: data.album } : data.album}
+                            style={styles.albumImage}
+                        />
+                        
+                        </View>
+                        <Image source={vinylImg} style={styles.vinylImage} />
+                    </Animated.View>
+                </View>           
                 <View style = {[{flexDirection: 'row', alignItems: "flex-start", justifyContent: "flex-end", marginRight: '3%'}]}>
                     {[1,2,3,4,5].map((num) => (<RatingButton key = {num} value = {num} selected = {rating === num} onPress = {setRating}/>))}
                     <View style = {{position: 'absolute', marginTop: '20%', marginRight: '15%'}}>
