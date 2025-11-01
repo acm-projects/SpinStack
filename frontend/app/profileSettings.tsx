@@ -83,7 +83,7 @@ export default function ProfileSettings() {
       </View>
 
       {/* Profile Image + Info */}
-      <View style={{ flexDirection: "row", paddingRight: 37 }}>
+      <View style={{ flexDirection: "row", paddingLeft: 15, alignSelf: "flex-start" }}>
         <View style={{ position: "relative" }}>
           <Image
             source={pfpUrl ? { uri: pfpUrl } : require("../assets/images/profile.png")}

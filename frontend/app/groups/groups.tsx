@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,6 +9,7 @@ import {
   TextInput,
   Easing,
   ImageBackground,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -58,11 +59,14 @@ function GroupClickTab({
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
       <View style={styles.groupRow}>
         {/* Unread dot */}
-        {item.dailies[0].rating === -1 && (
+        <View style = {{ paddingLeft: 27}}>
+            {item.dailies[0].rating === -1 && (
           <View style={styles.unreadDotContainer}>
             <View style={styles.unreadDot} />
           </View>
         )}
+        </View>
+        
 
         {/* Text info */}
         <View style={styles.groupTextContainer}>
@@ -115,6 +119,10 @@ export default function GroupsView({
     });
     setFontsLoaded(true);
   };
+  useEffect(() => {
+    // Load fonts on mount so custom font variants (italic/bold) are available
+    loadFonts();
+  }, []);
   // Filter and sort groups
   const filteredData = [...data]
     .sort((a, b) => {
@@ -168,6 +176,13 @@ export default function GroupsView({
   ];
 
   const background = require('../../assets/images/groupBackground.png');
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#000000', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#ffffff" />
+      </View>
+    );
+  }
 
   return (
     <ImageBackground source={background} style={styles.backgroundImage}>
@@ -310,25 +325,26 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: 'Lato',
     color: '#ffffffff',
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',   // shadow color
-    textShadowOffset: { width: 1, height: 1 }, // shadow position
-    textShadowRadius: 3,                      // blur radius
+    // textShadowColor: 'rgba(0, 0, 0, 0.6)',   // shadow color
+    // textShadowOffset: { width: 1, height: 1 }, // shadow position
+    // textShadowRadius: 3,                      // blur radius
     paddingLeft: 5,
-    fontWeight: 500
+    fontWeight: 700
   },
   groupTitle: {
     fontSize: 15,
-    fontFamily: 'Lato',
+    fontFamily: "Lato",
     color: '#ffffffb2',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
     paddingLeft: 5,
-    fontStyle: 'italic'
+    fontStyle: 'italic',
+    paddingTop: 5
   },
   unreadDotContainer: {
     marginRight: 8,
-    paddingLeft: 7
+    marginLeft: -17
   },
   unreadDot: {
     width: 10,
