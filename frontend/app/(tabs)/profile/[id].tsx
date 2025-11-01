@@ -365,7 +365,8 @@ export default function FriendProfile() {
             user: {
                 name: profile?.username || "Unknown User",
                 profilePic: profile?.pfp_url,
-            }
+            },
+            type: "moment",
         });
 
         router.push('/stack' as RelativePathString);

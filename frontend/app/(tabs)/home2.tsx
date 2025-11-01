@@ -106,7 +106,8 @@ function Masonry({ data, spacing = 8, columns = 2, router, onPressMore, setSelec
     if (item.type === 'moment' && item.momentData && item.userData) {
       setSelectedMomentInfo({
         moment: item.momentData,
-        user: item.userData
+        user: item.userData,
+        type: "moment",
       });
 
       router.push('/stack' as RelativePathString);
@@ -734,7 +735,8 @@ export default function HomeScreen() {
         user: {
           name: userData?.username || "Unknown User",
           profilePic: pfpUrl,
-        }
+        },
+        type: "story",
       });
 
       router.push('/stack' as RelativePathString);

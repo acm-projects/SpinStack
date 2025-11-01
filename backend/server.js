@@ -18,6 +18,7 @@ const uploadRoutes = require('./routes/upload');
 const dotenv = require('dotenv');
 const spotifyRoutes = require('./routes/spotify');
 const storyRoutes = require('./routes/story_moments');
+const likesStoriesRoutes = require('./routes/likes_stories');
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ app.use('/api/likes_moments', likesMomentsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/spotify', spotifyRoutes);
 app.use('/api/story_moments', storyRoutes);
+app.use('/api/likes_stories', likesStoriesRoutes);
 
 // Start the server
 const PORT = 3000; // or process.env.PORT if deployed
