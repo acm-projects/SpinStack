@@ -17,6 +17,7 @@ import { supabase } from "@/constants/supabase";
 import { useRouter, RelativePathString } from "expo-router";
 import { useMomentInfoStore } from "../stores/useMomentInfoStore";
 import { useTabBar } from './profile/tabBarContext';
+import { AddToStackPopup } from "@/components/addToStackPopup";
 
 const { width } = Dimensions.get("window");
 const POLAROID_WIDTH = 150;
@@ -707,51 +708,7 @@ export default function HomeScreen() {
       </Modal>
 
       {/* ➕ Add to Stack Popup */}
-      <Modal
-        visible={addToStackVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setAddToStackVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.friendsPopup}>
-            <View style={styles.popupHeader}>
-              <Text style={styles.popupTitle}>Add to Stack</Text>
-              <Pressable onPress={() => setAddToStackVisible(false)}>
-                <Feather name="x" size={26} color="#333C42" />
-              </Pressable>
-            </View>
-
-            <View style={styles.popupContent}>
-              <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-                <ScrollView style={{ width: "100%" }}>
-                  {userStacks.length === 0 ? (
-                    <Text style={{ textAlign: "center", color: "#333C42", fontFamily: "Jacques Francois" }}>
-                      No stacks yet
-                    </Text>
-                  ) : (
-                    userStacks.map((stack) => (
-                      <TouchableOpacity
-                        key={stack.id}
-                        style={styles.stackOption}
-                        onPress={() => addMomentToStack(stack.id)}
-                      >
-                        <Feather name="folder" size={20} color="#333C42" />
-                        <Text style={styles.stackText}>{stack.title}</Text>
-                      </TouchableOpacity>
-                    ))
-                  )}
-                </ScrollView>
-              </View>
-
-              <TouchableOpacity style={styles.newStackButton}>
-                <Feather name="plus" size={18} color="#333C42" />
-                <Text style={styles.newStackText}>Create New Stack</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <AddToStackPopup addMomentToStack = {addMomentToStack} addToStackVisible = {addToStackVisible} setAddToStackVisible={setAddToStackVisible} userStacks = {userStacks}/>
 
       {/* Feed Section */}
       {albums.length > 0 ? (

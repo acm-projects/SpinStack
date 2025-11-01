@@ -5,6 +5,10 @@ import { Moment } from '../../components/momentInfo';
 import Feather from '@expo/vector-icons/Feather';
 import Bubble from '../../assets/other/bubble.svg';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { AddToStackPopup } from '@/components/addToStackPopup';
+
+const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
+import { supabase } from "@/constants/supabase";
 
 export default function MomentFinalizeView({ moment, scrollFunc, height }: { moment: Moment, scrollFunc: (page: number) => void, height: number }) {
   const src = require('../../assets/images/stack.png');
@@ -12,6 +16,57 @@ export default function MomentFinalizeView({ moment, scrollFunc, height }: { mom
   const { width } = useWindowDimensions();
 
   const bubbleHeight = 0.12533245892 * width;
+  const [addToStackVisible, setAddToStackVisible] = useState(false);
+  const [userStacks, setUserStacks] = useState<any[]>([]);
+
+
+  const addMomentToStack = async (stackId: string) => {
+
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      if (!token) return;
+
+      const res = await fetch(`${NGROK_URL}/api/stacks/${stackId}/moments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ momentId: moment.id }),
+      });
+
+      if (res.ok) {
+        setAddToStackVisible(false);
+        alert("Moment added to stack!");
+      } else {
+        const err = await res.json();
+        console.error("Failed to add moment:", err);
+        alert(err.error || "Failed to add moment");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchUserStacks = async () => {
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      if (!token) return;
+
+      const res = await fetch(`${NGROK_URL}/api/stacks`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const stacks = await res.json();
+        setUserStacks(stacks);
+      } else {
+        console.error("Failed to fetch stacks:", await res.text());
+      }
+    } catch (err) {
+      console.error("Error fetching user stacks:", err);
+    }
+  };
 
   return (
     <View style={{ width, justifyContent: 'center', alignItems: 'center' }}>
@@ -29,7 +84,10 @@ export default function MomentFinalizeView({ moment, scrollFunc, height }: { mom
               </View>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity style={{ alignItems: 'center', marginTop: 0.25 * bubbleHeight, marginLeft: 1.5 * bubbleHeight}}>
+          <TouchableOpacity onPress={() => {
+            fetchUserStacks();
+            setAddToStackVisible(true);
+          }}style={{ alignItems: 'center', marginTop: 0.25 * bubbleHeight, marginLeft: 1.5 * bubbleHeight}}>
             <View style={{ position: 'absolute', alignItems: 'center' }}>
               <Bubble width={1.6 * bubbleHeight} height={1.6*bubbleHeight} />
               <View style={{ marginTop: '-87.5%' }}>
@@ -65,6 +123,8 @@ export default function MomentFinalizeView({ moment, scrollFunc, height }: { mom
             </View>
           </View>
         </View>
+
+        <AddToStackPopup addToStackVisible = {addToStackVisible} setAddToStackVisible={setAddToStackVisible} userStacks = {userStacks} addMomentToStack={addMomentToStack}/>
 
         {/* Next Button */}
         <View style={{ width: '100%', justifyContent: 'flex-start', alignItems: 'center' }}>

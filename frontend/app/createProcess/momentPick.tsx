@@ -217,6 +217,7 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
                     start={mStart}
                     end={mEnd}
                     baseColor="#333C42"
+                    regionColor = "#6d976aff"
                     duration = {currentDuration}
                     anim={false}
                     selectedColor={(currentDuration <= MAX_DURATION_SECONDS) ? '#B7FFF7' : 'red'}
