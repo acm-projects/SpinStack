@@ -358,17 +358,16 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={{ flexDirection: "row", width: "100%", justifyContent: "center", alignItems: "center", paddingLeft: 110 }}>
+      <View style={{ flexDirection: "row", width: "100%", justifyContent: "center", alignItems: "center", paddingLeft: 120 }}>
         <Text style={styles.header}>Profile</Text>
-
-        <View style={{ marginLeft: 85, }}>
-          <Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
+      <View style = {{ alignSelf: "center", marginLeft: 90 }}>
+        <Pressable onPress={() => router.push("/profileSettings" as RelativePathString)}>
             <Feather name="settings" size={30} color="#333C42" />
           </Pressable>
-
-        </View>
-
       </View>
+      </View>
+
+      
 
       <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5, paddingHorizontal: 20 }}>
         <Image
@@ -379,12 +378,12 @@ export default function ProfileScreen() {
             borderRadius: IMAGE_SIZE / 2,
           }}
         />
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 }}>
-          <Text style={{ fontSize: 20, fontFamily: "Jacques Francois", color: "#333C42", fontWeight: "500" }}
+        <View style={{ flex: 1, alignItems: "flex-start", justifyContent: "center", paddingHorizontal: 10 }}>
+          <Text style={{ fontSize: 20, fontFamily: "Lato", color: "#333C42", fontWeight: "500" }}
             numberOfLines={1} ellipsizeMode="tail">
             {username}
           </Text>
-          <Text style={{ fontSize: 14, fontFamily: "Jacques Francois", color: "#333C42", textAlign: "center", }}
+          <Text style={{ fontSize: 14, fontFamily: "Lato", color: "#333C42", textAlign: "center", }}
             numberOfLines={2} ellipsizeMode="tail">
             "{bio || 'loading...'}"
           </Text>
@@ -400,14 +399,12 @@ export default function ProfileScreen() {
               fontSize: 14,
               color: "#333C42",
               textDecorationLine: "underline",
-              fontFamily: "Luxurious Roman",
+              fontFamily: "Lato",
               marginBottom: 8,
             }}>
               {numFriends} Friends
             </Text>
           </Pressable>
-
-
         </View>
       </View>
 
@@ -429,7 +426,7 @@ export default function ProfileScreen() {
             }}
           >
             <Feather name="check-circle" size={18} color="#FFF0E2" />
-            <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois", fontSize: 14 }}>
+            <Text style={{ color: "#FFF0E2", fontFamily: "Lato", fontSize: 14 }}>
               Spotify Connected (Tap to Disconnect)
             </Text>
           </Pressable>
@@ -455,7 +452,7 @@ export default function ProfileScreen() {
             ) : (
               <Feather name="music" size={18} color="#FFF0E2" />
             )}
-            <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois", fontSize: 14 }}>
+            <Text style={{ color: "#FFF0E2", fontFamily: "Lato", fontSize: 14 }}>
               {isConnectingSpotify ? "Connecting..." : "Connect Spotify"}
             </Text>
           </Pressable>
@@ -467,7 +464,7 @@ export default function ProfileScreen() {
           <Pressable>
             <Feather name="plus-circle" size={28} color="#333C42" />
           </Pressable>
-          <Text style={{ fontSize: 24, color: "#333C42", fontWeight: "500", fontFamily: "Jacques Francois" }}>
+          <Text style={{ fontSize: 24, color: "#333C42", fontWeight: "500", fontFamily: "Lato" }}>
             {viewMode === "moments" ? "Moments" : "Stacks"}
           </Text>
           <Pressable onPress={() => setViewMode(prev => (prev === "moments" ? "stacks" : "moments"))}>
@@ -483,7 +480,7 @@ export default function ProfileScreen() {
               </View>
             ) : moments.length === 0 ? (
               <View style={styles.loadingContainer}>
-                <Text style={{ color: "#333C42", fontFamily: "Jacques Francois" }}>No moments yet 😢</Text>
+                <Text style={{ color: "#333C42", fontFamily: "Lato" }}>No moments yet 😢</Text>
               </View>
             ) : (
               <FlatList
@@ -508,10 +505,10 @@ export default function ProfileScreen() {
                       resizeMode="cover"
                     />
                     <View style={{ width: Dimensions.get("window").width / 2 - 24, marginTop: 6 }}>
-                      <Text style={{ fontFamily: "Jacques Francois", fontSize: 15, color: "#333C42" }} numberOfLines={1}>
+                      <Text style={{ fontFamily: "Lato", fontSize: 15, color: "#333C42" }} numberOfLines={1}>
                         {item.title}
                       </Text>
-                      <Text style={{ fontFamily: "Jacques Francois", fontSize: 13, color: "#555" }} numberOfLines={1}>
+                      <Text style={{ fontFamily: "Lato", fontSize: 13, color: "#555" }} numberOfLines={1}>
                         {item.description}
                       </Text>
                     </View>
@@ -637,10 +634,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF0E2",
   },
   header: {
-    fontSize: 35,
-    fontWeight: "600",
+    fontSize: 40,
+    fontWeight: "700",
     color: "#333C42",
-    fontFamily: "Luxurious Roman",
+    fontFamily: 'Lato',
   },
   content: {
     flex: 1,
@@ -658,6 +655,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
+
   },
   coverImage: {
     width: "88%",
@@ -673,13 +671,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 14,
     textAlign: "center",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   captionText: {
     color: "#333C42",
     fontSize: 12,
     textAlign: "center",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   loadingContainer: {
     flex: 1,
@@ -711,7 +709,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 22,
-    fontFamily: "Luxurious Roman",
+    fontFamily: "Lato",
     color: "#333C42",
   },
   friendRow: {
@@ -727,11 +725,11 @@ const styles = StyleSheet.create({
   friendName: {
     fontSize: 16,
     color: "#333C42",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   friendBio: {
     fontSize: 12,
     color: "#555",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
 });

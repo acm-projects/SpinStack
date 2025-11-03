@@ -90,10 +90,10 @@ export default function TabLayout() {
     return (
       <View
         style={{
-          width: '100%',
+          width: '105%',
           aspectRatio: 3.62344538,
           position: 'absolute',
-          left: 0,
+          left: -9,
           bottom: -8,
           right: 0,
           backgroundColor: 'transparent',
@@ -182,7 +182,7 @@ export default function TabLayout() {
           options={{
             title: ' ',
             tabBarIcon: ({ color }) => (
-              <View>
+              <View style = {{ paddingBottom: 4, }}>
                 <FontAwesome6
                   name="house"
                   size={ICON_SIZE}
@@ -199,7 +199,7 @@ export default function TabLayout() {
           options={{
             title: ' ',
             tabBarIcon: ({ color }) => (
-              <View>
+              <View style = {{ paddingBottom: 3.5, }}>
                 <FontAwesome6
                   name="magnifying-glass"
                   size={ICON_SIZE}

@@ -83,7 +83,7 @@ export default function ProfileSettings() {
       </View>
 
       {/* Profile Image + Info */}
-      <View style={{ flexDirection: "row", paddingRight: 37 }}>
+      <View style={{ flexDirection: "row", paddingLeft: 15, alignSelf: "flex-start" }}>
         <View style={{ position: "relative" }}>
           <Image
             source={pfpUrl ? { uri: pfpUrl } : require("../assets/images/profile.png")}
@@ -99,12 +99,12 @@ export default function ProfileSettings() {
 
         <View style={{ flexDirection: "column", paddingLeft: 18, justifyContent: "center" }}>
           <Text
-            style={{ color: "#333C42", fontWeight: "500", fontSize: 20, fontFamily: "Jacques Francois", }}
+            style={{ color: "#333C42", fontWeight: "500", fontSize: 20, fontFamily: "Lato", }}
           >
             {username}
           </Text>
           <Text
-            style={{ color: "#333C42", fontWeight: "500", width: "150%", fontSize: 14, fontFamily: "Jacques Francois", }}
+            style={{ color: "#333C42", fontWeight: "500", width: "150%", fontSize: 14, fontFamily: "Lato", }}
           >
             Bio: {bio}
           </Text>
@@ -145,8 +145,8 @@ const styles = StyleSheet.create({
   header: {
     color: "#333C42",
     fontSize: 35,
-    fontFamily: "Luxurious Roman",
-    fontWeight: "600",
+    fontFamily: "Lato",
+    fontWeight: "700",
     justifyContent: "center",
   },
   cameraButton: {
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 18,
     color: "#333C42",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
     textDecorationLine: "underline",
     marginBottom: 12,
   },
