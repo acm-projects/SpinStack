@@ -62,8 +62,25 @@ type MasonryProps = {
   setSelectedMomentInfo: (momentInfo: any) => void;
 };
 
+type StoryItem = {
+  id: string;
+  userId: string;
+  username: string;
+  profilePic: string | null;
+  momentData: {
+    id: string;
+    cover_url?: string;
+  };
+  userData: {
+    name?: string;
+    profilePic?: string | null;
+  };
+};
+
+
 function Masonry({ data, spacing = 8, columns = 2, router, onPressMore, setSelectedMomentInfo }: MasonryProps) {
   const [cols, setCols] = useState<MasonryItem[][]>([]);
+
 
   useEffect(() => {
     const withHeights = data.map((item: any) => ({
@@ -89,12 +106,16 @@ function Masonry({ data, spacing = 8, columns = 2, router, onPressMore, setSelec
     if (item.type === 'moment' && item.momentData && item.userData) {
       setSelectedMomentInfo({
         moment: item.momentData,
-        user: item.userData
+        user: item.userData,
+        type: "moment",
       });
 
       router.push('/stack' as RelativePathString);
     }
   };
+
+
+
 
   const renderItem = (item: any) => (
     <View
@@ -240,6 +261,7 @@ export default function HomeScreen() {
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [addToStackVisible, setAddToStackVisible] = useState(false);
   const [userStacks, setUserStacks] = useState<any[]>([]);
+  const [stories, setStories] = useState<any[]>([]);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [friends, setFriends] = useState<string[]>([]);
   const [albums, setAlbums] = useState<MasonryItem[]>([]);
@@ -249,6 +271,28 @@ export default function HomeScreen() {
   const router = useRouter();
   const setSelectedMomentInfo = useMomentInfoStore((s) => s.setSelectedMomentInfo);
   const { tabHeight } = useTabBar();
+  const [myProfilePic, setMyProfilePic] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchMyProfile = async () => {
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+
+      const { data: userData, error } = await supabase
+        .from("users")
+        .select("pfp_url")
+        .eq("id", userId)
+        .single();
+
+      if (error) return console.error(error);
+
+      const pfp = await fetchProfilePictureUrl(userData?.pfp_url);
+      setMyProfilePic(pfp);
+    };
+
+    fetchMyProfile();
+  }, []);
+
 
   const loadFonts = async () => {
     await Font.loadAsync({
@@ -411,6 +455,56 @@ export default function HomeScreen() {
       console.error("Error fetching friends:", err);
     }
   };
+
+  const fetchActiveStories = async () => {
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      if (!token) return;
+
+      const res = await fetch(`${NGROK_URL}/api/story_moments`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        console.error("Failed to fetch stories:", err);
+        return;
+      }
+
+      const data = await res.json();
+
+      // Process the stories into the shape your frontend expects
+      const processed = await Promise.all(
+        (data || []).map(async (story: any) => {
+          const profileUrl = await fetchProfilePictureUrl(story.users.pfp_url);
+          return {
+            id: story.id,
+            userId: story.user_id,
+            username: story.users.username,
+            profilePic: profileUrl,
+            momentData: { id: story.id, cover_url: story.cover_url },
+            userData: { name: story.users.username, profilePic: profileUrl },
+          };
+        })
+      );
+
+      console.log("Processed stories:", processed);
+
+      const userId = await getCurrentUserId();
+      const myStory = processed.find((story) => story.userId === userId);
+      const otherStories = processed.filter((story) => story.userId !== userId);
+
+      setStories(myStory ? [myStory, ...otherStories] : otherStories);
+    } catch (err) {
+      console.error("Error fetching active stories:", err);
+    }
+  };
+
+
+
+
 
   const fetchProfilePictureUrl = async (pfpPath: string | null): Promise<string | null> => {
     if (!pfpPath) return null;
@@ -575,8 +669,9 @@ export default function HomeScreen() {
   // Load fonts and fetch friends on mount
   useEffect(() => {
     loadFonts();
-    fetchFriends();
+    fetchFriends().then(() => fetchActiveStories());
   }, []);
+
 
   // Fetch content when fonts load, filter changes, or friends list changes
   useEffect(() => {
@@ -599,6 +694,65 @@ export default function HomeScreen() {
     setAddToStackVisible(true);
   };
 
+  const handleStoryPress = async (story: StoryItem) => {
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error("No access token");
+
+      const res = await fetch(`${NGROK_URL}/api/story_moments/${story.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Ensure response is JSON
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        const text = await res.text();
+        throw new Error(`Unexpected response format: ${text}`);
+      }
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to fetch story");
+      }
+
+      const data = await res.json();
+
+      const userData = Array.isArray(data.users) ? data.users[0] : data.users;
+      const pfpUrl = await fetchProfilePictureUrl(userData?.pfp_url);
+      const coverUrl = await fetchCoverImageUrl(data.cover_url);
+      const trackId = extractTrackId(data.song_url);
+
+      setSelectedMomentInfo({
+        moment: {
+          id: data.id,
+          spotifyId: trackId || null,
+          title: data.title,
+          artist: data.description || "Unknown Artist",
+          songStart: data.start_time || 0,
+          songDuration: data.duration || 30,
+          length: 180,
+          album: coverUrl ? { uri: coverUrl } : require("@/assets/images/album1.jpeg"),
+          waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
+        },
+        user: {
+          name: userData?.username || "Unknown User",
+          profilePic: pfpUrl,
+        },
+        type: "story",
+      });
+
+      router.push('/stack' as RelativePathString);
+
+    } catch (err) {
+      console.error("Error handling story press:", err);
+      alert(`Failed to open story: ${err.message}`);
+    }
+  };
+
+
+
+
 
 
   return (
@@ -618,16 +772,101 @@ export default function HomeScreen() {
 
       </View>
 
-      {/* Profiles */}
+      {/* Stories Bar */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.profileScroll}
+        style={{ paddingVertical: 12, paddingHorizontal: 16 }}
       >
-        {profiles.map((p) => (
-          <View key={p.id} style={styles.profileCircle} />
+
+        {/* Your own story circle */}
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/create",
+              params: { isStory: "true" }, // flag to create a story, not a moment
+            })
+          }
+          style={{ alignItems: "center", marginRight: 14 }}
+        >
+          <View
+            style={{
+              width: 65,
+              height: 65,
+              borderRadius: 33,
+              borderWidth: 3,
+              borderColor: "#ff5c5c",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Image
+              source={myProfilePic ? { uri: myProfilePic } : require("@/assets/images/profile.png")}
+              style={{ width: 58, height: 58, borderRadius: 29 }}
+            />
+            {/* Plus Button */}
+            <View
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: [{ translateX: -11 }, { translateY: -11 }], // half of icon size
+                width: 22,
+                height: 22,
+                borderRadius: 11,
+                backgroundColor: "#ff5c5c",
+                justifyContent: "center",
+                alignItems: "center",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 3,
+                elevation: 4,
+              }}
+            >
+              <Feather name="plus" size={14} color="#fff" />
+            </View>
+
+          </View>
+          <Text style={{ marginTop: 4, color: "#333C42", fontSize: 13 }}>You</Text>
+        </Pressable>
+
+        {/* Friends’ stories */}
+        {stories.map((story) => (
+          <Pressable
+            key={story.id}
+            onPress={() => handleStoryPress(story)}
+            style={{ alignItems: "center", marginRight: 14 }}
+          >
+            <View
+              style={{
+                width: 65,
+                height: 65,
+                borderRadius: 33,
+                borderWidth: 3,
+                borderColor: "#ff5c5c",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Image
+                source={
+                  story.profilePic
+                    ? { uri: story.profilePic }
+                    : require("@/assets/images/profile.png")
+                }
+                style={{ width: 58, height: 58, borderRadius: 29 }}
+              />
+            </View>
+            <Text style={{ marginTop: 4, color: "#333C42", fontSize: 13 }}>
+              {story.username}
+            </Text>
+          </Pressable>
         ))}
       </ScrollView>
+
+
+
 
       <View style={styles.filterContainer}>
         {["Friends", "For You"].map((filter) => (

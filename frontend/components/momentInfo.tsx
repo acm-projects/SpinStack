@@ -2,7 +2,9 @@ import { ImageSourcePropType } from 'react-native';
 
 export default interface MomentInfo {
     moment: Moment,
-    user: User
+    user: User,
+    type: 'moment' | 'story',
+
 }
 
 export interface Moment {

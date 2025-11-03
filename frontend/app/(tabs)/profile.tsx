@@ -339,7 +339,8 @@ export default function ProfileScreen() {
       user: {
         name: username,
         profilePic: pfpUrl,
-      }
+      },
+      type: "moment",
     });
 
 
