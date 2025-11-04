@@ -82,7 +82,7 @@ export default function DailyView({ daily, users }: { daily: DailyInfo, users: U
         <View style = {{flex: 1, backgroundColor: '#FFF0E2'}}>
             <View style = {StyleSheet.absoluteFill}>
                 <View style = {{height: '100%', alignItems: 'center', justifyContent: "flex-start"}}>
-                    <View style = {{width: '100%', height: 170}}>
+                    <View style = {{width: '100%'}}>
                         <RNSVGSvgIOS><Background/></RNSVGSvgIOS>
                     </View>
                     

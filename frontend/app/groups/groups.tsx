@@ -7,10 +7,11 @@ import {
   FlatList,
   Animated,
   TextInput,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@expo/vector-icons/Feather';
-import { useRouter } from 'expo-router';
+import { RelativePathString, useRouter } from 'expo-router';
 import GroupProfile from '../../components/groupProfile';
 import { demoGroups } from '../../components/demoMoment';
 import { useGroupStore } from '../stores/useGroupStore';
@@ -48,7 +49,8 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
   const fadeSearch = useRef(new Animated.Value(0)).current;
   const textInputRef = useRef<any>(null);
   const [tabWidth, setTabWidth] = useState(0);
-
+  const [createVisible, setCreateVisible] = useState(false);
+  
   const router = useRouter();
   const setSelectedGroup = useGroupStore(s => s.setSelectedGroup);
   const buttons = ['Recent', 'Search', 'Create'];
@@ -74,6 +76,8 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
     })
     .filter(group => !searchQuery.trim() || group.name.toLowerCase().includes(searchQuery.toLowerCase()) || group.dailies[0].title.toLowerCase().includes(searchQuery.toLowerCase()));
 
+    
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -86,7 +90,7 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
         <Animated.View style={{ opacity: fadeTabs, position: 'absolute', width: '100%', alignItems: 'center' }}>
           <View style={{ flexDirection: 'row', gap: 10 }} onLayout={({ nativeEvent }) => setTabWidth(nativeEvent.layout.width)}>
             {buttons.map((label, i) => (
-              <ClickableTab key={i} label={label} isActive={activeTab === i} onPress={() => { setActiveTab(i); if (label === 'Search') toggleSearch(); }} />
+              <ClickableTab key={i} label={label} isActive={activeTab === i} onPress={() => { setActiveTab(i); if (label === 'Search') toggleSearch(); if(label == "Create") setCreateVisible(true); }} />
             ))}
           </View>
         </Animated.View>
@@ -120,6 +124,44 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
           />
         </Animated.View>
       </View>
+
+      <Modal
+        visible={createVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCreateVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.friendsPopup}>
+            <View style={styles.popupHeader}>
+              <Text style={styles.popupTitle}>Create a Group or Daily</Text>
+              <TouchableOpacity onPress={() => setCreateVisible(false)}>
+                <Feather name="x" size={26} color="#333C42" />
+              </TouchableOpacity>
+             </View>
+          
+          <View style={styles.popupContent}>
+              <View style={{flexDirection: "column", justifyContent: "space-evenly"}}>
+                <TouchableOpacity onPress={() => {router.push({
+                                        pathname: '/dailyProcess/userGroupSelection' as RelativePathString,
+                                      });setCreateVisible(false)}}>
+                  <Text style={{textAlign: "center", fontSize: 20,color: "#333C42", fontFamily: "Jacques Francois", marginVertical: 10 }}>
+                      Create a Group
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => {router.push({
+                                        pathname: '/dailyProcess/dailyCreation' as RelativePathString,
+                                      });setCreateVisible(false)}}>
+                  <Text style={{textAlign: "center", fontSize: 20, color: "#333C42", fontFamily: "Jacques Francois", marginVertical: 10}}>
+                      Create a Daily
+                  </Text>
+                </TouchableOpacity>
+                </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Messages-style Group List */}
       <FlatList
@@ -164,4 +206,37 @@ const styles = StyleSheet.create({
   groupName: { fontSize: 18, fontFamily: 'Jacques Francois', color: '#333C42' },
   dailyTitle: { fontSize: 14, fontFamily: 'Jacques Francois', color: '#39868F' },
   separator: { height: 1, backgroundColor: 'rgba(0,0,0,0.1)', marginHorizontal: 15 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  friendsPopup: {
+    width: "90%",
+    backgroundColor: "#FFF0E2",
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5,
+    marginBottom: 200,
+  },
+  popupHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  popupTitle: {
+    fontFamily: "Luxurious Roman",
+    fontSize: 26,
+    color: "#333C42",
+  },
+  popupContent: {
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: 100,
+  },
 });
