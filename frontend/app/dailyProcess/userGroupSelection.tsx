@@ -17,6 +17,7 @@ import * as Font from "expo-font";
 import { supabase } from "@/constants/supabase";
 import { RelativePathString, useRouter } from "expo-router";
 import { useSelectedUsersStore } from "../stores/selectedUsersStore";
+import { useAuth } from "@/_context/AuthContext";
 
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
@@ -48,6 +49,7 @@ interface User {
 
 export default function SearchPage() {
   const router = useRouter();
+  const { user: currentUser } = useAuth(); // Get current logged-in user
   const [activeFilter, setActiveFilter] = useState<SearchType>("Users");
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<{
@@ -60,17 +62,15 @@ export default function SearchPage() {
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const setSelectedUsersStore = useSelectedUsersStore(s => s.setUsersSelected);
 
-const handleSelectUser = (user: User) => {
-  if (!selectedUsers.find((u) => u.id === user.id)) {
-    setSelectedUsers((prev) => [...prev, user]);
-  }
-};
+  const handleSelectUser = (user: User) => {
+    if (!selectedUsers.find((u) => u.id === user.id)) {
+      setSelectedUsers((prev) => [...prev, user]);
+    }
+  };
 
-const handleRemoveUser = (id: string) => {
-  setSelectedUsers((prev) => prev.filter((u) => u.id !== id));
-};
-
-  
+  const handleRemoveUser = (id: string) => {
+    setSelectedUsers((prev) => prev.filter((u) => u.id !== id));
+  };
 
   // Auto-search when user types
   useEffect(() => {
@@ -145,6 +145,7 @@ const handleRemoveUser = (id: string) => {
           .or(
             `username.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%`
           )
+          .neq("id", currentUser?.id || "") // Exclude current user from results
           .limit(20);
 
         if (error) {
@@ -233,7 +234,6 @@ const handleRemoveUser = (id: string) => {
       <Pressable
         style={styles.songRow}
         onPress={() => handleSelectUser(item)}
-
       >
         <Text style={styles.rank}>{index + 1}</Text>
         <View style={styles.songInfo}>
@@ -267,39 +267,38 @@ const handleRemoveUser = (id: string) => {
       <View style={styles.container}>
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-  {selectedUsers.length > 0 && (
-    <View style={styles.tagContainer}>
-      {selectedUsers.map((user) => (
-        <Pressable
-          key={user.id}
-          style={styles.tag}
-          onPress={() => handleRemoveUser(user.id)}
-        >
-          {user.pfp_url ? (
-            <Image source={{ uri: user.pfp_url }} style={styles.tagPfp} />
-          ) : (
-            <View style={[styles.tagPfp, styles.tagPlaceholder]}>
-              <Text style={styles.tagPlaceholderText}>
-                {user.username.charAt(0).toUpperCase()}
-              </Text>
+          {selectedUsers.length > 0 && (
+            <View style={styles.tagContainer}>
+              {selectedUsers.map((user) => (
+                <Pressable
+                  key={user.id}
+                  style={styles.tag}
+                  onPress={() => handleRemoveUser(user.id)}
+                >
+                  {user.pfp_url ? (
+                    <Image source={{ uri: user.pfp_url }} style={styles.tagPfp} />
+                  ) : (
+                    <View style={[styles.tagPfp, styles.tagPlaceholder]}>
+                      <Text style={styles.tagPlaceholderText}>
+                        {user.username.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  <Text style={styles.tagText}>@{user.username}</Text>
+                  <Text style={styles.tagRemove}>✕</Text>
+                </Pressable>
+              ))}
             </View>
           )}
-          <Text style={styles.tagText}>@{user.username}</Text>
-          <Text style={styles.tagRemove}>✕</Text>
-        </Pressable>
-      ))}
-    </View>
-  )}
-  <TextInput
-    style={styles.searchInput}
-    placeholder="Search users..."
-    placeholderTextColor="#333C42"
-    value={search}
-    onChangeText={setSearch}
-    returnKeyType="search"
-  />
-</View>
-
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search users..."
+            placeholderTextColor="#333C42"
+            value={search}
+            onChangeText={setSearch}
+            returnKeyType="search"
+          />
+        </View>
 
         {/* Loading State */}
         {loading ? (
@@ -329,29 +328,35 @@ const handleRemoveUser = (id: string) => {
             </Text>
           </View>
         )}
-        <View style = {{flex: 0.5, width: '100%', alignItems: 'center'}}>
-        <TouchableOpacity
-                style={{
-                  backgroundColor:'#39868F',
-                  borderRadius: 10,
-                  borderWidth: 4,
-                  borderColor: '#333C42',
-                  alignItems: 'center',
-                  marginTop: 10,
-                  width: '60%',
-                }}
-                onPress={() => {{if(selectedUsers.length == 0) {Alert.alert('You have to select at least one other person to make a group with.');return;}
-              router.push({
-                pathname: '/dailyProcess/groupCreation' as RelativePathString,
-              });
-              setSelectedUsersStore(selectedUsers)
-              }}}>
-                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10, fontFamily: 'Jacques Francois' }}>
-                  Next
-                </Text>
-              </TouchableOpacity>
+        <View style={[{ flex: 0.5, width: '100%', alignItems: 'center' }]}>
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#39868F',
+              borderRadius: 10,
+              borderWidth: 4,
+              borderColor: '#333C42',
+              alignItems: 'center',
+              marginTop: 10,
+              width: '60%',
+            }}
+            onPress={() => {
+              {
+                if (selectedUsers.length == 0) {
+                  Alert.alert('You have to select at least one other person to make a group with.');
+                  return;
+                }
+                router.push({
+                  pathname: '/dailyProcess/groupCreation' as RelativePathString,
+                });
+                setSelectedUsersStore(selectedUsers)
+              }
+            }}>
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10, fontFamily: 'Jacques Francois' }}>
+              Next
+            </Text>
+          </TouchableOpacity>
         </View>
-        
+
       </View>
     </TouchableWithoutFeedback>
   );
@@ -490,48 +495,47 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   tagContainer: {
-  flexDirection: "row",
-  flexWrap: "wrap",
-  marginBottom: 8,
-},
-tag: {
-  flexDirection: "row",
-  alignItems: "center",
-  backgroundColor: "#333C42",
-  borderRadius: 20,
-  paddingVertical: 4,
-  paddingHorizontal: 8,
-  marginRight: 6,
-  marginBottom: 6,
-},
-tagPfp: {
-  width: 20,
-  height: 20,
-  borderRadius: 10,
-  marginRight: 6,
-  borderWidth: 1,
-  borderColor: "#FFF0E2",
-},
-tagPlaceholder: {
-  backgroundColor: "#39868F",
-  justifyContent: "center",
-  alignItems: "center",
-},
-tagPlaceholderText: {
-  color: "#FFF0E2",
-  fontSize: 12,
-  fontWeight: "bold",
-},
-tagText: {
-  color: "#FFF0E2",
-  fontSize: 14,
-  fontFamily: "Jacques Francois",
-},
-tagRemove: {
-  color: "#FFF0E2",
-  fontSize: 14,
-  marginLeft: 4,
-  fontWeight: "bold",
-},
-
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 8,
+  },
+  tag: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#333C42",
+    borderRadius: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  tagPfp: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginRight: 6,
+    borderWidth: 1,
+    borderColor: "#FFF0E2",
+  },
+  tagPlaceholder: {
+    backgroundColor: "#39868F",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  tagPlaceholderText: {
+    color: "#FFF0E2",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  tagText: {
+    color: "#FFF0E2",
+    fontSize: 14,
+    fontFamily: "Jacques Francois",
+  },
+  tagRemove: {
+    color: "#FFF0E2",
+    fontSize: 14,
+    marginLeft: 4,
+    fontWeight: "bold",
+  },
 });
