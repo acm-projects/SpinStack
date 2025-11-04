@@ -30,21 +30,47 @@ router.post("/", async (req, res) => {
     const user = await verifyToken(req, res);
     if (!user) return;
 
-    const { name, max_members } = req.body;
+    const { name, max_members, member_ids } = req.body;
     if (!name || !max_members) {
         return res.status(400).json({ error: "Name and max_members are required" });
     }
 
     try {
-        const { data, error } = await supabaseAdmin
+        // Create the group
+        const { data: group, error: groupError } = await supabaseAdmin
             .from("groups")
-            .insert([{ name, max_members, owner_id: user.id }])
+            .insert([{ name, max_members }])
             .select()
             .single();
 
-        if (error) throw error;
-        res.status(201).json({ group: data });
+        if (groupError) throw groupError;
+
+        // Add the creator to the group
+        const membersToAdd = [user.id];
+        
+        // Add other selected members if provided
+        if (member_ids && Array.isArray(member_ids)) {
+            membersToAdd.push(...member_ids);
+        }
+
+        // Insert all members
+        const memberInserts = membersToAdd.map(userId => ({
+            group_id: group.id,
+            user_id: userId
+        }));
+
+        const { error: membersError } = await supabaseAdmin
+            .from("group_members")
+            .insert(memberInserts);
+
+        if (membersError) throw membersError;
+
+        res.status(201).json({ 
+            group,
+            message: "Group created successfully with members"
+        });
     } catch (err) {
+        console.error("Create group error:", err);
         res.status(500).json({ error: err.message });
     }
 });

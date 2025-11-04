@@ -13,16 +13,22 @@ import { useRouter } from "expo-router";
 import { supabase } from "@/constants/supabase";
 import { useSelectedUsersStore } from "../stores/selectedUsersStore";
 
+const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
+
 export default function GroupCreationPage() {
   const router = useRouter();
   const selectedUsers = useSelectedUsersStore((state) => state.selectedUsers);
+  const clearSelectedUsers = useSelectedUsersStore((state) => state.clearSelectedUsers);
   const [groupName, setGroupName] = useState("");
   const [loading, setLoading] = useState(false);
-  if(!selectedUsers) return (
-    <View>
-        <Text>No selected users</Text>
-    </View>
-  );
+
+  if (!selectedUsers) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>No selected users</Text>
+      </View>
+    );
+  }
 
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {
@@ -46,9 +52,13 @@ export default function GroupCreationPage() {
         return;
       }
 
-      const max_members = selectedUsers.length + 1; // including current user
+      // Calculate max_members: creator + selected users
+      const max_members = selectedUsers.length + 1;
+      
+      // Extract just the user IDs
+      const member_ids = selectedUsers.map(user => user.id);
 
-      const res = await fetch(`${process.env.EXPO_PUBLIC_NGROK_URL}/api/groups`, {
+      const res = await fetch(`${nUrl}/api/groups`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -57,6 +67,7 @@ export default function GroupCreationPage() {
         body: JSON.stringify({
           name: groupName,
           max_members,
+          member_ids, // Send array of user IDs
         }),
       });
 
@@ -66,11 +77,24 @@ export default function GroupCreationPage() {
         throw new Error(result.error || "Failed to create group");
       }
 
-      Alert.alert("Success", `Group "${result.group.name}" created successfully!`);
-      router.dismissAll();
-      router.push("../groups");
+      // Clear selected users after successful creation
+      clearSelectedUsers();
+      
+      Alert.alert(
+        "Success", 
+        `Group "${result.group.name}" created successfully!`,
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              router.dismissAll();
+              router.replace("/(tabs)/dGroup");
+            }
+          }
+        ]
+      );
     } catch (err: any) {
-      console.error(err);
+      console.error("Create group error:", err);
       Alert.alert("Error", err.message || "Failed to create group");
     } finally {
       setLoading(false);
@@ -90,7 +114,9 @@ export default function GroupCreationPage() {
           onChangeText={setGroupName}
         />
 
-        <Text style={styles.selectedUsersTitle}>Selected Users ({selectedUsers.length}):</Text>
+        <Text style={styles.selectedUsersTitle}>
+          Selected Users ({selectedUsers.length}):
+        </Text>
         <View style={styles.tagContainer}>
           {selectedUsers.map((user) => (
             <View key={user.id} style={styles.tag}>
@@ -100,7 +126,7 @@ export default function GroupCreationPage() {
         </View>
 
         <TouchableOpacity
-          style={styles.createButton}
+          style={[styles.createButton, loading && styles.createButtonDisabled]}
           onPress={handleCreateGroup}
           disabled={loading}
         >
@@ -139,6 +165,7 @@ const styles = StyleSheet.create({
     color: "#333C42",
     marginBottom: 20,
     fontFamily: "Jacques Francois",
+    backgroundColor: "#FFF0E2",
   },
   selectedUsersTitle: {
     fontSize: 16,
@@ -176,10 +203,19 @@ const styles = StyleSheet.create({
     width: "60%",
     alignSelf: "center",
   },
+  createButtonDisabled: {
+    opacity: 0.6,
+  },
   createButtonText: {
     color: "white",
     fontWeight: "bold",
     fontSize: 20,
     fontFamily: "Jacques Francois",
+  },
+  errorText: {
+    color: "#333C42",
+    fontSize: 18,
+    fontFamily: "Jacques Francois",
+    textAlign: "center",
   },
 });
