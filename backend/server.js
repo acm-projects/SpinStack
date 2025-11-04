@@ -17,6 +17,7 @@ const likesMomentsRoutes = require('./routes/likes_moments');
 const uploadRoutes = require('./routes/upload');
 const dotenv = require('dotenv');
 const spotifyRoutes = require('./routes/spotify');
+const dailySubmissionsRoutes = require('./routes/daily_submissions');
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ app.use('/api/likes_stacks', likesStacksRoutes);
 app.use('/api/likes_moments', likesMomentsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/spotify', spotifyRoutes);
+app.use('/api/daily_submissions', dailySubmissionsRoutes);
 
 // Start the server
 const PORT = 3000; // or process.env.PORT if deployed
