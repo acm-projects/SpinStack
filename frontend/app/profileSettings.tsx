@@ -5,7 +5,7 @@ import { View, Text, StyleSheet, Image, Pressable, Dimensions } from "react-nati
 import Feather from "react-native-vector-icons/Feather";
 import { RelativePathString, useRouter } from "expo-router";
 import Bubble from '../assets/other/bubble.svg';
-import { AutoSizeText, ResizeTextMode } from 'react-native-auto-size-text'; // import these
+import { AutoSizeText, ResizeTextMode } from 'react-native-auto-size-text';
 
 export default function ProfileSettings() {
   const { width } = Dimensions.get("window");
@@ -15,7 +15,6 @@ export default function ProfileSettings() {
   const IMAGE_SIZE = width * 0.2;
   const router = useRouter();
   const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
-
 
   const handleSignOut = async () => {
     logout();
@@ -42,20 +41,28 @@ export default function ProfileSettings() {
         setUsername(userData?.username ?? "Unknown");
         setBio(userData?.bio ?? "");
 
-        if (userData?.pfp_url) {
+        // Only fetch presigned URL if pfp_url exists and is not empty
+        if (userData?.pfp_url && userData.pfp_url.trim() !== '') {
           try {
             const res = await fetch(
-              `${nUrl}/${userData.pfp_url}`
+              `${nUrl}/api/upload/download-url/${userData.pfp_url}`
             );
             if (res.ok) {
               const { downloadURL } = await res.json();
               setPfpUrl(downloadURL);
             } else {
               console.error("Failed to fetch presigned URL:", res.status);
+              // If fetch fails, set to null so default image is used
+              setPfpUrl(null);
             }
           } catch (err) {
             console.error("Error fetching presigned URL:", err);
+            // If error occurs, set to null so default image is used
+            setPfpUrl(null);
           }
+        } else {
+          // No profile picture set, use default
+          setPfpUrl(null);
         }
       } catch (err) {
         console.error("Unexpected error fetching user info:", err);
@@ -170,7 +177,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#8DD2CA",
     justifyContent: "flex-start",
     alignItems: "flex-start",
-
   },
   optionText: {
     fontSize: 18,

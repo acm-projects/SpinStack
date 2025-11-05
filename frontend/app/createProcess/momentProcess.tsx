@@ -16,8 +16,10 @@ import { useMomentStore } from "../stores/useMomentStore";
 import { supabase } from '@/constants/supabase';
 import { useAuth } from '@/_context/AuthContext';
 import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { useLocalSearchParams } from 'expo-router';
 
+import { useFocusEffect } from '@react-navigation/native';
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
 function bg1(width: number, height: number) {
@@ -216,7 +218,7 @@ export default function momentProcess() {
   useEffect(() => {
     return () => clearMoment(); // Clear when unmounting
   }, []);
-
+  
   if (!moment) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF0E2' }}>
@@ -298,8 +300,11 @@ export default function momentProcess() {
           { useNativeDriver: false }
         )}
       >
-        <MomentPick moment={moment} scrollFunc={goToPage} />
-        <MomentSpecify moment={moment} scrollFunc={goToPage} height={height} />
+        <MomentPick 
+          moment={moment} 
+          scrollFunc={goToPage}
+        />
+        <MomentSpecify moment={moment} scrollFunc={goToPage}/>
         <MomentFinalize moment={moment} scrollFunc={goToPage} height={height} />
       </Animated.ScrollView>
 
