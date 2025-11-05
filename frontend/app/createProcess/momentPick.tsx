@@ -622,7 +622,7 @@ export default function MomentPickView({
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ justifyContent: 'center', alignItems: 'center' }}>
             <View style={{ marginLeft: 10, marginTop: -20, marginBottom: 30 }}>
-              <Text style={{ fontSize: 16, fontFamily: 'Jacques Francois', color: '#333C42' }}>
+              <Text style={{ fontSize: 16, fontFamily: 'Lato', color: '#333C42' }}>
                 {moment.title} - {moment.artist}
               </Text>
             </View>
@@ -700,7 +700,7 @@ export default function MomentPickView({
                   <Text
                     style={{
                       fontSize: 16,
-                      fontFamily: 'Jacques Francois',
+                      fontFamily: 'Lato',
                       color: (currentDuration <= MAX_DURATION_SECONDS) ? '#333C42' : 'red',
                       fontWeight: 'bold',
                     }}
@@ -787,7 +787,7 @@ export default function MomentPickView({
           }}
           onPress={handleSelect}
         >
-          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10, fontFamily: 'Jacques Francois' }}>
+          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10, fontFamily: 'Lato' }}>
             Select
           </Text>
         </TouchableOpacity>

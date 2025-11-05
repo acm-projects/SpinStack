@@ -198,7 +198,7 @@ export default function SpotifyConnect() {
         {isConnected ? (
           <View style={{ alignItems: 'center', gap: 20 }}>
             <View style={{ backgroundColor: '#8DD2CA', padding: 15, borderRadius: 10, borderWidth: 2, borderColor: '#333C42' }}>
-              <Text style={{ fontFamily: 'Jacques Francois', fontSize: 16, color: '#333C42', textAlign: 'center' }}>
+              <Text style={{ fontFamily: 'Lato', fontSize: 16, color: '#333C42', textAlign: 'center' }}>
                 ✓ Spotify Connected
               </Text>
             </View>
@@ -286,6 +286,31 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "500",
     fontFamily: "Jacques Francois"
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 40,
+    width: '100%',
+    alignItems: 'center',
+    gap: 15,
+  },
+  nextButton: {
+    backgroundColor: "#333c42",
+    width: 352,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  nextButtonText: {
+    color: "white",
+    fontFamily: "Jacques Francois",
+    fontSize: 16,
+  },
+  skipText: {
+    color: "#39868F",
+    fontFamily: "Jacques Francois",
+    fontSize: 14,
+    textDecorationLine: "underline",
   },
   buttonContainer: {
     position: 'absolute',

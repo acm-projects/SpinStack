@@ -11,10 +11,13 @@ import {
   TouchableWithoutFeedback,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
 } from "react-native";
 import * as Font from "expo-font";
 import { supabase } from "@/constants/supabase";
 import { RelativePathString, useRouter } from "expo-router";
+import { useSelectedUsersStore } from "../stores/selectedUsersStore";
+import { useAuth } from "@/_context/AuthContext";
 
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
@@ -46,7 +49,8 @@ interface User {
 
 export default function SearchPage() {
   const router = useRouter();
-  const [activeFilter, setActiveFilter] = useState<SearchType>("Stacks");
+  const { user: currentUser } = useAuth(); // Get current logged-in user
+  const [activeFilter, setActiveFilter] = useState<SearchType>("Users");
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<{
     stacks?: Stack[];
@@ -54,7 +58,19 @@ export default function SearchPage() {
   }>({});
   const [loading, setLoading] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
-  
+
+  const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
+  const setSelectedUsersStore = useSelectedUsersStore(s => s.setUsersSelected);
+
+  const handleSelectUser = (user: User) => {
+    if (!selectedUsers.find((u) => u.id === user.id)) {
+      setSelectedUsers((prev) => [...prev, user]);
+    }
+  };
+
+  const handleRemoveUser = (id: string) => {
+    setSelectedUsers((prev) => prev.filter((u) => u.id !== id));
+  };
 
   // Auto-search when user types
   useEffect(() => {
@@ -129,6 +145,7 @@ export default function SearchPage() {
           .or(
             `username.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%`
           )
+          .neq("id", currentUser?.id || "") // Exclude current user from results
           .limit(20);
 
         if (error) {
@@ -216,9 +233,7 @@ export default function SearchPage() {
     return (
       <Pressable
         style={styles.songRow}
-        onPress={() => {
-          router.push(`/profile/${item.id}` as RelativePathString);
-        }}
+        onPress={() => handleSelectUser(item)}
       >
         <Text style={styles.rank}>{index + 1}</Text>
         <View style={styles.songInfo}>
@@ -252,40 +267,37 @@ export default function SearchPage() {
       <View style={styles.container}>
         {/* Search Bar */}
         <View style={styles.searchContainer}>
+          {selectedUsers.length > 0 && (
+            <View style={styles.tagContainer}>
+              {selectedUsers.map((user) => (
+                <Pressable
+                  key={user.id}
+                  style={styles.tag}
+                  onPress={() => handleRemoveUser(user.id)}
+                >
+                  {user.pfp_url ? (
+                    <Image source={{ uri: user.pfp_url }} style={styles.tagPfp} />
+                  ) : (
+                    <View style={[styles.tagPfp, styles.tagPlaceholder]}>
+                      <Text style={styles.tagPlaceholderText}>
+                        {user.username.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  <Text style={styles.tagText}>@{user.username}</Text>
+                  <Text style={styles.tagRemove}>✕</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
           <TextInput
             style={styles.searchInput}
-            placeholder="Search..."
+            placeholder="Search users..."
             placeholderTextColor="#333C42"
             value={search}
             onChangeText={setSearch}
             returnKeyType="search"
           />
-        </View>
-
-        {/* Filter Buttons */}
-        <View style={styles.filterRow}>
-          {(["Stacks", "Users"] as SearchType[]).map((filter) => (
-            <Pressable
-              key={filter}
-              style={[
-                styles.filterButton,
-                activeFilter === filter && styles.filterButtonActive,
-              ]}
-              onPress={() => {
-                setActiveFilter(filter);
-                setResults({});
-              }}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  activeFilter === filter && styles.filterTextActive,
-                ]}
-              >
-                {filter}
-              </Text>
-            </Pressable>
-          ))}
         </View>
 
         {/* Loading State */}
@@ -302,11 +314,7 @@ export default function SearchPage() {
             contentContainerStyle={styles.listContainer}
             keyExtractor={(item) => item.id}
             renderItem={({ item, index }) => {
-              if (activeFilter === "Stacks") {
-                return renderStack({ item: item as Stack, index });
-              } else {
-                return renderUser({ item: item as User, index });
-              }
+              return renderUser({ item: item as User, index });
             }}
             style={styles.list}
           />
@@ -320,6 +328,35 @@ export default function SearchPage() {
             </Text>
           </View>
         )}
+        <View style={[{ flex: 0.5, width: '100%', alignItems: 'center' }]}>
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#39868F',
+              borderRadius: 10,
+              borderWidth: 4,
+              borderColor: '#333C42',
+              alignItems: 'center',
+              marginTop: 10,
+              width: '60%',
+            }}
+            onPress={() => {
+              {
+                if (selectedUsers.length == 0) {
+                  Alert.alert('You have to select at least one other person to make a group with.');
+                  return;
+                }
+                router.push({
+                  pathname: '/dailyProcess/groupCreation' as RelativePathString,
+                });
+                setSelectedUsersStore(selectedUsers)
+              }
+            }}>
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10, fontFamily: 'Jacques Francois' }}>
+              Next
+            </Text>
+          </TouchableOpacity>
+        </View>
+
       </View>
     </TouchableWithoutFeedback>
   );
@@ -329,8 +366,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFF0E2",
+    width: '100%',
     paddingHorizontal: 18,
     paddingTop: 70,
+    justifyContent: 'flex-start',
   },
   searchContainer: {
     backgroundColor: "#8DD2CA",
@@ -343,7 +382,7 @@ const styles = StyleSheet.create({
   searchInput: {
     color: "#333C42",
     fontSize: 16,
-    fontFamily: "Lato",
+    fontFamily: "Jacques Francois",
   },
   filterRow: {
     flexDirection: "row",
@@ -366,7 +405,7 @@ const styles = StyleSheet.create({
   filterText: {
     color: "#333C42",
     fontSize: 14,
-    fontFamily: "Lato",
+    fontFamily: "Jacques Francois",
   },
   filterTextActive: {
     color: "#FFF0E2",
@@ -393,7 +432,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     width: 25,
     textAlign: "center",
-    fontFamily: "Lato",
+    fontFamily: "Jacques Francois",
   },
   songInfo: {
     flex: 1,
@@ -402,17 +441,17 @@ const styles = StyleSheet.create({
   songTitle: {
     color: "#333C42",
     fontSize: 18,
-    fontFamily: "Lato",
+    fontFamily: "Jacques Francois",
   },
   songArtist: {
     color: "#39868F",
     fontSize: 13,
-    fontFamily: "Lato",
+    fontFamily: "Jacques Francois",
   },
   stackDesc: {
     color: "#39868F",
     fontSize: 11,
-    fontFamily: "Lato",
+    fontFamily: "Jacques Francois",
     marginTop: 2,
   },
   albumArt: {
@@ -440,6 +479,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   loader: {
+    width: '100%',
     marginTop: 40,
   },
   emptyContainer: {
@@ -451,7 +491,51 @@ const styles = StyleSheet.create({
   emptyText: {
     color: "#39868F",
     fontSize: 16,
-    fontFamily: "Lato",
+    fontFamily: "Jacques Francois",
     textAlign: "center",
+  },
+  tagContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 8,
+  },
+  tag: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#333C42",
+    borderRadius: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  tagPfp: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginRight: 6,
+    borderWidth: 1,
+    borderColor: "#FFF0E2",
+  },
+  tagPlaceholder: {
+    backgroundColor: "#39868F",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  tagPlaceholderText: {
+    color: "#FFF0E2",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  tagText: {
+    color: "#FFF0E2",
+    fontSize: 14,
+    fontFamily: "Jacques Francois",
+  },
+  tagRemove: {
+    color: "#FFF0E2",
+    fontSize: 14,
+    marginLeft: 4,
+    fontWeight: "bold",
   },
 });

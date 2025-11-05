@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   searchInput: {
     color: "#333C42",
     fontSize: 16,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   sectionTitle: {
     fontSize: 25,
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     width: 25,
     textAlign: "center",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   songInfo: {
     flex: 1,
@@ -372,19 +372,19 @@ const styles = StyleSheet.create({
   songTitle: {
     color: "#333C42",
     fontSize: 18,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   songArtist: {
     color: "#39868F",
     fontSize: 13,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   momentCount: {
     color: "#1DB954",
     fontSize: 12,
     marginTop: 2,
     fontWeight: "500",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   albumArt: {
     width: 45,
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   emptyText: {
     color: "#39868F",
     fontSize: 16,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
     textAlign: "center",
   },
 });

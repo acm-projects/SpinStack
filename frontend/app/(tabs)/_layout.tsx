@@ -7,7 +7,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
-import { View, Dimensions, Image, ActivityIndicator, Text, TouchableOpacity} from 'react-native';
+import { View, Dimensions, Image, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 import { demoMoments, demoGroups } from '../../components/demoMoment';
 import Bottom from '@/assets/other/Group 9.svg';
 import { supabase } from '@/constants/supabase';
@@ -29,7 +29,7 @@ export default function TabLayout() {
 
   const { user, pfpUrl, setPfpUrl } = useAuth();
 
-  const {tabHeight, setTabHeight} = useTabBar();
+  const { tabHeight, setTabHeight } = useTabBar();
 
   const ICON_SIZE = useMemo(() => tabHeight * 0.295 || 24, [tabHeight]);
   const PROFILE_SIZE = useMemo(() => tabHeight * 0.37 || 28, [tabHeight]);
@@ -90,10 +90,10 @@ export default function TabLayout() {
     return (
       <View
         style={{
-          width: '100%',
+          width: '105%',
           aspectRatio: 3.62344538,
           position: 'absolute',
-          left: 0,
+          left: -9,
           bottom: -8,
           right: 0,
           backgroundColor: 'transparent',
@@ -117,7 +117,7 @@ export default function TabLayout() {
             alignItems: 'flex-end',
             width: '90%',
             gap: ICON_SIZE,
-            marginLeft: 0.975 *ICON_SIZE,
+            marginLeft: 0.975 * ICON_SIZE,
             marginBottom: ICON_SIZE,
           }}
         >
@@ -133,9 +133,15 @@ export default function TabLayout() {
               });
 
               if (!isFocused && !event.defaultPrevented) {
-                navigation.navigate(route.name, route.params);
+                if (route.name === 'create') {
+                  // Pass the param isStory=false when tapping create from tab bar
+                  navigation.navigate(route.name, { isStory: 'false' });
+                } else {
+                  navigation.navigate(route.name, route.params);
+                }
               }
             };
+
 
             const color = isFocused ? 'white' : 'hsla(0, 0%, 67%, 1.00)';
             const icon =
@@ -147,7 +153,7 @@ export default function TabLayout() {
               });
 
             return (
-              <View key={route.key} style={{ justifyContent: 'center', alignItems: 'center'}}>
+              <View key={route.key} style={{ justifyContent: 'center', alignItems: 'center' }}>
                 <TouchableOpacity onPress={onPress}>{icon}</TouchableOpacity>
               </View>
             );
@@ -176,14 +182,14 @@ export default function TabLayout() {
           options={{
             title: ' ',
             tabBarIcon: ({ color }) => (
-              <View>
+              <View style = {{ paddingBottom: 4, }}>
                 <FontAwesome6
                   name="house"
-                  size = {ICON_SIZE}
+                  size={ICON_SIZE}
                   color="hsla(0, 0%, 67%, 1.00)"
                 />
               </View>
-              
+
             ),
           }}
         />
@@ -193,14 +199,14 @@ export default function TabLayout() {
           options={{
             title: ' ',
             tabBarIcon: ({ color }) => (
-              <View>
+              <View style = {{ paddingBottom: 3.5, }}>
                 <FontAwesome6
                   name="magnifying-glass"
-                  size = {ICON_SIZE}
+                  size={ICON_SIZE}
                   color="hsla(0, 0%, 67%, 1.00)"
                 />
               </View>
-              
+
             ),
           }}
         />
@@ -213,8 +219,8 @@ export default function TabLayout() {
               <Image
                 source={createPic}
                 style={{
-                  width: 1.9*ICON_SIZE,
-                  height: 1.9*ICON_SIZE,
+                  width: 1.9 * ICON_SIZE,
+                  height: 1.9 * ICON_SIZE,
                   borderRadius: 50,
                   borderWidth: 1
                 }}
@@ -232,7 +238,7 @@ export default function TabLayout() {
               <View>
                 <Ionicons
                   name="people-sharp"
-                  size = {1.2*ICON_SIZE}
+                  size={1.2 * ICON_SIZE}
                   color="hsla(0, 0%, 67%, 1.00)"
                 />
               </View>
@@ -256,7 +262,7 @@ export default function TabLayout() {
                   style={{
                     width: PROFILE_SIZE,
                     height: PROFILE_SIZE,
-                    borderRadius: PROFILE_SIZE/2,
+                    borderRadius: PROFILE_SIZE / 2,
                     borderWidth: 1,
                     borderColor: 'white',
                     resizeMode: 'cover',

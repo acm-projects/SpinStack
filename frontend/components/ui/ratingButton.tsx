@@ -1,6 +1,7 @@
 import React from "react";
 import { Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Svg, Text as SvgText } from "react-native-svg";
+import {useWindowDimensions} from 'react-native';
 
 interface RatingButtonProps {
   value: number;
@@ -9,16 +10,19 @@ interface RatingButtonProps {
 }
 
 export default function RatingButton({ value, selected, onPress }: RatingButtonProps) {
+    const {height, width, scale, fontScale} = useWindowDimensions();
+    const sscale = width /430;
     const fontSize = 45;
     const text = value.toString();
     
-    let strokeWidth = 2
+    let strokeWidth = sscale* 2
 
     const alpha = 0.2 * value;
 
     const color = selected ? `hsla(215, 100%, 50%, ${alpha})` : `hsla(177, 100%, 52%, ${alpha})`;
 
-    let width = 100 + 100 * value + (selected ? 250/value : 0);
+    let wwidth = 100 + 100 * value + (selected ? 250/value : 0);
+    wwidth *= sscale;
 
   return (
     <TouchableOpacity onPress={() => onPress(value)} style={[styles.button, selected && styles.selected]}>
@@ -30,7 +34,7 @@ export default function RatingButton({ value, selected, onPress }: RatingButtonP
                 stroke={color}
                 strokeWidth={strokeWidth}
                 fontSize={fontSize}
-                fontWeight={width}
+                fontWeight={wwidth}
                 x={fontSize/4}
                 y={fontSize-1}
             >

@@ -189,7 +189,7 @@ export default function MomentSpecifyView({ moment, scrollFunc }: { moment: Mome
                 <TextInput
                 placeholder="Set moment caption:"
                 placeholderTextColor="#515f69ff"
-                style={{ position:'absolute', marginLeft: 0.25 * bubbleHeight, fontSize: 16, fontFamily: "Jacques Francois"}}
+                style={{ position:'absolute', marginLeft: 0.25 * bubbleHeight, fontSize: 16, fontFamily: "Lato"}}
                 autoFocus = {false}
                 onEndEditing={toggleSearch}
                 ref = {textInputRef}
@@ -237,7 +237,7 @@ export default function MomentSpecifyView({ moment, scrollFunc }: { moment: Mome
               </View>
               <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', marginTop: 0.6*bubbleHeight }}>
                   <View style={{ marginLeft: 0.2*bubbleHeight }}>
-                  <Text style={{ fontSize: 0.6*bubbleHeight, fontFamily: 'Jacques Francois', color: '#333C42' }}>
+                  <Text style={{ fontSize: 0.6*bubbleHeight, fontFamily: 'Lato', color: '#333C42' }}>
                     {moment.title} - {moment.artist}
                   </Text>
                 </View>
@@ -259,7 +259,7 @@ export default function MomentSpecifyView({ moment, scrollFunc }: { moment: Mome
             }}
             onPress={() => scrollFunc(2)}
           >
-            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10, fontFamily: 'Jacques Francois' }}>
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10, fontFamily: 'Lato' }}>
               Next
             </Text>
           </TouchableOpacity>

@@ -19,7 +19,7 @@ import { useMomentInfoStore } from "../../stores/useMomentInfoStore";
 
 const POLAROID_WIDTH = 150;
 const POLAROID_HEIGHT = 200;
-const POLAROID_URL = require("@/assets/images/polaroidFrame.webp"); 
+const POLAROID_URL = require("@/assets/images/polaroidFrame.webp");
 const NGROK_URL = process.env.EXPO_PUBLIC_NGROK_URL;
 
 interface Profile {
@@ -104,24 +104,24 @@ export default function FriendProfile() {
 
             if (error) throw error;
 
-                let pfp = null;
-                if (data.pfp_url) {
-                    const res = await fetch(
-                        `${nUrl}/api/upload/download-url/${data.pfp_url}`
-                    );
-                    if (res.ok) {
-                        const { downloadURL } = await res.json();
-                        pfp = downloadURL;
-                    }
+            let pfp = null;
+            if (data.pfp_url) {
+                const res = await fetch(
+                    `${nUrl}/api/upload/download-url/${data.pfp_url}`
+                );
+                if (res.ok) {
+                    const { downloadURL } = await res.json();
+                    pfp = downloadURL;
                 }
-
-                setProfile({ ...data, pfp_url: pfp });
-            } catch (err) {
-                console.error("Failed to load profile", err);
-            } finally {
-                setLoadingProfile(false);
             }
-        };
+
+            setProfile({ ...data, pfp_url: pfp });
+        } catch (err) {
+            console.error("Failed to load profile", err);
+        } finally {
+            setLoadingProfile(false);
+        }
+    };
 
     const fetchMoments = async () => {
         if (!id) return;
@@ -217,7 +217,62 @@ export default function FriendProfile() {
         }
     };
 
+    const sendFriendRequest = async () => {
+        try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const currentUser = sessionData?.session?.user;
+            if (!currentUser) {
+                Alert.alert("Error", "You must be logged in to send friend requests.");
+                return;
+            }
+
+            // Prevent sending to self
+            if (currentUser.id === id) {
+                Alert.alert("Error", "You can't send a friend request to yourself!");
+                return;
+            }
+
+            // Check for existing friend request
+            const { data: existingRequests, error: existingError } = await supabase
+                .from("notifications")
+                .select("*")
+                .eq("sender_id", currentUser.id)
+                .eq("user_id", id) // ✅ FIXED
+                .eq("type", "friend_request")
+                .maybeSingle();
+
+            if (existingError && existingError.code !== "PGRST116") throw existingError;
+            if (existingRequests) {
+                Alert.alert("Already Sent", "You’ve already sent a friend request.");
+                return;
+            }
+
+            // Insert new friend request notification
+            const { error } = await supabase.from("notifications").insert([
+                {
+                    sender_id: currentUser.id,
+                    user_id: id, // ✅ FIXED
+                    type: "friend_request",
+                    content: `${profile?.username || "Someone"} sent you a friend request.`, // ✅ 'content' not 'message'
+                },
+            ]);
+
+            if (error) throw error;
+
+            Alert.alert("Friend request sent!");
+        } catch (err) {
+            console.error("Error sending friend request:", err);
+            Alert.alert("Error", "Could not send friend request.");
+        }
+    };
+
+
     const addFriend = async () => {
+        await sendFriendRequest();
+    };
+
+    // Remove friend functionality
+    const removeFriend = async () => {
         try {
             const sessionData = await supabase.auth.getSession();
             const currentUser = sessionData?.data?.session?.user;
@@ -225,31 +280,47 @@ export default function FriendProfile() {
 
             if (!currentUser || !accessToken) return;
 
-            const response = await fetch(`${nUrl}/api/friends`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({
-                    user_id: currentUser.id,
-                    friend_id: id,
-                }),
-            });
+            // Ask for confirmation before removal
+            Alert.alert(
+                "Remove Friend",
+                "Are you sure you want to remove this friend?",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                        text: "Yes, Remove",
+                        style: "destructive",
+                        onPress: async () => {
+                            const response = await fetch(`${nUrl}/api/friends`, {
+                                method: "DELETE",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    Authorization: `Bearer ${accessToken}`,
+                                },
+                                body: JSON.stringify({
+                                    user_id: currentUser.id,
+                                    friend_id: id,
+                                }),
+                            });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error("Failed to add friend:", errorData);
-                return;
-            }
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                console.error("Failed to remove friend:", errorData);
+                                Alert.alert("Error", "Could not remove friend.");
+                                return;
+                            }
 
-            Alert.alert("Friend added!");
-            setIsFriend(true);
-            fetchFriendsList();
+                            Alert.alert("Friend removed");
+                            setIsFriend(false);
+                            fetchFriendsList();
+                        },
+                    },
+                ]
+            );
         } catch (err) {
-            console.error("Error adding friend:", err);
+            console.error("Error removing friend:", err);
         }
     };
+
 
     const handleBackPress = () => {
         if (originalProfileId === 'main') {
@@ -276,24 +347,28 @@ export default function FriendProfile() {
 
     const handleMomentPress = (moment: ContentItem) => {
         const trackId = extractTrackId(moment.song_url || '');
-        
+
         setSelectedMomentInfo({
             moment: {
-                id: trackId || moment.id,
+                id: moment.id,           // DB moment ID stays here
+                spotifyId: trackId || null, // Spotify track ID separately
                 title: moment.title,
                 artist: moment.description || "Unknown Artist",
                 songStart: moment.start_time || 0,
                 songDuration: moment.duration || 30,
                 length: 180,
-                album: moment.cover_url ? { uri: moment.cover_url } : require("@/assets/images/album1.jpeg"),
+                album: moment.cover_url
+                    ? { uri: moment.cover_url }
+                    : require("@/assets/images/album1.jpeg"),
                 waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
             },
             user: {
                 name: profile?.username || "Unknown User",
                 profilePic: profile?.pfp_url,
-            }
+            },
+            type: "moment",
         });
-        
+
         router.push('/stack' as RelativePathString);
     };
 
@@ -322,7 +397,7 @@ export default function FriendProfile() {
     const { username, bio, pfp_url } = profile;
 
     const renderMoment = ({ item }: { item: ContentItem }) => (
-        <Pressable 
+        <Pressable
             style={{ flex: 1, margin: 6, alignItems: "center" }}
             onPress={() => handleMomentPress(item)}
         >
@@ -337,10 +412,10 @@ export default function FriendProfile() {
                 resizeMode="cover"
             />
             <View style={{ width: Dimensions.get("window").width / 2 - 24, marginTop: 6 }}>
-                <Text style={{ fontFamily: "Jacques Francois", fontSize: 15, color: "#333C42" }} numberOfLines={1}>
+                <Text style={{ fontFamily: "Lato", fontSize: 15, color: "#333C42", paddingLeft: 5 }} numberOfLines={1}>
                     {item.title}
                 </Text>
-                <Text style={{ fontFamily: "Jacques Francois", fontSize: 13, color: "#555" }} numberOfLines={1}>
+                <Text style={{ fontFamily: "Lato", fontSize: 13, color: "#555", paddingLeft: 5 }} numberOfLines={1}>
                     {item.description}
                 </Text>
             </View>
@@ -407,12 +482,12 @@ export default function FriendProfile() {
                         marginHorizontal: 10,
                     }}
                 />
-                <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 }}>
-                    <Text style={{ fontSize: 20, fontFamily: "Jacques Francois", color: "#333C42", fontWeight: "500" }}
+                <View style={{ flex: 1, alignItems: "flex-start", justifyContent: "center", paddingHorizontal: 8,  }}>
+                    <Text style={{ fontSize: 20, fontFamily: "Lato", color: "#333C42", fontWeight: "500", textAlign: "left" }}
                         numberOfLines={1} ellipsizeMode="tail">
                         {username}
                     </Text>
-                    <Text style={{ fontSize: 14, fontFamily: "Jacques Francois", color: "#333C42", textAlign: "center", }}
+                    <Text style={{ fontSize: 14, fontFamily: "Lato", color: "#333C42", textAlign: "left", }}
                         numberOfLines={2} ellipsizeMode="tail">
                         "{bio || 'loading...'}"
                     </Text>
@@ -423,33 +498,46 @@ export default function FriendProfile() {
                             fontSize: 14,
                             color: "#333C42",
                             textDecorationLine: "underline",
-                            fontFamily: "Luxurious Roman",
+                            fontFamily: "Lato",
                             marginBottom: 8,
                         }}>
                             {numFriends} Friends
                         </Text>
                     </Pressable>
-                    {!isFriend && (
-                        <Pressable
-                            onPress={addFriend}
+                    <Pressable
+                        onPress={isFriend ? removeFriend : addFriend}
+                        style={{
+                            backgroundColor: isFriend ? "#B85C5C" : "#39868F",
+                            paddingVertical: 4,
+                            paddingHorizontal: 8,
+                            borderRadius: 8,
+                            marginTop: 4,
+                            maxWidth: 90,
+                            alignItems: "center",
+                        }}
+                    >
+                        <Text
                             style={{
-                                backgroundColor: "#39868F",
-                                paddingVertical: 4,
-                                paddingHorizontal: 8,
-                                borderRadius: 8,
-                                marginTop: 4,
+                                color: "#FFF0E2",
+                                fontFamily: "Lato",
+                                textAlign: "center",
+                                flexWrap: "wrap",
+                                fontSize: 13,
                             }}
+                            numberOfLines={2}
                         >
-                            <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois" }}>Add Friend</Text>
-                        </Pressable>
-                    )}
+                            {isFriend ? "Remove\nFriend" : "Add\nFriend"}
+                        </Text>
+                    </Pressable>
+
+
                 </View>
             </View>
 
             <View style={styles.content}>
                 <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8, width: "100%", justifyContent: "space-between", paddingHorizontal: 20 }}>
                     <View style={{ width: 28 }}></View>
-                    <Text style={{ fontSize: 24, color: "#333C42", fontWeight: "500", fontFamily: "Jacques Francois", flex: 1, textAlign: "center" }}>
+                    <Text style={{ fontSize: 24, color: "#333C42", fontWeight: "500", fontFamily: "Lato", flex: 1, textAlign: "center" }}>
                         {viewMode === "moments" ? "Moments" : "Stacks"}
                     </Text>
                     <Pressable onPress={() => setViewMode(prev => (prev === "moments" ? "stacks" : "moments"))}>
@@ -457,7 +545,7 @@ export default function FriendProfile() {
                     </Pressable>
                 </View>
 
-                <View style={{ flex: 1, width: "100%", paddingHorizontal: 15, paddingTop: 10 }}>
+                <View style={{ flex: 1, width: "100%", paddingHorizontal: 6, paddingTop: 10 }}>
                     <View style={{ display: viewMode === "moments" ? "flex" : "none", flex: 1 }}>
                         {loadingMoments ? (
                             <View style={styles.loadingContainer}>
@@ -465,7 +553,7 @@ export default function FriendProfile() {
                             </View>
                         ) : moments.length === 0 ? (
                             <View style={styles.loadingContainer}>
-                                <Text style={{ color: "#333C42", fontFamily: "Jacques Francois" }}>No moments yet 😢</Text>
+                                <Text style={{ color: "#333C42", fontFamily: "Lato" }}>No moments yet 😢</Text>
                             </View>
                         ) : (
                             <FlatList
@@ -473,7 +561,7 @@ export default function FriendProfile() {
                                 numColumns={2}
                                 showsVerticalScrollIndicator={false}
                                 keyExtractor={(item) => item.id.toString()}
-                                contentContainerStyle={{ paddingBottom: 100 }}
+                                contentContainerStyle={{ paddingBottom: 100,  }}
                                 renderItem={renderMoment}
                             />
                         )}
@@ -486,7 +574,7 @@ export default function FriendProfile() {
                             </View>
                         ) : stacks.length === 0 ? (
                             <View style={styles.loadingContainer}>
-                                <Text style={{ color: "#333C42", fontFamily: "Jacques Francois" }}>No stacks yet 😢</Text>
+                                <Text style={{ color: "#333C42", fontFamily: "Lato" }}>No stacks yet 😢</Text>
                             </View>
                         ) : (
                             <FlatList
@@ -523,7 +611,7 @@ export default function FriendProfile() {
                             </View>
                         ) : friendsList.length === 0 ? (
                             <View style={styles.loadingContainer}>
-                                <Text style={{ color: "#333C42", fontFamily: "Jacques Francois" }}>No friends yet 😢</Text>
+                                <Text style={{ color: "#333C42", fontFamily: "Lato" }}>No friends yet 😢</Text>
                             </View>
                         ) : (
                             <FlatList
@@ -560,6 +648,7 @@ const styles = StyleSheet.create({
         width: "97%",
         backgroundColor: "#8DD2CA",
         alignItems: "center",
+        paddingHorizontal: 0
     },
     momentContainer: {
         width: POLAROID_WIDTH,
@@ -569,28 +658,33 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         overflow: "hidden",
+    
     },
     coverImage: {
         width: "88%",
         height: "88%",
     },
     textOnTop: {
-        position: "absolute",
+        
         width: "90%",
-        alignItems: "center",
+        
     },
     titleText: {
         color: "#030303ff",
         fontWeight: "700",
         fontSize: 14,
         textAlign: "center",
-        fontFamily: "Jacques Francois",
+        fontFamily: "Lato",
+        paddingLeft: 10
+        
     },
     captionText: {
         color: "#333C42",
         fontSize: 12,
-        textAlign: "center",
-        fontFamily: "Jacques Francois",
+        textAlign: "left",
+        fontFamily: "Lato",
+        paddingLeft: 20
+        
     },
     loadingContainer: {
         flex: 1,
@@ -622,7 +716,7 @@ const styles = StyleSheet.create({
     },
     modalTitle: {
         fontSize: 22,
-        fontFamily: "Luxurious Roman",
+        fontFamily: "Lato",
         color: "#333C42",
     },
     friendRow: {
@@ -638,11 +732,11 @@ const styles = StyleSheet.create({
     friendName: {
         fontSize: 16,
         color: "#333C42",
-        fontFamily: "Jacques Francois",
+        fontFamily: "Lato",
     },
     friendBio: {
         fontSize: 12,
         color: "#555",
-        fontFamily: "Jacques Francois",
+        fontFamily: "Lato",
     },
 });
