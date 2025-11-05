@@ -365,7 +365,8 @@ export default function FriendProfile() {
             user: {
                 name: profile?.username || "Unknown User",
                 profilePic: profile?.pfp_url,
-            }
+            },
+            type: "moment",
         });
 
         router.push('/stack' as RelativePathString);
@@ -411,10 +412,10 @@ export default function FriendProfile() {
                 resizeMode="cover"
             />
             <View style={{ width: Dimensions.get("window").width / 2 - 24, marginTop: 6 }}>
-                <Text style={{ fontFamily: "Jacques Francois", fontSize: 15, color: "#333C42" }} numberOfLines={1}>
+                <Text style={{ fontFamily: "Lato", fontSize: 15, color: "#333C42", paddingLeft: 5 }} numberOfLines={1}>
                     {item.title}
                 </Text>
-                <Text style={{ fontFamily: "Jacques Francois", fontSize: 13, color: "#555" }} numberOfLines={1}>
+                <Text style={{ fontFamily: "Lato", fontSize: 13, color: "#555", paddingLeft: 5 }} numberOfLines={1}>
                     {item.description}
                 </Text>
             </View>
@@ -481,12 +482,12 @@ export default function FriendProfile() {
                         marginHorizontal: 10,
                     }}
                 />
-                <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 }}>
-                    <Text style={{ fontSize: 20, fontFamily: "Jacques Francois", color: "#333C42", fontWeight: "500" }}
+                <View style={{ flex: 1, alignItems: "flex-start", justifyContent: "center", paddingHorizontal: 8,  }}>
+                    <Text style={{ fontSize: 20, fontFamily: "Lato", color: "#333C42", fontWeight: "500", textAlign: "left" }}
                         numberOfLines={1} ellipsizeMode="tail">
                         {username}
                     </Text>
-                    <Text style={{ fontSize: 14, fontFamily: "Jacques Francois", color: "#333C42", textAlign: "center", }}
+                    <Text style={{ fontSize: 14, fontFamily: "Lato", color: "#333C42", textAlign: "left", }}
                         numberOfLines={2} ellipsizeMode="tail">
                         "{bio || 'loading...'}"
                     </Text>
@@ -497,7 +498,7 @@ export default function FriendProfile() {
                             fontSize: 14,
                             color: "#333C42",
                             textDecorationLine: "underline",
-                            fontFamily: "Luxurious Roman",
+                            fontFamily: "Lato",
                             marginBottom: 8,
                         }}>
                             {numFriends} Friends
@@ -518,7 +519,7 @@ export default function FriendProfile() {
                         <Text
                             style={{
                                 color: "#FFF0E2",
-                                fontFamily: "Jacques Francois",
+                                fontFamily: "Lato",
                                 textAlign: "center",
                                 flexWrap: "wrap",
                                 fontSize: 13,
@@ -536,7 +537,7 @@ export default function FriendProfile() {
             <View style={styles.content}>
                 <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8, width: "100%", justifyContent: "space-between", paddingHorizontal: 20 }}>
                     <View style={{ width: 28 }}></View>
-                    <Text style={{ fontSize: 24, color: "#333C42", fontWeight: "500", fontFamily: "Jacques Francois", flex: 1, textAlign: "center" }}>
+                    <Text style={{ fontSize: 24, color: "#333C42", fontWeight: "500", fontFamily: "Lato", flex: 1, textAlign: "center" }}>
                         {viewMode === "moments" ? "Moments" : "Stacks"}
                     </Text>
                     <Pressable onPress={() => setViewMode(prev => (prev === "moments" ? "stacks" : "moments"))}>
@@ -544,7 +545,7 @@ export default function FriendProfile() {
                     </Pressable>
                 </View>
 
-                <View style={{ flex: 1, width: "100%", paddingHorizontal: 15, paddingTop: 10 }}>
+                <View style={{ flex: 1, width: "100%", paddingHorizontal: 6, paddingTop: 10 }}>
                     <View style={{ display: viewMode === "moments" ? "flex" : "none", flex: 1 }}>
                         {loadingMoments ? (
                             <View style={styles.loadingContainer}>
@@ -552,7 +553,7 @@ export default function FriendProfile() {
                             </View>
                         ) : moments.length === 0 ? (
                             <View style={styles.loadingContainer}>
-                                <Text style={{ color: "#333C42", fontFamily: "Jacques Francois" }}>No moments yet 😢</Text>
+                                <Text style={{ color: "#333C42", fontFamily: "Lato" }}>No moments yet 😢</Text>
                             </View>
                         ) : (
                             <FlatList
@@ -560,7 +561,7 @@ export default function FriendProfile() {
                                 numColumns={2}
                                 showsVerticalScrollIndicator={false}
                                 keyExtractor={(item) => item.id.toString()}
-                                contentContainerStyle={{ paddingBottom: 100 }}
+                                contentContainerStyle={{ paddingBottom: 100,  }}
                                 renderItem={renderMoment}
                             />
                         )}
@@ -573,7 +574,7 @@ export default function FriendProfile() {
                             </View>
                         ) : stacks.length === 0 ? (
                             <View style={styles.loadingContainer}>
-                                <Text style={{ color: "#333C42", fontFamily: "Jacques Francois" }}>No stacks yet 😢</Text>
+                                <Text style={{ color: "#333C42", fontFamily: "Lato" }}>No stacks yet 😢</Text>
                             </View>
                         ) : (
                             <FlatList
@@ -610,7 +611,7 @@ export default function FriendProfile() {
                             </View>
                         ) : friendsList.length === 0 ? (
                             <View style={styles.loadingContainer}>
-                                <Text style={{ color: "#333C42", fontFamily: "Jacques Francois" }}>No friends yet 😢</Text>
+                                <Text style={{ color: "#333C42", fontFamily: "Lato" }}>No friends yet 😢</Text>
                             </View>
                         ) : (
                             <FlatList
@@ -647,6 +648,7 @@ const styles = StyleSheet.create({
         width: "97%",
         backgroundColor: "#8DD2CA",
         alignItems: "center",
+        paddingHorizontal: 0
     },
     momentContainer: {
         width: POLAROID_WIDTH,
@@ -656,28 +658,33 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         overflow: "hidden",
+    
     },
     coverImage: {
         width: "88%",
         height: "88%",
     },
     textOnTop: {
-        position: "absolute",
+        
         width: "90%",
-        alignItems: "center",
+        
     },
     titleText: {
         color: "#030303ff",
         fontWeight: "700",
         fontSize: 14,
         textAlign: "center",
-        fontFamily: "Jacques Francois",
+        fontFamily: "Lato",
+        paddingLeft: 10
+        
     },
     captionText: {
         color: "#333C42",
         fontSize: 12,
-        textAlign: "center",
-        fontFamily: "Jacques Francois",
+        textAlign: "left",
+        fontFamily: "Lato",
+        paddingLeft: 20
+        
     },
     loadingContainer: {
         flex: 1,
@@ -709,7 +716,7 @@ const styles = StyleSheet.create({
     },
     modalTitle: {
         fontSize: 22,
-        fontFamily: "Luxurious Roman",
+        fontFamily: "Lato",
         color: "#333C42",
     },
     friendRow: {
@@ -725,11 +732,11 @@ const styles = StyleSheet.create({
     friendName: {
         fontSize: 16,
         color: "#333C42",
-        fontFamily: "Jacques Francois",
+        fontFamily: "Lato",
     },
     friendBio: {
         fontSize: 12,
         color: "#555",
-        fontFamily: "Jacques Francois",
+        fontFamily: "Lato",
     },
 });

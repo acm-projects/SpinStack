@@ -50,6 +50,8 @@ export default function MomentView({ data }: { data: MomentInfo }) {
   const isActiveRef = useRef(false);
   const cleanupExecutedRef = useRef(false);
 
+
+
   // Generate unique key for moment (includes start time to differentiate same songs)
   const getMomentKey = (momentData: typeof data.moment) => {
     return `${momentData.spotifyId}_${momentData.songStart}_${momentData.songDuration}`;
@@ -442,7 +444,11 @@ export default function MomentView({ data }: { data: MomentInfo }) {
                 </View>
 
           <View style={[{ flexDirection: 'row', alignItems: "center", justifyContent: "flex-end", marginBottom: 0.0215053763*height, marginRight: 0.0348837209*width }]}>
-            <LikeButton momentId={data.moment.id} />
+            <LikeButton
+              contentId={data.moment.id}
+              type={data.type}
+            />
+
           </View>
         
       </SafeAreaView>

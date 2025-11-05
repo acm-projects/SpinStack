@@ -7,26 +7,47 @@ import {
   FlatList,
   Animated,
   TextInput,
+  Easing,
+  ImageBackground,
   Modal,
   ActivityIndicator,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@expo/vector-icons/Feather';
-import { RelativePathString, useRouter } from 'expo-router';
+import { RelativePathString } from 'expo-router';
 import GroupProfile from '../../components/groupProfile';
+import GroupInfo from '../../components/groupInfo';
 import { useGroupStore } from '../stores/useGroupStore';
-import type { GroupInfo } from '../../components/groupInfo';
+import type { DailyInfo } from '../../components/groupInfo';
+import * as Font from "expo-font";
 import { supabase } from '@/constants/supabase';
 import { useAuth } from '@/_context/AuthContext';
 
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
-function ClickableTab({ label, isActive, onPress }: { label: string; isActive: boolean; onPress: () => void }) {
+
+
+// ======= ICON TAB =======
+function ClickableTab({
+  icon,
+  isActive,
+  onPress,
+}: {
+  icon: keyof typeof Feather.glyphMap;
+  isActive: boolean;
+  onPress: () => void;
+}) {
   return (
-    <TouchableOpacity onPress={onPress} style={{ padding: 5 }}>
-      <View style={[styles.tabButton, isActive && styles.tabButtonActive]}>
-        <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{label}</Text>
-      </View>
+    <TouchableOpacity onPress={onPress} style={{padding: 10,}}>
+      <Feather
+        name={icon}
+        size={28}
+        color={isActive ? '#ffffffff' : '#ffffffff'}
+        style={{
+          opacity: isActive ? 1 : 0.6,
+        }}
+      />
     </TouchableOpacity>
   );
 }
@@ -45,24 +66,47 @@ function GroupRow({ item, onPress }: { item: GroupInfo; onPress: () => void }) {
   });
   
   return (
-    <TouchableOpacity onPress={onPress} style={styles.groupRow}>
-      {item.dailies[0]?.rating === -1 && <View style={styles.unseenDot} />}
-      <View style={{ flex: 1 }}>
-        <Text style={styles.groupName}>{item.name}</Text>
-        <Text style={styles.dailyTitle}>
-          {item.dailies[0]?.title || 'No daily prompt yet'}
-        </Text>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+      <View style={styles.groupRow}>
+        {/* Unread dot */}
+        <View style = {{ paddingLeft: 27}}>
+            {item.dailies[0].rating === -1 && (
+          <View style={styles.unreadDotContainer}>
+            <View style={styles.unreadDot} />
+          </View>
+        )}
+        </View>
+        
+
+        {/* Text info */}
+        <View style={styles.groupTextContainer}>
+          <Text style={styles.groupName}>{item.name}</Text>
+          <Text style={styles.groupTitle}>{item.dailies[0].title || "No daily prompt yet"}</Text>
+        </View>
+
+        <View style = {{ paddingRight: 23}}>
+        <GroupProfile
+          pics={item.users.slice(0, 3).map((user) =>
+            typeof user.profilePic === 'string'
+              ? { uri: user.profilePic }
+              : user.profilePic
+          )}
+          scale={0.6}
+        />
+            
+        </View>
+        {/* Profile pictures */}
+        
       </View>
-      <GroupProfile
-        pics={profilePics}
-        scale={0.6}
-      />
+      <View style={styles.separatorLine} />
     </TouchableOpacity>
   );
 }
 
-export default function GroupsView({ data }: { data?: typeof GroupInfo[] }) {
-  const [activeTab, setActiveTab] = useState<number>(0);
+// ======= MAIN COMPONENT =======
+export default function GroupsView({ data }: { data?: GroupInfo[] }) 
+{
+  const [active, setActive] = useState<number>(0);
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [groups, setGroups] = useState<GroupInfo[]>([]);
@@ -78,7 +122,6 @@ export default function GroupsView({ data }: { data?: typeof GroupInfo[] }) {
   const router = useRouter();
   const setSelectedGroup = useGroupStore(s => s.setSelectedGroup);
   const { user } = useAuth();
-  const buttons = ['Recent', 'Search', 'Create'];
 
   // Fetch groups from Supabase
   useEffect(() => {
@@ -239,19 +282,21 @@ export default function GroupsView({ data }: { data?: typeof GroupInfo[] }) {
     setIsSearchActive(toSearch);
 
     Animated.parallel([
-      Animated.timing(fadeTabs, { 
-        toValue: toSearch ? 0 : 1, 
-        duration: 200, 
-        useNativeDriver: true 
+      Animated.timing(fadeTabs, {
+        toValue: toSearch ? 0 : 1,
+        duration: 150,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
       }),
-      Animated.timing(fadeSearch, { 
-        toValue: toSearch ? 1 : 0, 
-        duration: 200, 
-        useNativeDriver: true 
+      Animated.timing(fadeSearch, {
+        toValue: toSearch ? 1 : 0,
+        duration: 150,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
       }),
     ]).start();
   };
-
+  
   const filteredData = groups
     .sort((a, b) => {
       const ratingA = a.dailies[0]?.rating ?? 0;
@@ -296,110 +341,76 @@ export default function GroupsView({ data }: { data?: typeof GroupInfo[] }) {
     
 
     
+  const buttons = [
+    { icon: 'clock' as const },
+    { icon: 'search' as const },
+    { icon: 'plus-circle' as const },
+  ];
 
+  const background = require('../../assets/images/groupBackground.png');
+
+  console.log("Hello: " + filteredData.length)
+  console.log(filteredData[0])
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Groups</Text>
-      </View>
+    <ImageBackground source={background} style={styles.backgroundImage}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        {/* HEADER */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Dailies</Text>
+        </View>
 
-      {/* Tabs / Search */}
-      <View style={{ height: 70, justifyContent: 'center', alignItems: 'center' }}>
-        <Animated.View style={{ 
-          opacity: fadeTabs, 
-          position: 'absolute', 
-          width: '100%', 
-          alignItems: 'center' 
-        }}>
-          <View 
-            style={{ flexDirection: 'row', gap: 10 }} 
+        {/* TABS + SEARCH BAR */}
+        <View style={styles.tabArea}>
+          <Animated.View
+            style={{
+              opacity: fadeTabs,
+              position: 'absolute',
+              width: '100%',
+              alignItems: 'center',
+            }}
             onLayout={({ nativeEvent }) => setTabWidth(nativeEvent.layout.width)}
           >
-            {buttons.map((label, i) => (
-              <ClickableTab 
-                key={i} 
-                label={label} 
-                isActive={activeTab === i} 
-                onPress={() => { 
-                  setActiveTab(i); 
-                  if (label === 'Search') toggleSearch(); 
-                if(label == "Create") setCreateVisible(true); }} 
-              />
-            ))}
-          </View>
-        </Animated.View>
-
-        <Animated.View
-          style={{
-            opacity: fadeSearch,
-            position: 'absolute',
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: '#F9DDC3',
-            borderWidth: 4,
-            borderColor: '#2E3337',
-            borderRadius: 15,
-            paddingHorizontal: 10,
-            width: tabWidth - 20,
-            height: 50,
-          }}
-        >
-          <TouchableOpacity onPress={toggleSearch} style={{ marginRight: 10 }}>
-            <Feather name="arrow-left" size={24} color="#333C42" />
-          </TouchableOpacity>
-          <TextInput
-            placeholder="Search groups..."
-            placeholderTextColor="#333C42"
-            style={{ flex: 1, fontSize: 16, fontFamily: 'Jacques Francois' }}
-            autoFocus={false}
-            ref={textInputRef}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </Animated.View>
-      </View>
-
-      <Modal
-        visible={createVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setCreateVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.friendsPopup}>
-            <View style={styles.popupHeader}>
-              <Text style={styles.popupTitle}>Create a Group or Daily</Text>
-              <TouchableOpacity onPress={() => setCreateVisible(false)}>
-                <Feather name="x" size={26} color="#333C42" />
-              </TouchableOpacity>
-             </View>
-          
-          <View style={styles.popupContent}>
-              <View style={{flexDirection: "column", justifyContent: "space-evenly"}}>
-                <TouchableOpacity onPress={() => {router.push({
-                                        pathname: '/dailyProcess/userGroupSelection' as RelativePathString,
-                                      });setCreateVisible(false)}}>
-                  <Text style={{textAlign: "center", fontSize: 20,color: "#333C42", fontFamily: "Jacques Francois", marginVertical: 10 }}>
-                      Create a Group
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => {router.push({
-                                        pathname: '/dailyProcess/dailyCreation' as RelativePathString,
-                                      });setCreateVisible(false)}}>
-                  <Text style={{textAlign: "center", fontSize: 20, color: "#333C42", fontFamily: "Jacques Francois", marginVertical: 10}}>
-                      Create a Daily
-                  </Text>
-                </TouchableOpacity>
-                </View>
+            <View style={styles.tabsRow}>
+              {buttons.map((btn, i) => (
+                <ClickableTab
+                  key={i}
+                  icon={btn.icon}
+                  isActive={active === i}
+                  onPress={() => {
+                    setActive(i);
+                    if (btn.icon === 'search') {toggleSearch();}
+                    else if(btn.icon == "plus-circle") {setCreateVisible(true);}
+                  }}
+                />
+              ))}
             </View>
-          </View>
-        </View>
-      </Modal>
+          </Animated.View>
 
-      {/* Messages-style Group List */}
-      <FlatList
+          <Animated.View
+            style={[
+              styles.searchBar,
+              {
+                opacity: fadeSearch,
+                width: tabWidth - 20,
+              },
+            ]}
+          >
+            <TouchableOpacity onPress={toggleSearch} style={{ marginRight: 10 }}>
+              <Feather name="arrow-left" size={22} color="#333C42" />
+            </TouchableOpacity>
+            <TextInput
+              ref={textInputRef}
+              placeholder="Search groups..."
+              placeholderTextColor="#333C42"
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </Animated.View>
+        </View>
+
+        {/* GROUP LIST SECTION */}
+        <FlatList
         data={filteredData}
         keyExtractor={(item, index) => `${item.name}-${index}`}
         contentContainerStyle={{ paddingVertical: 10 }}
@@ -421,75 +432,110 @@ export default function GroupsView({ data }: { data?: typeof GroupInfo[] }) {
           </View>
         }
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
+// ======= STYLES =======
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#8DD2CA' },
-  header: { paddingVertical: 20, alignItems: 'center' },
   headerTitle: { fontSize: 40, fontFamily: 'Luxurious Roman', color: '#333C42' },
-  tabButton: { 
-    borderRadius: 25, 
-    paddingHorizontal: 20, 
-    paddingVertical: 10, 
-    backgroundColor: '#E8C585' 
-  },
+  tabButton: { borderRadius: 25, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#E8C585' },
   tabButtonActive: { backgroundColor: '#F9DDC3' },
-  tabText: { 
-    fontSize: 16, 
-    fontFamily: 'Jacques Francois', 
-    color: '#333C42', 
-    fontWeight: 'bold' 
-  },
+  tabText: { fontSize: 16, fontFamily: 'Jacques Francois', color: '#333C42', fontWeight: 'bold' },
   tabTextActive: { color: '#222222' },
+  unseenDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#008CFF', marginRight: 12 },
+  dailyTitle: { fontSize: 14, fontFamily: 'Jacques Francois', color: '#39868F' },
+  separator: { height: 1, backgroundColor: 'rgba(0,0,0,0.1)', marginHorizontal: 15 },
+  backgroundImage: {
+    flex: 1,
+    resizeMode: 'cover',
+  },
+  container: {
+    flex: 1,
+  },
+  header: {
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  title: {
+    fontSize: 40,
+    fontFamily: 'Lato',
+    fontWeight: 700,
+    color: '#ffffffff',
+  },
+  tabArea: {
+    height: 70,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tabsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 25,
+  },
+  searchBar: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9DDC3',
+    borderWidth: 3,
+    borderColor: '#2E3337',
+    borderRadius: 15,
+    paddingHorizontal: 10,
+    height: 50,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Lato',
+  },
   groupRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
     paddingHorizontal: 15,
+    paddingVertical: 14,
   },
-  unseenDot: { 
-    width: 12, 
-    height: 12, 
-    borderRadius: 6, 
-    backgroundColor: '#008CFF', 
-    marginRight: 12 
-  },
-  groupName: { fontSize: 18, fontFamily: 'Jacques Francois', color: '#333C42' },
-  dailyTitle: { fontSize: 14, fontFamily: 'Jacques Francois', color: '#39868F' },
-  separator: { height: 1, backgroundColor: 'rgba(0,0,0,0.1)', marginHorizontal: 15 },
-  modalOverlay: {
+  groupTextContainer: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
   },
-  friendsPopup: {
-    width: "90%",
-    backgroundColor: "#FFF0E2",
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
-    marginBottom: 200,
+   groupName: {
+    fontSize: 20,
+    fontFamily: 'Lato',
+    color: '#ffffffff',
+    // textShadowColor: 'rgba(0, 0, 0, 0.6)',   // shadow color
+    // textShadowOffset: { width: 1, height: 1 }, // shadow position
+    // textShadowRadius: 3,                      // blur radius
+    paddingLeft: 5,
+    fontWeight: 700
   },
-  popupHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
+  groupTitle: {
+    fontSize: 15,
+    fontFamily: "Lato",
+    color: '#ffffffb2',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    paddingLeft: 5,
+    fontStyle: 'italic',
+    paddingTop: 5
   },
-  popupTitle: {
-    fontFamily: "Luxurious Roman",
-    fontSize: 26,
-    color: "#333C42",
+  unreadDotContainer: {
+    marginRight: 8,
+    marginLeft: -17
   },
-  popupContent: {
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: 100,
+  unreadDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#008CFF',
+    
   },
+  separatorLine: {
+    height: 1,
+    backgroundColor: '#ffffffff',
+    opacity: 1,
+    marginHorizontal: 20,
+  },
+
 });

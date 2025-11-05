@@ -10,6 +10,10 @@ import {
   ActivityIndicator,
   Modal,
   TouchableOpacity,
+  TextInput,
+  Alert,
+  FlatList,
+  SafeAreaView,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as Font from "expo-font";
@@ -17,6 +21,11 @@ import { supabase } from "@/constants/supabase";
 import { useRouter, RelativePathString } from "expo-router";
 import { useMomentInfoStore } from "../stores/useMomentInfoStore";
 import { useTabBar } from './profile/tabBarContext';
+import MomentInfo, { Moment } from "@/components/momentInfo";
+import * as ImagePicker from 'expo-image-picker';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+
 
 const { width } = Dimensions.get("window");
 const POLAROID_WIDTH = 150;
@@ -62,8 +71,25 @@ type MasonryProps = {
   setSelectedMomentInfo: (momentInfo: any) => void;
 };
 
+type StoryItem = {
+  id: string;
+  userId: string;
+  username: string;
+  profilePic: string | null;
+  momentData: {
+    id: string;
+    cover_url?: string;
+  };
+  userData: {
+    name?: string;
+    profilePic?: string | null;
+  };
+};
+
+
 function Masonry({ data, spacing = 8, columns = 2, router, onPressMore, setSelectedMomentInfo }: MasonryProps) {
   const [cols, setCols] = useState<MasonryItem[][]>([]);
+
 
   useEffect(() => {
     const withHeights = data.map((item: any) => ({
@@ -86,15 +112,23 @@ function Masonry({ data, spacing = 8, columns = 2, router, onPressMore, setSelec
   const colWidth = (width - spacing * (columns + 1)) / columns;
 
   const handleMomentPress = (item: MasonryItem) => {
-    if (item.type === 'moment' && item.momentData && item.userData) {
+
+
+    if (item.type === "stack") {
+      router.push(`/(tabs)/stackViewer?id=${item.id}` as RelativePathString);
+    } else if (item.type === 'moment' && item.momentData && item.userData) {
       setSelectedMomentInfo({
         moment: item.momentData,
-        user: item.userData
+        user: item.userData,
+        type: "moment",
       });
 
       router.push('/stack' as RelativePathString);
     }
   };
+
+
+
 
   const renderItem = (item: any) => (
     <View
@@ -238,22 +272,125 @@ export default function HomeScreen() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [activeFilter, setActiveFilter] = useState("For You");
   const [notificationsVisible, setNotificationsVisible] = useState(false);
-  const [addToStackVisible, setAddToStackVisible] = useState(false);
   const [userStacks, setUserStacks] = useState<any[]>([]);
+  const [stories, setStories] = useState<any[]>([]);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [friends, setFriends] = useState<string[]>([]);
   const [albums, setAlbums] = useState<MasonryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [friendRequests, setFriendRequests] = useState<any[]>([]);
+  const [loadingMoments, setLoadingMoments] = useState(false);
+  const [userMoments, setUserMoments] = useState<MomentInfo[]>([]);
+
 
   const router = useRouter();
   const setSelectedMomentInfo = useMomentInfoStore((s) => s.setSelectedMomentInfo);
   const { tabHeight } = useTabBar();
+  const [myProfilePic, setMyProfilePic] = useState<string | null>(null);
+
+  // For Add to Stack modal
+  const [addToStackVisible, setAddToStackVisible] = useState(false);
+
+  // For Create New Stack modal
+  const [createStackVisible, setCreateStackVisible] = useState(false);
+
+  // Form inputs for new stack
+  const [newStackTitle, setNewStackTitle] = useState("");
+  const [newStackDescription, setNewStackDescription] = useState("");
+  const [newStackVisibility, setNewStackVisibility] = useState(true); // public by default
+  const [stackCover, setStackCover] = useState<string | null>(null);
+
+
+  // Selected moments for new stack
+  const [selectedMoments, setSelectedMoments] = useState<MasonryItem[]>([]);
+  const [isMomentPickerVisible, setMomentPickerVisible] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchAllContent(); // Refresh content whenever screen gains focus
+    }, [])
+  );
+
+
+  useEffect(() => {
+    if (isMomentPickerVisible) {
+      fetchUserMoments();
+    }
+  }, [isMomentPickerVisible]);
+
+  async function fetchUserMoments() {
+    setLoadingMoments(true);
+
+    try {
+      // Get the user's JWT token
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session?.access_token) {
+        console.error("No valid session found");
+        setLoadingMoments(false);
+        return;
+      }
+
+      const userToken = session.access_token;
+
+      // Fetch moments from your API
+      const res = await fetch(`${NGROK_URL}/api/moments`, {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch moments");
+
+      const data = await res.json();
+      setUserMoments(data);
+    } catch (err) {
+      console.error("Error fetching moments:", err);
+    } finally {
+      setLoadingMoments(false);
+    }
+  }
+
+  const openMomentPicker = () => {
+    setMomentPickerVisible(true);
+  };
+
+  const closeMomentPicker = () => {
+    setMomentPickerVisible(false);
+  };
+
+
+  useEffect(() => {
+    const fetchMyProfile = async () => {
+      const userId = await getCurrentUserId();
+      if (!userId) return;
+
+      const { data: userData, error } = await supabase
+        .from("users")
+        .select("pfp_url")
+        .eq("id", userId)
+        .single();
+
+      if (error) return console.error(error);
+
+      const pfp = await fetchProfilePictureUrl(userData?.pfp_url);
+      setMyProfilePic(pfp);
+    };
+
+    fetchMyProfile();
+  }, []);
+
 
   const loadFonts = async () => {
     await Font.loadAsync({
       "Luxurious Roman": require("@/fonts/LuxuriousRoman-Regular.ttf"),
       "Jacques Francois": require("@/fonts/JacquesFrancois-Regular.ttf"),
+      "Lato": require("@/fonts/Lato-Regular.ttf"),
+      "LatoBold": require("@/fonts/Lato-Bold.ttf"),
+      "LatoItalic": require("@/fonts/Lato-Italic.ttf")
     });
     setFontsLoaded(true);
   };
@@ -287,7 +424,7 @@ export default function HomeScreen() {
 
   const declineFriendRequest = async (notificationId: string) => {
     try {
-      await supabase.from("notifications").update({ read: true }).eq("id", notificationId);
+      await supabase.from("notifications").update({ is_read: true }).eq("id", notificationId);
 
       setFriendRequests((prev) => prev.filter(n => n.id !== notificationId));
     } catch (err) {
@@ -408,6 +545,56 @@ export default function HomeScreen() {
       console.error("Error fetching friends:", err);
     }
   };
+
+  const fetchActiveStories = async () => {
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      if (!token) return;
+
+      const res = await fetch(`${NGROK_URL}/api/story_moments`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        console.error("Failed to fetch stories:", err);
+        return;
+      }
+
+      const data = await res.json();
+
+      // Process the stories into the shape your frontend expects
+      const processed = await Promise.all(
+        (data || []).map(async (story: any) => {
+          const profileUrl = await fetchProfilePictureUrl(story.users.pfp_url);
+          return {
+            id: story.id,
+            userId: story.user_id,
+            username: story.users.username,
+            profilePic: profileUrl,
+            momentData: { id: story.id, cover_url: story.cover_url },
+            userData: { name: story.users.username, profilePic: profileUrl },
+          };
+        })
+      );
+
+      console.log("Processed stories:", processed);
+
+      const userId = await getCurrentUserId();
+      const myStory = processed.find((story) => story.userId === userId);
+      const otherStories = processed.filter((story) => story.userId !== userId);
+
+      setStories(myStory ? [myStory, ...otherStories] : otherStories);
+    } catch (err) {
+      console.error("Error fetching active stories:", err);
+    }
+  };
+
+
+
+
 
   const fetchProfilePictureUrl = async (pfpPath: string | null): Promise<string | null> => {
     if (!pfpPath) return null;
@@ -572,8 +759,9 @@ export default function HomeScreen() {
   // Load fonts and fetch friends on mount
   useEffect(() => {
     loadFonts();
-    fetchFriends();
+    fetchFriends().then(() => fetchActiveStories());
   }, []);
+
 
   // Fetch content when fonts load, filter changes, or friends list changes
   useEffect(() => {
@@ -596,6 +784,89 @@ export default function HomeScreen() {
     setAddToStackVisible(true);
   };
 
+  const handleStoryPress = async (story: StoryItem) => {
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error("No access token");
+
+      const res = await fetch(`${NGROK_URL}/api/story_moments/${story.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Ensure response is JSON
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        const text = await res.text();
+        throw new Error(`Unexpected response format: ${text}`);
+      }
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to fetch story");
+      }
+
+      const data = await res.json();
+
+      const userData = Array.isArray(data.users) ? data.users[0] : data.users;
+      const pfpUrl = await fetchProfilePictureUrl(userData?.pfp_url);
+      const coverUrl = await fetchCoverImageUrl(data.cover_url);
+      const trackId = extractTrackId(data.song_url);
+
+      setSelectedMomentInfo({
+        moment: {
+          id: data.id,
+          spotifyId: trackId || null,
+          title: data.title,
+          artist: data.description || "Unknown Artist",
+          songStart: data.start_time || 0,
+          songDuration: data.duration || 30,
+          length: 180,
+          album: coverUrl ? { uri: coverUrl } : require("@/assets/images/album1.jpeg"),
+          waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
+        },
+        user: {
+          name: userData?.username || "Unknown User",
+          profilePic: pfpUrl,
+        },
+        type: "story",
+      });
+
+      router.push('/stack' as RelativePathString);
+
+    } catch (err) {
+      console.error("Error handling story press:", err);
+      alert(`Failed to open story: ${err.message}`);
+    }
+  };
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      setStackCover(result.assets[0].uri);
+    }
+  };
+
+  // Add a moment to selected moments (up to 5)
+  const addSelectedMoment = (moment: MasonryItem) => {
+    if (selectedMoments.length >= 5) {
+      Alert.alert("Limit reached", "You can only add up to 5 moments");
+      return;
+    }
+    setSelectedMoments([...selectedMoments, moment]);
+  };
+
+  const removeSelectedMoment = (id: string) => {
+    setSelectedMoments(selectedMoments.filter((m) => m.id !== id));
+  };
+
+
 
 
   return (
@@ -615,16 +886,101 @@ export default function HomeScreen() {
 
       </View>
 
-      {/* Profiles */}
+      {/* Stories Bar */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.profileScroll}
+        style={{ paddingVertical: 12, paddingHorizontal: 16 }}
       >
-        {profiles.map((p) => (
-          <View key={p.id} style={styles.profileCircle} />
+
+        {/* Your own story circle */}
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/create",
+              params: { isStory: "true" }, // flag to create a story, not a moment
+            })
+          }
+          style={{ alignItems: "center", marginRight: 14 }}
+        >
+          <View
+            style={{
+              width: 65,
+              height: 65,
+              borderRadius: 33,
+              borderWidth: 3,
+              borderColor: "#ff5c5c",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Image
+              source={myProfilePic ? { uri: myProfilePic } : require("@/assets/images/profile.png")}
+              style={{ width: 58, height: 58, borderRadius: 29 }}
+            />
+            {/* Plus Button */}
+            <View
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: [{ translateX: -11 }, { translateY: -11 }], // half of icon size
+                width: 22,
+                height: 22,
+                borderRadius: 11,
+                backgroundColor: "#ff5c5c",
+                justifyContent: "center",
+                alignItems: "center",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 3,
+                elevation: 4,
+              }}
+            >
+              <Feather name="plus" size={14} color="#fff" />
+            </View>
+
+          </View>
+          <Text style={{ marginTop: 4, color: "#333C42", fontSize: 13 }}>You</Text>
+        </Pressable>
+
+        {/* Friends’ stories */}
+        {stories.map((story) => (
+          <Pressable
+            key={story.id}
+            onPress={() => handleStoryPress(story)}
+            style={{ alignItems: "center", marginRight: 14 }}
+          >
+            <View
+              style={{
+                width: 65,
+                height: 65,
+                borderRadius: 33,
+                borderWidth: 3,
+                borderColor: "#ff5c5c",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Image
+                source={
+                  story.profilePic
+                    ? { uri: story.profilePic }
+                    : require("@/assets/images/profile.png")
+                }
+                style={{ width: 58, height: 58, borderRadius: 29 }}
+              />
+            </View>
+            <Text style={{ marginTop: 4, color: "#333C42", fontSize: 13 }}>
+              {story.username}
+            </Text>
+          </Pressable>
         ))}
       </ScrollView>
+
+
+
 
       <View style={styles.filterContainer}>
         {["Friends", "For You"].map((filter) => (
@@ -666,7 +1022,7 @@ export default function HomeScreen() {
             </View>
             <View style={styles.popupContent}>
               {friendRequests.length === 0 ? (
-                <Text style={{ color: "#333C42", fontFamily: "Jacques Francois" }}>
+                <Text style={{ color: "#333C42", fontFamily: "Lato" }}>
                   No notifications yet 📭
                 </Text>
               ) : (
@@ -677,7 +1033,7 @@ export default function HomeScreen() {
                         source={req.users.profileUrl ? { uri: req.users.profileUrl } : require("@/assets/images/profile.png")}
                         style={{ width: 40, height: 40, borderRadius: 20, marginRight: 10 }}
                       />
-                      <Text style={{ flex: 1, fontFamily: "Jacques Francois", color: "#333C42" }}>
+                      <Text style={{ flex: 1, fontFamily: "Lato", color: "#333C42" }}>
                         {req.type === "friend_request"
                           ? `${req.users.username} sent you a friend request`
                           : req.type === "like"
@@ -723,31 +1079,24 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.popupContent}>
-              <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-                <ScrollView style={{ width: "100%" }}>
-                  {userStacks.length === 0 ? (
-                    <Text style={{ textAlign: "center", color: "#333C42", fontFamily: "Jacques Francois" }}>
-                      No stacks yet
-                    </Text>
-                  ) : (
-                    userStacks.map((stack) => (
-                      <TouchableOpacity
-                        key={stack.id}
-                        style={styles.stackOption}
-                        onPress={() => addMomentToStack(stack.id)}
-                      >
-                        <Feather name="folder" size={20} color="#333C42" />
-                        <Text style={styles.stackText}>{stack.title}</Text>
-                      </TouchableOpacity>
-                    ))
-                  )}
-                </ScrollView>
-              </View>
-
-              <TouchableOpacity style={styles.newStackButton}>
-                <Feather name="plus" size={18} color="#333C42" />
-                <Text style={styles.newStackText}>Create New Stack</Text>
-              </TouchableOpacity>
+              <ScrollView style={{ width: "100%" }}>
+                {userStacks.length === 0 ? (
+                  <Text style={{ textAlign: "center", color: "#333C42", fontFamily: "Lato" }}>
+                    No stacks yet
+                  </Text>
+                ) : (
+                  userStacks.map((stack) => (
+                    <TouchableOpacity
+                      key={stack.id}
+                      style={styles.stackOption}
+                      onPress={() => addMomentToStack(stack.id)}
+                    >
+                      <Feather name="folder" size={20} color="#333C42" />
+                      <Text style={styles.stackText}>{stack.title}</Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </ScrollView>
             </View>
           </View>
         </View>
@@ -780,12 +1129,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontFamily: "Luxurious Roman",
+    fontFamily: "Lato",
     fontSize: 34,
     paddingTop: 60,
     marginLeft: 97,
     alignSelf: "center",
     color: "#333C42",
+    fontWeight: 600
   },
   bellIcon: {
     alignSelf: "center",
@@ -799,6 +1149,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingBottom: 60,
     backgroundColor: "#FFF0E2",
+  },
+  label: {
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 5,
+    color: '#333C42',
   },
   profileCircle: {
     width: 60,
@@ -822,7 +1178,7 @@ const styles = StyleSheet.create({
   filterText: {
     color: "#afb2b3ff",
     fontSize: 18,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   filterTextActive: {
     color: "#333C42",
@@ -844,19 +1200,19 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#333C42",
     fontSize: 14,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   time: {
     fontSize: 11,
     color: "#777",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   caption: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     fontSize: 12,
     color: "#333C42",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
     textAlign: "center",
   },
   modalOverlay: {
@@ -883,7 +1239,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   popupTitle: {
-    fontFamily: "Luxurious Roman",
+    fontFamily: "Lato",
     fontSize: 22,
     color: "#333C42",
   },
@@ -903,7 +1259,7 @@ const styles = StyleSheet.create({
   },
   stackText: {
     marginLeft: 10,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
     color: "#333C42",
     fontSize: 16,
   },
@@ -915,7 +1271,96 @@ const styles = StyleSheet.create({
   newStackText: {
     marginLeft: 6,
     color: "#333C42",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
     fontSize: 15,
   },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 10,
+    backgroundColor: "#fff",
+    width: "100%",
+    marginBottom: 10,
+  },
+  momentChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#333C42",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    marginRight: 8,
+    marginVertical: 5,
+    borderRadius: 12,
+  },
+  addButton: {
+    backgroundColor: "#ccc",
+    padding: 10,
+    borderRadius: 8,
+    marginVertical: 10,
+    alignItems: "center",
+  },
+  addButtonText: {
+    fontWeight: "bold",
+    color: "#333C42",
+  },
+  saveButton: {
+    backgroundColor: "#333C42",
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  momentPickerContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    padding: 20,
+    paddingTop: 50,
+  },
+
+  momentItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 8,
+    backgroundColor: "#222",
+    padding: 10,
+    borderRadius: 10,
+  },
+
+  momentImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+
+  momentTitle: {
+    color: "#fff",
+    fontSize: 16,
+  },
+
+  closePickerBtn: {
+    marginTop: 20,
+    alignSelf: "center",
+    padding: 10,
+    backgroundColor: "#555",
+    borderRadius: 8,
+  },
+
+  closePickerText: {
+    color: "#fff",
+    fontSize: 16,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+
 });

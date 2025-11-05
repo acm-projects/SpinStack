@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   searchInput: {
     color: "#333C42",
     fontSize: 16,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   filterRow: {
     flexDirection: "row",
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
   filterText: {
     color: "#333C42",
     fontSize: 14,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   filterTextActive: {
     color: "#FFF0E2",
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     width: 25,
     textAlign: "center",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   songInfo: {
     flex: 1,
@@ -402,17 +402,17 @@ const styles = StyleSheet.create({
   songTitle: {
     color: "#333C42",
     fontSize: 18,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   songArtist: {
     color: "#39868F",
     fontSize: 13,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   stackDesc: {
     color: "#39868F",
     fontSize: 11,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
     marginTop: 2,
   },
   albumArt: {
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
   emptyText: {
     color: "#39868F",
     fontSize: 16,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
     textAlign: "center",
   },
 });

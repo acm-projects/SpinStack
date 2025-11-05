@@ -2,6 +2,7 @@ import { Text, View, Pressable, Image } from "react-native";
 import { useState } from "react";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import React from "react";
 
 export default function CreateScreen() {
 

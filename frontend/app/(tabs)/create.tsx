@@ -6,6 +6,8 @@ import { router } from "expo-router";
 import { moms } from '../../components/demoMoment'
 import { useMomentStore } from "../stores/useMomentStore";
 import { supabase } from "@/constants/supabase";
+import { useLocalSearchParams } from "expo-router";
+
 
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
@@ -28,6 +30,7 @@ interface TopHitTrack extends SpotifyTrack {
 
 
 export default function TestSpotify() {
+
   return (
     <SafeAreaView
       style={{
@@ -37,7 +40,7 @@ export default function TestSpotify() {
         backgroundColor: '#FFF0E2',
       }}
     >
-      <Text style={{ color: "black", fontSize: 30, fontWeight: "500", fontFamily: 'Luxurious Roman' }}>
+      <Text style={{ color: "black", fontSize: 30, fontWeight: "700", fontFamily: 'Lato' }}>
         Create Your Moment
       </Text>
 
@@ -56,6 +59,8 @@ function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [loadingTopHits, setLoadingTopHits] = useState(true);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const { isStory } = useLocalSearchParams();
+  const isStoryMode = isStory === "true";
 
 
 
@@ -272,7 +277,10 @@ function SearchPage() {
           waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
         };
         setSelectedMoment(moment);
-        router.push({ pathname: "/createProcess/momentProcess" });
+        router.push({
+          pathname: "/createProcess/momentProcess",
+          params: { isStory: isStoryMode ? "true" : "false" },
+        });
       }}
     >
       <View style={styles2.songRow}>
@@ -315,6 +323,13 @@ function SearchPage() {
         ) : (
           <Text style={styles2.sectionTitle}>Select a Song</Text>
         )}
+
+        {isStoryMode && (
+          <Text style={{ color: "#39868F", fontSize: 14, marginTop: 4, textAlign: 'center' }}>
+            You are creating a story — it will disappear in 24 hours
+          </Text>
+        )}
+
 
         {loading || (loadingTopHits && !search.trim()) ? (
           <ActivityIndicator size="large" color="#39868F" style={styles2.loader} />
@@ -363,7 +378,7 @@ const styles2 = StyleSheet.create({
   },
   searchInput: {
     color: "#333C42",
-    fontFamily: 'Jacques Francois',
+    fontFamily: 'Lato',
     fontSize: 16,
   },
   sectionTitle: {
@@ -373,7 +388,7 @@ const styles2 = StyleSheet.create({
     marginTop: 15,
     marginBottom: 15,
     textAlign: "center",
-    fontFamily: 'Jacques Francois',
+    fontFamily: 'Lato',
   },
   songRow: {
     flexDirection: "row",
@@ -386,7 +401,7 @@ const styles2 = StyleSheet.create({
   rank: {
     color: "#333c42",
     fontSize: 20,
-    fontFamily: 'Jacques Francois',
+    fontFamily: 'Lato',
     width: 25,
     textAlign: 'center'
   },
@@ -396,12 +411,12 @@ const styles2 = StyleSheet.create({
   },
   songTitle: {
     color: "#333c42",
-    fontFamily: 'Jacques Francois',
+    fontFamily: 'Lato',
     fontSize: 16,
   },
   songArtist: {
     color: "#39868F",
-    fontFamily: 'Jacques Francois',
+    fontFamily: 'Lato',
     fontSize: 13,
   },
   momentCount: {
@@ -409,7 +424,7 @@ const styles2 = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
     fontWeight: "500",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   albumArt: {
     width: 40,
@@ -437,7 +452,7 @@ const styles2 = StyleSheet.create({
   emptyText: {
     color: "#39868F",
     fontSize: 16,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
     textAlign: "center",
   },
 });
