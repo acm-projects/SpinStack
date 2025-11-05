@@ -45,7 +45,6 @@ export default function MomentFinalizeView({
         Alert.alert("Error", "You are not signed in");
         return;
       }
-
       const table = "story_moments";
       const songUrl = `https://open.spotify.com/track/${moment.id}`;
 
