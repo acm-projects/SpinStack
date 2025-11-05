@@ -10,6 +10,10 @@ import {
   ActivityIndicator,
   Modal,
   TouchableOpacity,
+  TextInput,
+  Alert,
+  FlatList,
+  SafeAreaView,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as Font from "expo-font";
@@ -17,6 +21,11 @@ import { supabase } from "@/constants/supabase";
 import { useRouter, RelativePathString } from "expo-router";
 import { useMomentInfoStore } from "../stores/useMomentInfoStore";
 import { useTabBar } from './profile/tabBarContext';
+import MomentInfo, { Moment } from "@/components/momentInfo";
+import * as ImagePicker from 'expo-image-picker';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+
 
 const { width } = Dimensions.get("window");
 const POLAROID_WIDTH = 150;
@@ -103,7 +112,11 @@ function Masonry({ data, spacing = 8, columns = 2, router, onPressMore, setSelec
   const colWidth = (width - spacing * (columns + 1)) / columns;
 
   const handleMomentPress = (item: MasonryItem) => {
-    if (item.type === 'moment' && item.momentData && item.userData) {
+
+
+    if (item.type === "stack") {
+      router.push(`/(tabs)/stackViewer?id=${item.id}` as RelativePathString);
+    } else if (item.type === 'moment' && item.momentData && item.userData) {
       setSelectedMomentInfo({
         moment: item.momentData,
         user: item.userData,
@@ -259,7 +272,6 @@ export default function HomeScreen() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [activeFilter, setActiveFilter] = useState("For You");
   const [notificationsVisible, setNotificationsVisible] = useState(false);
-  const [addToStackVisible, setAddToStackVisible] = useState(false);
   const [userStacks, setUserStacks] = useState<any[]>([]);
   const [stories, setStories] = useState<any[]>([]);
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -267,11 +279,89 @@ export default function HomeScreen() {
   const [albums, setAlbums] = useState<MasonryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [friendRequests, setFriendRequests] = useState<any[]>([]);
+  const [loadingMoments, setLoadingMoments] = useState(false);
+  const [userMoments, setUserMoments] = useState<MomentInfo[]>([]);
+
 
   const router = useRouter();
   const setSelectedMomentInfo = useMomentInfoStore((s) => s.setSelectedMomentInfo);
   const { tabHeight } = useTabBar();
   const [myProfilePic, setMyProfilePic] = useState<string | null>(null);
+
+  // For Add to Stack modal
+  const [addToStackVisible, setAddToStackVisible] = useState(false);
+
+  // For Create New Stack modal
+  const [createStackVisible, setCreateStackVisible] = useState(false);
+
+  // Form inputs for new stack
+  const [newStackTitle, setNewStackTitle] = useState("");
+  const [newStackDescription, setNewStackDescription] = useState("");
+  const [newStackVisibility, setNewStackVisibility] = useState(true); // public by default
+  const [stackCover, setStackCover] = useState<string | null>(null);
+
+
+  // Selected moments for new stack
+  const [selectedMoments, setSelectedMoments] = useState<MasonryItem[]>([]);
+  const [isMomentPickerVisible, setMomentPickerVisible] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchAllContent(); // Refresh content whenever screen gains focus
+    }, [])
+  );
+
+
+  useEffect(() => {
+    if (isMomentPickerVisible) {
+      fetchUserMoments();
+    }
+  }, [isMomentPickerVisible]);
+
+  async function fetchUserMoments() {
+    setLoadingMoments(true);
+
+    try {
+      // Get the user's JWT token
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session?.access_token) {
+        console.error("No valid session found");
+        setLoadingMoments(false);
+        return;
+      }
+
+      const userToken = session.access_token;
+
+      // Fetch moments from your API
+      const res = await fetch(`${NGROK_URL}/api/moments`, {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch moments");
+
+      const data = await res.json();
+      setUserMoments(data);
+    } catch (err) {
+      console.error("Error fetching moments:", err);
+    } finally {
+      setLoadingMoments(false);
+    }
+  }
+
+  const openMomentPicker = () => {
+    setMomentPickerVisible(true);
+  };
+
+  const closeMomentPicker = () => {
+    setMomentPickerVisible(false);
+  };
+
 
   useEffect(() => {
     const fetchMyProfile = async () => {
@@ -334,7 +424,7 @@ export default function HomeScreen() {
 
   const declineFriendRequest = async (notificationId: string) => {
     try {
-      await supabase.from("notifications").update({ read: true }).eq("id", notificationId);
+      await supabase.from("notifications").update({ is_read: true }).eq("id", notificationId);
 
       setFriendRequests((prev) => prev.filter(n => n.id !== notificationId));
     } catch (err) {
@@ -750,7 +840,31 @@ export default function HomeScreen() {
     }
   };
 
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
 
+    if (!result.canceled) {
+      setStackCover(result.assets[0].uri);
+    }
+  };
+
+  // Add a moment to selected moments (up to 5)
+  const addSelectedMoment = (moment: MasonryItem) => {
+    if (selectedMoments.length >= 5) {
+      Alert.alert("Limit reached", "You can only add up to 5 moments");
+      return;
+    }
+    setSelectedMoments([...selectedMoments, moment]);
+  };
+
+  const removeSelectedMoment = (id: string) => {
+    setSelectedMoments(selectedMoments.filter((m) => m.id !== id));
+  };
 
 
 
@@ -965,31 +1079,24 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.popupContent}>
-              <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-                <ScrollView style={{ width: "100%" }}>
-                  {userStacks.length === 0 ? (
-                    <Text style={{ textAlign: "center", color: "#333C42", fontFamily: "Lato" }}>
-                      No stacks yet
-                    </Text>
-                  ) : (
-                    userStacks.map((stack) => (
-                      <TouchableOpacity
-                        key={stack.id}
-                        style={styles.stackOption}
-                        onPress={() => addMomentToStack(stack.id)}
-                      >
-                        <Feather name="folder" size={20} color="#333C42" />
-                        <Text style={styles.stackText}>{stack.title}</Text>
-                      </TouchableOpacity>
-                    ))
-                  )}
-                </ScrollView>
-              </View>
-
-              <TouchableOpacity style={styles.newStackButton}>
-                <Feather name="plus" size={18} color="#333C42" />
-                <Text style={styles.newStackText}>Create New Stack</Text>
-              </TouchableOpacity>
+              <ScrollView style={{ width: "100%" }}>
+                {userStacks.length === 0 ? (
+                  <Text style={{ textAlign: "center", color: "#333C42", fontFamily: "Lato" }}>
+                    No stacks yet
+                  </Text>
+                ) : (
+                  userStacks.map((stack) => (
+                    <TouchableOpacity
+                      key={stack.id}
+                      style={styles.stackOption}
+                      onPress={() => addMomentToStack(stack.id)}
+                    >
+                      <Feather name="folder" size={20} color="#333C42" />
+                      <Text style={styles.stackText}>{stack.title}</Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </ScrollView>
             </View>
           </View>
         </View>
@@ -1042,6 +1149,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingBottom: 60,
     backgroundColor: "#FFF0E2",
+  },
+  label: {
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 5,
+    color: '#333C42',
   },
   profileCircle: {
     width: 60,
@@ -1161,4 +1274,93 @@ const styles = StyleSheet.create({
     fontFamily: "Lato",
     fontSize: 15,
   },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 10,
+    backgroundColor: "#fff",
+    width: "100%",
+    marginBottom: 10,
+  },
+  momentChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#333C42",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    marginRight: 8,
+    marginVertical: 5,
+    borderRadius: 12,
+  },
+  addButton: {
+    backgroundColor: "#ccc",
+    padding: 10,
+    borderRadius: 8,
+    marginVertical: 10,
+    alignItems: "center",
+  },
+  addButtonText: {
+    fontWeight: "bold",
+    color: "#333C42",
+  },
+  saveButton: {
+    backgroundColor: "#333C42",
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  momentPickerContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    padding: 20,
+    paddingTop: 50,
+  },
+
+  momentItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 8,
+    backgroundColor: "#222",
+    padding: 10,
+    borderRadius: 10,
+  },
+
+  momentImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+
+  momentTitle: {
+    color: "#fff",
+    fontSize: 16,
+  },
+
+  closePickerBtn: {
+    marginTop: 20,
+    alignSelf: "center",
+    padding: 10,
+    backgroundColor: "#555",
+    borderRadius: 8,
+  },
+
+  closePickerText: {
+    color: "#fff",
+    fontSize: 16,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+
 });
