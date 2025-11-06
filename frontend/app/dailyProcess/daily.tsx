@@ -3,28 +3,29 @@ import { StyleSheet, Text, View, Image, Easing, Animated, TouchableOpacity} from
 import {useRef, useEffect, useState} from 'react';
 import {SafeAreaView} from "react-native-safe-area-context";
 import {useWindowDimensions} from 'react-native';
-import Waveform from './waveform';
-import {Moment} from './momentInfo';
-import {User} from './momentInfo';
+import Waveform from '../../components/waveform';
+import {Moment} from '../../components/momentInfo';
+import {User} from '../../components/momentInfo';
 import Background from '@/assets/other/Moment Background(1).svg';
-import GroupProfile from './groupProfile';
-import RatingButton from './ui/ratingButton';
+import GroupProfile from '../../components/groupProfile';
+import RatingButton from '../../components/ui/ratingButton';
 import { useNavigation } from '@react-navigation/native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { RNSVGSvgIOS } from 'react-native-svg';
-import { DailyInfo } from './groupInfo';
+import { DailyInfo } from '../../components/groupInfo';
+import { useDailyStore } from '../stores/useDailyStore';
 
-
-export default function DailyView({ daily, users }: { daily: DailyInfo, users: User[] }) {
+export default function DailyView() {
+    const daily = useDailyStore((s) => s.selectedDaily);
     if(!daily) {
         return (<View style = {{flex: 1, backgroundColor: 'red'}}><Text>you're cooked buddy the daily doesn't even exist</Text></View>);
     }
     const data = daily.moment;
-    
+   
 
 
     const {height, width, scale, fontScale} = useWindowDimensions();
-    const vinylImg = require('../assets/images/vinyl.png');
+    const vinylImg = require('../../assets/images/vinyl.png');
     const spinAnim = useRef(new Animated.Value(0)).current;
     const [rating, setRating] = useState<number | null>(4);
 
@@ -94,10 +95,6 @@ export default function DailyView({ daily, users }: { daily: DailyInfo, users: U
             <SafeAreaView style = {[StyleSheet.absoluteFill, {justifyContent: 'space-between', marginBottom: '15%'}]} edges = {['top', 'left', 'right', 'bottom']}>
                 <View style = {{justifyContent: 'flex-start'}}>
                     <View style = {{marginLeft: 0.0465116279*width, marginHorizontal: 0.023255814*width, flexDirection: 'row', alignItems: 'flex-start', marginTop: -0.0107*height}}>
-                        <GroupProfile pics = {users.slice(0, 3).map(user => (typeof user.profilePic === "string"
-                                        ? { uri: user.profilePic }
-                                        : user.profilePic))} scale={0.6} 
-                                        />
                         <View style = {{marginLeft: 0.023255814*width, marginRight: 0.0930232558*width, flexDirection: 'row', flex: 1}}>
                             <View style = {[{width: '100%', justifyContent: "center"}]}>
                                 <View style = {[{width: '100%', height: 0.00536480687*height, borderRadius: 50, backgroundColor: '#333c42', marginTop: 0.00751072961*height}]}/>
@@ -150,6 +147,10 @@ export default function DailyView({ daily, users }: { daily: DailyInfo, users: U
         </View>
   );
 }
+
+export const options = {
+  headerShown: false,
+};
 
 const styles = StyleSheet.create({
     container: {
