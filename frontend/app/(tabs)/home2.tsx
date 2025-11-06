@@ -923,10 +923,9 @@ export default function HomeScreen() {
   };
 
   
-
-    const sendMomentToGroup = (selectedItem: any) => {
-      //todo
-    };
+  const sendMomentToGroup = (selectedItem: any) => {
+    //todo
+  };
 
 
 

@@ -20,6 +20,7 @@ export default function GroupCreationPage() {
   const selectedUsers = useSelectedUsersStore((state) => state.selectedUsers);
   const clearSelectedUsers = useSelectedUsersStore((state) => state.clearSelectedUsers);
   const [groupName, setGroupName] = useState("");
+  const [dailyPrompt, setDailyPrompt] = useState("");
   const [loading, setLoading] = useState(false);
 
   if (!selectedUsers) {
@@ -33,6 +34,11 @@ export default function GroupCreationPage() {
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {
       Alert.alert("Error", "Please enter a group name");
+      return;
+    }
+
+    if (!dailyPrompt.trim()) {
+      Alert.alert("Error", "Please enter a daily prompt");
       return;
     }
 
@@ -58,7 +64,8 @@ export default function GroupCreationPage() {
       // Extract just the user IDs
       const member_ids = selectedUsers.map(user => user.id);
 
-      const res = await fetch(`${nUrl}/api/groups`, {
+      // Create the group
+      const groupRes = await fetch(`${nUrl}/api/groups`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -67,22 +74,58 @@ export default function GroupCreationPage() {
         body: JSON.stringify({
           name: groupName,
           max_members,
-          member_ids, // Send array of user IDs
+          member_ids,
         }),
       });
 
-      const result = await res.json();
+      const groupResult = await groupRes.json();
 
-      if (!res.ok) {
-        throw new Error(result.error || "Failed to create group");
+      if (!groupRes.ok) {
+        throw new Error(groupResult.error || "Failed to create group");
       }
 
-      // Clear selected users after successful creation
+      // Create the first daily for this group
+      const dailyRes = await fetch(`${nUrl}/api/dailies`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          group_id: groupResult.group.id,
+          prompt: dailyPrompt.trim(),
+          date: new Date().toISOString().split("T")[0], // Today's date in YYYY-MM-DD format
+        }),
+      });
+
+      const dailyResult = await dailyRes.json();
+
+      if (!dailyRes.ok) {
+        // Group was created but daily failed - still consider it a partial success
+        console.error("Failed to create daily:", dailyResult.error);
+        Alert.alert(
+          "Partial Success",
+          `Group "${groupResult.group.name}" created, but failed to create daily prompt. You can add one later.`,
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                clearSelectedUsers();
+                router.dismissAll();
+                router.replace("/(tabs)/dGroup");
+              }
+            }
+          ]
+        );
+        return;
+      }
+
+      // Both group and daily created successfully
       clearSelectedUsers();
       
       Alert.alert(
         "Success", 
-        `Group "${result.group.name}" created successfully!`,
+        `Group "${groupResult.group.name}" created with first daily prompt!`,
         [
           {
             text: "OK",
@@ -112,6 +155,17 @@ export default function GroupCreationPage() {
           placeholderTextColor="#333C42"
           value={groupName}
           onChangeText={setGroupName}
+        />
+
+        <TextInput
+          style={[styles.input, styles.promptInput]}
+          placeholder="First Daily Prompt (e.g., 'A song that makes you feel nostalgic')"
+          placeholderTextColor="#333C42"
+          value={dailyPrompt}
+          onChangeText={setDailyPrompt}
+          multiline
+          numberOfLines={3}
+          textAlignVertical="top"
         />
 
         <Text style={styles.selectedUsersTitle}>
@@ -166,6 +220,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontFamily: "Jacques Francois",
     backgroundColor: "#FFF0E2",
+  },
+  promptInput: {
+    minHeight: 80,
+    paddingTop: 12,
+    borderRadius: 15,
   },
   selectedUsersTitle: {
     fontSize: 16,

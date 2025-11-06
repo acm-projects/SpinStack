@@ -12,10 +12,9 @@ import {
   Modal,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, RelativePathString } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@expo/vector-icons/Feather';
-import { RelativePathString } from 'expo-router';
 import GroupProfile from '../../components/groupProfile';
 import GroupInfo from '../../components/groupInfo';
 import { useGroupStore } from '../stores/useGroupStore';
@@ -25,8 +24,6 @@ import { supabase } from '@/constants/supabase';
 import { useAuth } from '@/_context/AuthContext';
 
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
-
-
 
 // ======= ICON TAB =======
 function ClickableTab({
@@ -117,7 +114,6 @@ export default function GroupsView({ data }: { data?: GroupInfo[] })
   const fadeSearch = useRef(new Animated.Value(0)).current;
   const textInputRef = useRef<any>(null);
   const [tabWidth, setTabWidth] = useState(0);
-  const [createVisible, setCreateVisible] = useState(false);
   
   const router = useRouter();
   const setSelectedGroup = useGroupStore(s => s.setSelectedGroup);
@@ -338,9 +334,6 @@ export default function GroupsView({ data }: { data?: GroupInfo[] })
     );
   }
 
-    
-
-    
   const buttons = [
     { icon: 'clock' as const },
     { icon: 'search' as const },
@@ -350,7 +343,10 @@ export default function GroupsView({ data }: { data?: GroupInfo[] })
   const background = require('../../assets/images/groupBackground.png');
 
   console.log("Hello: " + filteredData.length)
-  console.log(filteredData[0])
+  if (filteredData.length > 0) {
+    console.log(filteredData[0])
+  }
+  
   return (
     <ImageBackground source={background} style={styles.backgroundImage}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -378,8 +374,11 @@ export default function GroupsView({ data }: { data?: GroupInfo[] })
                   isActive={active === i}
                   onPress={() => {
                     setActive(i);
-                    if (btn.icon === 'search') {toggleSearch();}
-                    else if(btn.icon == "plus-circle") {setCreateVisible(true);}
+                    if (btn.icon === 'search') {
+                      toggleSearch();
+                    } else if (btn.icon === "plus-circle") {
+                      router.push('/dailyProcess/userGroupSelection' as RelativePathString);
+                    }
                   }}
                 />
               ))}
@@ -503,9 +502,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: 'Lato',
     color: '#ffffffff',
-    // textShadowColor: 'rgba(0, 0, 0, 0.6)',   // shadow color
-    // textShadowOffset: { width: 1, height: 1 }, // shadow position
-    // textShadowRadius: 3,                      // blur radius
     paddingLeft: 5,
     fontWeight: 700
   },
@@ -537,5 +533,4 @@ const styles = StyleSheet.create({
     opacity: 1,
     marginHorizontal: 20,
   },
-
 });
