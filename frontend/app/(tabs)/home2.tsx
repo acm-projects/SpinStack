@@ -25,6 +25,8 @@ import MomentInfo, { Moment } from "@/components/momentInfo";
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
+import GroupInfo from '../../components/groupInfo';
+import { useAuth } from '@/_context/AuthContext';
 
 
 const { width } = Dimensions.get("window");
@@ -273,6 +275,7 @@ export default function HomeScreen() {
   const [activeFilter, setActiveFilter] = useState("For You");
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [userStacks, setUserStacks] = useState<any[]>([]);
+  const [userGroups, setUserGroups] = useState<any[]>([]);
   const [stories, setStories] = useState<any[]>([]);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [friends, setFriends] = useState<string[]>([]);
@@ -281,6 +284,7 @@ export default function HomeScreen() {
   const [friendRequests, setFriendRequests] = useState<any[]>([]);
   const [loadingMoments, setLoadingMoments] = useState(false);
   const [userMoments, setUserMoments] = useState<MomentInfo[]>([]);
+  const { user } = useAuth();
 
 
   const router = useRouter();
@@ -317,6 +321,58 @@ export default function HomeScreen() {
       fetchUserMoments();
     }
   }, [isMomentPickerVisible]);
+
+  const fetchUserGroups = async () => {
+      try {
+        setLoading(true);
+  
+        // Get groups the user is a member of
+        const { data: groupMembers, error: membersError } = await supabase
+          .from('group_members')
+          .select('group_id')
+          .eq('user_id', user.id);
+  
+        if (membersError) throw membersError;
+  
+        const groupIds = groupMembers?.map(gm => gm.group_id) || [];
+  
+        if (groupIds.length === 0) {
+          setUserGroups([]);
+          setLoading(false);
+          return;
+        }
+  
+        // Fetch group details
+        const { data: groupsData, error: groupsError } = await supabase
+          .from('groups')
+          .select('id, name, created_at')
+          .in('id', groupIds);
+  
+        if (groupsError) throw groupsError;
+  
+        //dummy
+        const groupsWithDetails = await Promise.all(
+          (groupsData || []).map(async (group) => {
+            return {
+              name: group.name,
+              users: [],
+              dailies: [],
+            } as GroupInfo;
+          })
+        );
+  
+        setUserGroups(groupsWithDetails);
+      } catch (error) {
+        console.error('Error fetching groups:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  useEffect(() => {
+      if (!user?.id) return;
+      fetchUserGroups();
+    }, [user?.id]);
 
   async function fetchUserMoments() {
     setLoadingMoments(true);
@@ -866,6 +922,12 @@ export default function HomeScreen() {
     setSelectedMoments(selectedMoments.filter((m) => m.id !== id));
   };
 
+  
+
+    const sendMomentToGroup = (selectedItem: any) => {
+      //todo
+    };
+
 
 
 
@@ -1072,7 +1134,7 @@ export default function HomeScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.friendsPopup}>
             <View style={styles.popupHeader}>
-              <Text style={styles.popupTitle}>Add to Stack</Text>
+              <Text style={styles.popupTitle}>Moment Options</Text>
               <Pressable onPress={() => setAddToStackVisible(false)}>
                 <Feather name="x" size={26} color="#333C42" />
               </Pressable>
@@ -1093,6 +1155,24 @@ export default function HomeScreen() {
                     >
                       <Feather name="folder" size={20} color="#333C42" />
                       <Text style={styles.stackText}>{stack.title}</Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </ScrollView>
+              <ScrollView style={{ width: "100%" }}>
+                {userGroups.length === 0 ? (
+                  <Text style={{ textAlign: "center", color: "#333C42", fontFamily: "Lato" }}>
+                    No groups to send to yet
+                  </Text>
+                ) : (
+                  userGroups.map((group) => (
+                    <TouchableOpacity
+                      key={group.id}
+                      style={styles.stackOption}
+                      onPress={() => sendMomentToGroup(selectedItem)}
+                    >
+                      <Feather name="folder" size={20} color="#333C42" />
+                      <Text style={styles.stackText}>{group.name}</Text>
                     </TouchableOpacity>
                   ))
                 )}
