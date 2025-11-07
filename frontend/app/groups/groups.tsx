@@ -11,7 +11,7 @@ import {
   ImageBackground,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, RelativePathString} from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Feather from '@expo/vector-icons/Feather';
@@ -374,10 +374,13 @@ export default function GroupsView({ data }: { data?: GroupInfo[] }) {
                     icon={btn.icon}
                     isActive={active === i}
                     onPress={() => {
-                      setActive(i);
-                      if (btn.icon === 'search') toggleSearch();
-                      else if (btn.icon === 'plus-circle') setCreateVisible(true);
-                    }}
+                    setActive(i);
+                    if (btn.icon === 'search') {
+                      toggleSearch();
+                    } else if (btn.icon === "plus-circle") {
+                      router.push('/dailyProcess/userGroupSelection' as RelativePathString);
+                    }
+                  }}
                   />
                 ))}
               </View>
