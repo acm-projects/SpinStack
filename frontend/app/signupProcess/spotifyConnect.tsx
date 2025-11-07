@@ -33,7 +33,11 @@ export default function SpotifyConnect() {
   const glowAnim = useRef(new Animated.Value(1)).current;
   const nextPulseAnim = useRef(new Animated.Value(1)).current;
 
+  const { user } = useAuth();
+
   useEffect(() => {
+
+    
     const checkConnection = async () => {
       if (!user?.id) {
         setIsLoading(false);

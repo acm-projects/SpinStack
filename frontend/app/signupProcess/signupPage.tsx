@@ -74,8 +74,8 @@ export default function SignUpPage() {
       Animated.loop(
         Animated.sequence([
           Animated.timing(animRef, {
-            toValue: 1.05,
-            duration: 800,
+            toValue: 1.03,
+            duration: 1000,
             easing: Animated.Easing?.inOut?.(Animated.Easing.sin) || undefined,
             useNativeDriver: true,
           }),
