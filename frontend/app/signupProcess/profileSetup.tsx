@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Alert,
+  Animated,
+  Easing,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/constants/supabase';
@@ -29,6 +31,49 @@ export default function ProfileInfo() {
   const [bio, setBio] = useState('');
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
+  // ======= FADE + SLIDE-IN ANIMATION =======
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+
+  // ======= PULSING BUTTON ANIMATION =======
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    loadFonts();
+
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Start pulsing animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05, // max scale
+          duration: 800,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1, // back to normal
+          duration: 800,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+  }, []);
+
   const loadFonts = async () => {
     await Font.loadAsync({
       'Luxurious Roman': require('@/fonts/LuxuriousRoman-Regular.ttf'),
@@ -36,10 +81,6 @@ export default function ProfileInfo() {
     });
     setFontsLoaded(true);
   };
-
-  useEffect(() => {
-    loadFonts();
-  }, []);
 
   if (!fontsLoaded) return null;
 
@@ -115,6 +156,10 @@ export default function ProfileInfo() {
     }
   };
 
+  const handleBackPress = () => {
+    router.back();
+  };
+
   return (
     <View style={[StyleSheet.absoluteFill, { flex: 1 }]}>
       {/* Background */}
@@ -132,10 +177,10 @@ export default function ProfileInfo() {
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View>
+          <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
             {/* Back Button */}
             <View style={{ marginBottom: 50, marginLeft: 10 }}>
-              <Pressable onPress={() => router.back()}>
+              <Pressable onPress={handleBackPress}>
                 <View style={{ marginBottom: 60, marginLeft: 10 }}>
                   <View style={{ position: 'absolute', alignItems: 'center' }}>
                     <Bubble width={50} height={50} />
@@ -186,11 +231,13 @@ export default function ProfileInfo() {
               multiline
             />
 
-            {/* Button */}
-            <Pressable style={styles.button} onPress={setUserInfo}>
-              <Text style={styles.buttonText}>Next</Text>
+            {/* Pulsing Next Button */}
+            <Pressable onPress={setUserInfo}>
+              <Animated.View style={[styles.button, { transform: [{ scale: pulseAnim }] }]}>
+                <Text style={styles.buttonText}>Next</Text>
+              </Animated.View>
             </Pressable>
-          </View>
+          </Animated.View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </View>
