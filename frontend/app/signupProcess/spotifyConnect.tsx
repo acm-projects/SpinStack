@@ -12,11 +12,8 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/_context/AuthContext";
-import {
-  authenticateSpotify,
-  hasSpotifyAuth,
-  clearSpotifyTokens,
-} from "../utils/spotifyAuth";
+import { authenticateSpotify, hasSpotifyAuth, clearSpotifyTokens, getSpotifyUserId } from '../utils/spotifyAuth';
+import { supabase } from '@/constants/supabase';
 
 import OpeningSplash from "../../assets/other/openingSplash.svg";
 import Bubble from "../../assets/other/bubble.svg";
@@ -38,17 +35,41 @@ export default function SpotifyConnect() {
 
   useEffect(() => {
     const checkConnection = async () => {
+      if (!user?.id) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const connected = await hasSpotifyAuth();
-        setIsConnected(connected);
+        // Check if user has spotify_user_id in database
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('spotify_user_id')
+          .eq('id', user.id)
+          .single();
+
+        if (error) throw error;
+
+        const hasSpotifyInDB = !!userData?.spotify_user_id;
+        
+        // If they have Spotify in DB, check if token is still valid
+        if (hasSpotifyInDB) {
+          const hasValidToken = await hasSpotifyAuth();
+          setIsConnected(hasValidToken);
+        } else {
+          // New user or no Spotify connection - clear any old tokens
+          await clearSpotifyTokens();
+          setIsConnected(false);
+        }
       } catch (error) {
         console.error("Error checking Spotify connection:", error);
+        setIsConnected(false);
       } finally {
         setIsLoading(false);
       }
     };
     checkConnection();
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     Animated.parallel([
@@ -147,6 +168,21 @@ export default function SpotifyConnect() {
       setIsConnecting(true);
       const token = await authenticateSpotify();
       if (token) {
+        // Get Spotify user ID and save to database
+        const spotifyUserId = await getSpotifyUserId(token);
+        
+        if (spotifyUserId && user?.id) {
+          // Save Spotify user ID to database
+          const { error } = await supabase
+            .from('users')
+            .update({ spotify_user_id: spotifyUserId })
+            .eq('id', user.id);
+
+          if (error) {
+            console.error("Error saving Spotify user ID:", error);
+          }
+        }
+
         setIsConnected(true);
         Alert.alert("Success! 🎉", "Your Spotify account has been connected.", [
           { text: "OK" },
@@ -178,6 +214,15 @@ export default function SpotifyConnect() {
         style: "destructive",
         onPress: async () => {
           await clearSpotifyTokens();
+            
+            // Remove Spotify user ID from database
+            if (user?.id) {
+              await supabase
+                .from('users')
+                .update({ spotify_user_id: null })
+                .eq('id', user.id);
+            }
+            
           setIsConnected(false);
           Alert.alert("Disconnected", "Your Spotify account has been disconnected.");
         },
@@ -187,8 +232,26 @@ export default function SpotifyConnect() {
 
   const handleNext = () => {
     setProfileComplete(true);
-    router.dismissAll();
-    router.replace("../profile");
+    // Use replace with the full path to avoid navigation stack issues
+    router.replace("/(tabs)/profile");
+  };
+
+  const handleSkip = () => {
+    Alert.alert(
+      "Skip Spotify Connection?",
+      "You won't be able to play moments until you connect Spotify later in Settings.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Skip",
+          onPress: () => {
+            setProfileComplete(true);
+            // Use replace with the full path to avoid navigation stack issues
+            router.replace("/(tabs)/profile");
+          }
+        }
+      ]
+    );
   };
 
   if (isLoading) {

@@ -4,49 +4,347 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Waveform from '../../components/waveform';
 import { Moment } from '../../components/momentInfo';
 import Feather from '@expo/vector-icons/Feather';
-import Bubble from '../../assets/other/bubble.svg';
+import * as SecureStore from 'expo-secure-store';
+import { useProgressAnimation } from "../progressAnimation";
+import { useFocusEffect } from '@react-navigation/native';
 
 const MAX_DURATION_SECONDS = 30;
+const API_BASE = "https://api.spotify.com/v1";
 
-export default function MomentPickView({ moment, scrollFunc }: { moment: Moment, scrollFunc: (page: number) => void }) {
+type Device = {
+  id: string;
+  is_active: boolean;
+  name: string;
+  type: string;
+  is_restricted: boolean;
+};
+
+export default function MomentPickView({
+  moment,
+  scrollFunc,
+}: {
+  moment: Moment;
+  scrollFunc: (page: number) => void;
+}) {
   const src = require('../../assets/images/stack.png');
   const { width } = useWindowDimensions();
   const [waveWidth, setWaveWidth] = useState(0);
 
-  // Progress bar animation
-  const progress = useRef(new Animated.Value(0)).current;
+  //----------Spotify integration ----------------------
+  const [token, setToken] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  
+  // Track current moment to detect changes - use a unique key
+  const currentMomentKey = useRef<string | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isActiveRef = useRef(false);
+  const cleanupExecutedRef = useRef(false);
 
+  // NEW: Track last API call timestamps to prevent rate limiting
+  const lastPauseTime = useRef<number>(0);
+  const lastSeekTime = useRef<number>(0);
+  const MIN_API_INTERVAL = 500; // Minimum 500ms between API calls
+
+  // Generate unique key for moment (includes start time to differentiate same songs)
+  const getMomentKey = (momentData: typeof moment) => {
+    return `${momentData.id}_${momentData.songStart}_${momentData.songDuration}`;
+  };
+
+  // Initialize token on mount
   useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(progress, {
-          toValue: 1,
-          duration: 3000,
-          easing: Easing.linear,
-          useNativeDriver: false,
-        }),
-        Animated.timing(progress, {
-          toValue: 0,
-          duration: 0,
-          useNativeDriver: false,
-        }),
-      ])
-    ).start();
+    const initSpotify = async () => {
+      try {
+        const storedToken = await SecureStore.getItemAsync('spotifyToken');
+        if (!storedToken) {
+          Alert.alert(
+            "Spotify Not Connected",
+            "Please connect your Spotify account in Settings to play moments.",
+            [{ text: "OK" }]
+          );
+          return;
+        }
+
+        console.log("✅ Found Spotify token");
+        setToken(storedToken);
+      } catch (error) {
+        console.error("Error initializing Spotify:", error);
+        Alert.alert("Error", "Failed to initialize Spotify playback");
+      }
+    };
+
+    initSpotify();
+
+    // Cleanup on unmount
+    return () => {
+      console.log("🗑️ Component unmounting - final cleanup");
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
   }, []);
 
-  // Restart animation
-  const restartAnimation = () => {
-    progress.stopAnimation(() => {
-      progress.setValue(0);
-      Animated.timing(progress, {
-        toValue: 1,
-        duration: 2000,
-        easing: Easing.linear,
-        useNativeDriver: false,
-      }).start(({ finished }) => {
-        if (finished) restartAnimation();
-      });
+  // Cleanup function to stop playback
+  const cleanup = React.useCallback(async (cleanupToken: string | null) => {
+    if (cleanupExecutedRef.current) {
+      console.log("🔄 Cleanup already executed, skipping");
+      return;
+    }
+    
+    console.log("🛑 Executing cleanup");
+    cleanupExecutedRef.current = true;
+    isActiveRef.current = false;
+    
+    // CRITICAL: Reset dragging flag during cleanup
+    isDraggingRef.current = false;
+
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+
+    if (cleanupToken) {
+      await pausePlayback(cleanupToken).catch(console.error);
+    }
+
+    setIsPlaying(false);
+  }, []);
+
+  // Detect moment changes and cleanup immediately
+  useEffect(() => {
+    if (!moment?.id) return;
+
+    const newMomentKey = getMomentKey(moment);
+    const momentChanged = currentMomentKey.current !== null && currentMomentKey.current !== newMomentKey;
+    
+    if (momentChanged) {
+      console.log(`🔄 Moment changed from ${currentMomentKey.current} to ${newMomentKey}`);
+      console.log(`   Title: ${moment.title}, Start: ${moment.songStart}, Duration: ${moment.songDuration}`);
+      
+      // IMMEDIATELY stop playback and clear intervals
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+      
+      setIsPlaying(false);
+      
+      // Pause playback asynchronously
+      if (token) {
+        pausePlayback(token).catch(console.error);
+      }
+      
+      // Reset flags for new moment
+      cleanupExecutedRef.current = false;
+      isActiveRef.current = false;
+    }
+    
+    // Update current moment key
+    currentMomentKey.current = newMomentKey;
+  }, [moment?.id, moment?.songStart, moment?.songDuration, token]);
+
+  // Handle focus/unfocus with proper cleanup
+  useFocusEffect(
+    React.useCallback(() => {
+      const momentKey = moment ? getMomentKey(moment) : null;
+      console.log("🎧 MomentView focused for:", moment?.title, "Key:", momentKey);
+      isActiveRef.current = true;
+      
+      // Only reset cleanup flag if this is truly a new focus (not just re-render)
+      if (cleanupExecutedRef.current) {
+        cleanupExecutedRef.current = false;
+      }
+
+      let startTimeout: NodeJS.Timeout | null = null;
+
+      // ✅ Only start playback if token exists and moment exists
+      // Duration validation happens inside startPlayback
+      if (token && moment?.id) {
+        // Wait longer for cleanup and devices to be ready
+        startTimeout = setTimeout(async () => {
+          if (isActiveRef.current && !cleanupExecutedRef.current) {
+            console.log("🎯 Starting playback after delay for:", moment.title);
+            console.log("   Start time:", moment.songStart, "Duration:", moment.songDuration);
+            await startPlayback(token);
+          }
+        }, 800);
+      }
+
+      return () => {
+        console.log("🛑 MomentView unfocused from:", moment?.title);
+        
+        if (startTimeout) {
+          clearTimeout(startTimeout);
+        }
+
+        // CRITICAL: Actually call cleanup when losing focus
+        cleanup(token);
+      };
+    }, [token, moment?.id, moment?.songStart, moment?.songDuration, moment?.title, cleanup])
+  );
+
+  // --- Spotify API helpers ---
+  const api = async (spotifyToken: string, path: string, init?: RequestInit) => {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${spotifyToken}`,
+        ...(init?.headers || {}),
+      },
     });
+    return res;
+  };
+
+  const getDevices = async (spotifyToken: string): Promise<Device[]> => {
+    const res = await api(spotifyToken, "/me/player/devices");
+    if (!res.ok) throw new Error(`devices: ${res.status}`);
+    const deviceData = await res.json();
+    return deviceData.devices as Device[];
+  };
+
+  const transferPlayback = async (spotifyToken: string, deviceId: string) => {
+    await api(spotifyToken, "/me/player", {
+      method: "PUT",
+      body: JSON.stringify({ device_ids: [deviceId], play: false }),
+    });
+  };
+
+  // NEW: Rate-limited seek function
+  const seekTo = async (spotifyToken: string, ms: number) => {
+    const now = Date.now();
+    if (now - lastSeekTime.current < MIN_API_INTERVAL) {
+      console.log("⏭️ Skipping seek - rate limited");
+      return;
+    }
+    lastSeekTime.current = now;
+    await api(spotifyToken, `/me/player/seek?position_ms=${ms}`, { method: "PUT" });
+  };
+
+  // NEW: Rate-limited pause function
+  const pausePlayback = async (spotifyToken: string) => {
+    try {
+      const now = Date.now();
+      if (now - lastPauseTime.current < MIN_API_INTERVAL) {
+        console.log("⏸️ Skipping pause - rate limited");
+        return;
+      }
+      lastPauseTime.current = now;
+      await api(spotifyToken, "/me/player/pause", { method: "PUT" });
+      console.log("⏸ Playback paused");
+    } catch (error) {
+      console.error("Error pausing playback:", error);
+    }
+  };
+
+  // --- Main playback logic ---
+  const startPlayback = async (spotifyToken: string) => {
+    // ✅ Don't start playback if user is dragging
+    if (isDraggingRef.current) {
+      console.log("⏸️ User is dragging, skipping playback");
+      return;
+    }
+
+    if (!isActiveRef.current) {
+      console.log("⚠️ Component not active, skipping playback");
+      return;
+    }
+
+    // ✅ Check if duration is valid before starting playback
+    if (currentDuration <= 0 || currentDuration > MAX_DURATION_SECONDS) {
+      console.log("❌ Invalid duration, not starting playback:", currentDuration);
+      setIsPlaying(false);
+      return;
+    }
+
+    try {
+      const trackUri = `spotify:track:${moment.id}`;
+      const startMs = Math.floor(moment.songStart * 1000);
+      const endMs = Math.floor((moment.songStart + moment.songDuration) * 1000);
+
+      console.log(`🎵 Starting playback for ${moment.title}`);
+
+      let res = await api(spotifyToken, "/me/player/play", {
+        method: "PUT",
+        body: JSON.stringify({ uris: [trackUri], position_ms: startMs }),
+      });
+
+      if (res.status === 404 || res.status === 403 || res.status === 202) {
+        console.log("⚠️ No active device, searching...");
+        const devices = await getDevices(spotifyToken);
+
+        if (devices.length === 0) throw new Error("No Spotify devices found.");
+
+        const active = devices.find((d) => d.is_active && !d.is_restricted);
+        const smartphone = devices.find((d) => d.type === "Smartphone" && !d.is_restricted);
+        const any = devices.find((d) => !d.is_restricted);
+        const target = active ?? smartphone ?? any;
+
+        if (!target) throw new Error("No available Spotify devices.");
+
+        await transferPlayback(spotifyToken, target.id);
+        await new Promise((r) => setTimeout(r, 800));
+        
+        res = await api(
+          spotifyToken,
+          `/me/player/play?device_id=${encodeURIComponent(target.id)}`,
+          {
+            method: "PUT",
+            body: JSON.stringify({ uris: [trackUri], position_ms: startMs }),
+          }
+        );
+      }
+
+      if (!res.ok && res.status !== 204) {
+        const txt = await res.text();
+        throw new Error(`Play error ${res.status}: ${txt}`);
+      }
+
+      if (!isActiveRef.current) {
+        console.log("⚠️ Component became inactive during setup");
+        await pausePlayback(spotifyToken);
+        return;
+      }
+
+      console.log("✅ Playback started");
+      setIsPlaying(true);
+
+      // Polling loop
+      if (pollingRef.current) clearInterval(pollingRef.current);
+
+      pollingRef.current = setInterval(async () => {
+        if (!isActiveRef.current) {
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+          return;
+        }
+
+        try {
+          const playbackRes = await api(spotifyToken, "/me/player");
+          if (playbackRes.status === 204 || !playbackRes.ok) return;
+
+          const playbackData = await playbackRes.json();
+          const pos = playbackData.progress_ms ?? 0;
+
+          const startMs = Math.floor(moment.songStart * 1000);
+          const endMs = Math.floor((moment.songStart + moment.songDuration) * 1000);
+
+          if (pos > endMs || pos < startMs) {
+            console.log(`🔁 Looping back to start`);
+            restartAnimation()
+            await seekTo(spotifyToken, startMs);
+          }
+        } catch (error) {
+          console.error("Error in playback loop:", error);
+        }
+      }, 1000);
+    } catch (error: any) {
+      console.error("Playback error:", error);
+      Alert.alert("Playback Error", error.message || "Failed to start playback.");
+    }
   };
 
   // Slider positions in pixels
@@ -56,9 +354,26 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
   // Slider positions as percentages (0-1)
   const [mStart, setStart] = useState(0);
   const [mEnd, setEnd] = useState(Math.min(MAX_DURATION_SECONDS / moment.length, 1));
-  const [currentDuration, setCurrentDuration] = useState((mEnd - mStart) * moment.length);
+  // ✅ Round to avoid floating point errors
+  const [currentDuration, setCurrentDuration] = useState(
+    Math.round((Math.min(MAX_DURATION_SECONDS / moment.length, 1) - 0) * moment.length * 10) / 10
+  );
+  const startOffsetRef = useRef(0);
+  const endOffsetRef = useRef(0);
+  const isDraggingRef = useRef(false);
 
-  // Update start position4+
+  // NEW: Pending seek position to batch updates
+  const pendingSeekMs = useRef<number | null>(null);
+  const seekTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Progress bar animation
+  const { progress, pauseAnimation, restartAnimation } = useProgressAnimation(
+    isPlaying,
+    moment.songDuration * 1000,
+    [moment.id, moment.songStart, moment.songDuration]
+  );
+
+  // Update start position
   startX.addListener(({ value }) => {
     updateStartPosition(value);
   });
@@ -71,34 +386,63 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
   const updateStartPosition = (value: number) => {
     if (waveWidth > 0) {
       const newStart = Math.max(0, Math.min(value / waveWidth, 1));
-      
-      
-      // Ensure we don't exceed max duration or overlap with mEnd
+      let finalStart = newStart;
+
       if (newStart >= mEnd) {
-        setStart(Math.max(0, mEnd - 0.01));
+        finalStart = Math.max(0, mEnd - 0.01);
+        setStart(finalStart);
       } else {
-        setStart(newStart);
+        setStart(finalStart);
       }
 
-      setCurrentDuration((mEnd - newStart) * moment.length);
+      // ✅ Round to 1 decimal place to avoid floating point errors
+      const newDuration = Math.round((mEnd - newStart) * moment.length * 10) / 10;
+      setCurrentDuration(newDuration);
+      moment.songStart = mStart * moment.length;
+      moment.songDuration = newDuration;
+      
+      // Store pending seek position instead of calling immediately
+      pendingSeekMs.current = Math.floor(newStart * moment.length * 1000);
+      
+      // Cancel any previous scheduled seeks - user is still adjusting
+      if (seekTimeoutRef.current) {
+        clearTimeout(seekTimeoutRef.current);
+        seekTimeoutRef.current = null;
+      }
+      
+      return newStart;
     }
+
+    return -1;
   };
 
-  // Update end position
   const updateEndPosition = (value: number) => {
     if (waveWidth > 0) {
       const newEnd = Math.min(1, Math.max(value / waveWidth, 0));
-      
-      
-      // Ensure we don't exceed max duration or overlap with start
+      let finalEnd = newEnd;
+
       if (newEnd <= mStart) {
-        setEnd(Math.min(1, mStart + 0.01));
+        finalEnd = Math.min(1, mStart + 0.01);
+        setEnd(finalEnd);
       } else {
-        setEnd(newEnd);
+        setEnd(finalEnd);
       }
 
-      setCurrentDuration((newEnd - mStart) * moment.length);
+      // ✅ Round to 1 decimal place to avoid floating point errors
+      const newDuration = Math.round((newEnd - mStart) * moment.length * 10) / 10;
+      setCurrentDuration(newDuration);
+      moment.songDuration = newDuration;
+      
+      // Cancel any previous scheduled seeks - user is still adjusting
+      if (seekTimeoutRef.current) {
+        clearTimeout(seekTimeoutRef.current);
+        seekTimeoutRef.current = null;
+      }
+      
+      return newEnd;
     }
+
+    return -1;
   };
 
   // Handle waveform layout
@@ -109,21 +453,61 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
     endX.setValue(mEnd * w);
   };
 
+  // NEW: Batch seek calls to avoid rate limiting - increased delay
+  const scheduleBatchedSeek = () => {
+    if (seekTimeoutRef.current) {
+      clearTimeout(seekTimeoutRef.current);
+    }
+
+    seekTimeoutRef.current = setTimeout(async () => {
+      if (pendingSeekMs.current !== null && token && isActiveRef.current) {
+        console.log('📍 Executing batched seek to:', pendingSeekMs.current);
+        await seekTo(token, pendingSeekMs.current);
+        pendingSeekMs.current = null;
+      }
+    }, 1500); // Increased to 1.5 seconds to ensure user has finished adjusting
+  };
+
   // Pan responder for start slider
   const panStart = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
+        isDraggingRef.current = true;
         startX.setOffset(startX.__getValue());
         startX.setValue(0);
+        // Pause playback once when starting to drag
+        if (token && isPlaying) {
+          pausePlayback(token);
+        }
+        pauseAnimation();
+        setIsPlaying(false);
       },
       onPanResponderMove: (_, gesture) => {
         startX.setValue(gesture.dx);
+        // Don't make any API calls during dragging
       },
       onPanResponderRelease: () => {
         startX.flattenOffset();
-        updateStartPosition(startX.__getValue());
-        restartAnimation();
+        const newStart = updateStartPosition(startX.__getValue());
+
+        // IMMEDIATELY reset dragging flag on release
+        isDraggingRef.current = false;
+
+        // Schedule batched seek after user releases
+        if (currentDuration > 0 && currentDuration <= MAX_DURATION_SECONDS) {
+          scheduleBatchedSeek();
+          
+          // Wait longer for seek to complete before restarting - increased delay
+          setTimeout(() => {
+            restartAnimation();
+            setIsPlaying(true);
+          }, 1800); // Increased to 1.8 seconds (300ms after the seek call)
+        } else {
+          if (token) pausePlayback(token);
+          pauseAnimation();
+          setIsPlaying(false);
+        }
       },
     })
   ).current;
@@ -133,19 +517,55 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
+        isDraggingRef.current = true;
         endX.setOffset(endX.__getValue());
         endX.setValue(0);
+        // Pause playback once when starting to drag
+        if (token && isPlaying) {
+          pausePlayback(token);
+        }
+        pauseAnimation();
+        setIsPlaying(false);
       },
       onPanResponderMove: (_, gesture) => {
         endX.setValue(gesture.dx);
+        // Don't make any API calls during dragging
       },
       onPanResponderRelease: () => {
         endX.flattenOffset();
-        updateEndPosition(endX.__getValue());
-        restartAnimation();
+        const newEnd = updateEndPosition(endX.__getValue());
+
+        // IMMEDIATELY reset dragging flag on release
+        isDraggingRef.current = false;
+
+        // Schedule batched seek after user releases
+        if (currentDuration > 0 && currentDuration <= MAX_DURATION_SECONDS) {
+          // Seek to start position since duration changed
+          pendingSeekMs.current = Math.floor(mStart * moment.length * 1000);
+          scheduleBatchedSeek();
+          
+          // Wait longer for seek to complete before restarting - increased delay
+          setTimeout(() => {
+            restartAnimation();
+            setIsPlaying(true);
+          }, 1800); // Increased to 1.8 seconds (300ms after the seek call)
+        } else {
+          if (token) pausePlayback(token);
+          pauseAnimation();
+          setIsPlaying(false);
+        }
       },
     })
   ).current;
+
+  // Cleanup seek timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (seekTimeoutRef.current) {
+        clearTimeout(seekTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Sync Animated values with state
   useEffect(() => {
@@ -180,6 +600,9 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
     moment.songDuration = (mEnd - mStart) * moment.length;
     scrollFunc(1);
   };
+
+  const [barWidth, setBarWidth] = useState(0);
+  const barFactor = 180 / currentDuration;
 
   return (
     <View style={{ width, justifyContent: 'center', alignItems: 'center' }}>
@@ -292,6 +715,7 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
 
         {/* Progress Bar */}
         <View
+          onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
           style={{
             backgroundColor: '#E4D7CB',
             borderRadius: 50,
@@ -342,7 +766,7 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
                 {
                   translateX: progress.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [-30, waveWidth - 100],
+                    outputRange: [-barFactor, barWidth + barFactor],
                   }),
                 },
               ],

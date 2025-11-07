@@ -16,10 +16,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Feather from '@expo/vector-icons/Feather';
 import GroupProfile from '../../components/groupProfile';
+import GroupInfo from '../../components/groupInfo';
 import { useGroupStore } from '../stores/useGroupStore';
-import { demoGroups } from '../../components/demoMoment';
 import type { DailyInfo } from '../../components/groupInfo';
-import * as Font from "expo-font";
+import { supabase } from '@/constants/supabase';
+import { useAuth } from '@/_context/AuthContext';
+
+const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
 // ======= ICON TAB =======
 function ClickableTab({
@@ -32,25 +35,29 @@ function ClickableTab({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity onPress={onPress} style={{padding: 10}}>
+    <TouchableOpacity onPress={onPress} style={{ padding: 10 }}>
       <Feather
         name={icon}
         size={28}
-        color={isActive ? '#ffffffff' : '#ffffffff'}
+        color="#ffffffff"
         style={{ opacity: isActive ? 1 : 0.6 }}
       />
     </TouchableOpacity>
   );
 }
 
-// ======= GROUP ITEM =======
-function GroupClickTab({
-  item,
-  onPress,
-}: {
-  item: any;
-  onPress: () => void;
-}) {
+// ======= GROUP ROW =======
+function GroupRow({ item, onPress }: { item: GroupInfo; onPress: () => void }) {
+  const firstThreeUsers = item.users.slice(0, 3);
+  const profilePics = firstThreeUsers.map((u) => {
+    if (typeof u.profilePic === 'string') {
+      return u.profilePic.trim()
+        ? { uri: u.profilePic }
+        : require('../../assets/images/profile.png');
+    }
+    return u.profilePic;
+  });
+
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
       <View style={styles.groupRow}>
@@ -64,15 +71,13 @@ function GroupClickTab({
 
         <View style={styles.groupTextContainer}>
           <Text style={styles.groupName}>{item.name}</Text>
-          <Text style={styles.groupTitle}>{item.dailies[0].title}</Text>
+          <Text style={styles.groupTitle}>
+            {item.dailies[0].title || 'No daily prompt yet'}
+          </Text>
         </View>
 
         <View style={{ paddingRight: 23 }}>
-          <GroupProfile
-            pics={item.users.slice(0, 3).map((user) =>
-              typeof user.profilePic === 'string' ? { uri: user.profilePic } : user.profilePic
-            )}
-          />
+          <GroupProfile pics={profilePics} scale={0.6} />
         </View>
       </View>
       <View style={styles.separatorLine} />
@@ -81,38 +86,173 @@ function GroupClickTab({
 }
 
 // ======= MAIN COMPONENT =======
-export default function GroupsView({ data = demoGroups }: { data?: typeof demoGroups }) {
+export default function GroupsView({ data }: { data?: GroupInfo[] }) {
   const [active, setActive] = useState<number>(0);
-  const router = useRouter();
-  const setSelectedGroup = useGroupStore((s) => s.setSelectedGroup);
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [groups, setGroups] = useState<GroupInfo[]>([]);
+  const [loading, setLoading] = useState(true);
   const fadeTabs = useRef(new Animated.Value(1)).current;
   const fadeSearch = useRef(new Animated.Value(0)).current;
   const slideUpAnim = useRef(new Animated.Value(20)).current;
   const textInputRef = useRef<any>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [tabWidth, setTabWidth] = useState(0);
-  const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [createVisible, setCreateVisible] = useState(false);
 
-  const loadFonts = async () => {
-    await Font.loadAsync({
-      "Luxurious Roman": require("@/fonts/LuxuriousRoman-Regular.ttf"),
-      "Jacques Francois": require("@/fonts/JacquesFrancois-Regular.ttf"),
-      "Lato": require("@/fonts/Lato-Regular.ttf"),
-      "LatoBold": require("@/fonts/Lato-Bold.ttf"),
-      "LatoItalic": require("@/fonts/Lato-Italic.ttf")
-    });
-    setFontsLoaded(true);
-  };
+  const router = useRouter();
+  const setSelectedGroup = useGroupStore((s) => s.setSelectedGroup);
+  const { user } = useAuth();
 
+  // ======= FETCH GROUPS =======
   useEffect(() => {
-    loadFonts();
-  }, []);
+    if (!user?.id) return;
+    fetchUserGroups();
+  }, [user?.id]);
+
+  const fetchUserGroups = async () => {
+    try {
+      setLoading(true);
+
+      const { data: groupMembers, error: membersError } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', user.id);
+
+      if (membersError) throw membersError;
+
+      const groupIds = groupMembers?.map((gm) => gm.group_id) || [];
+
+      if (groupIds.length === 0) {
+        setGroups([]);
+        setLoading(false);
+        return;
+      }
+
+      const { data: groupsData, error: groupsError } = await supabase
+        .from('groups')
+        .select('id, name, created_at')
+        .in('id', groupIds);
+
+      if (groupsError) throw groupsError;
+
+      const groupsWithDetails = await Promise.all(
+        (groupsData || []).map(async (group) => {
+          const { data: members } = await supabase
+            .from('group_members')
+            .select(`
+              user_id,
+              joined_at,
+              users!group_members_user_id_fkey (
+                id,
+                username,
+                pfp_url
+              )
+            `)
+            .eq('group_id', group.id)
+            .order('joined_at', { ascending: true });
+
+          const usersWithPfp = await Promise.all(
+            (members || []).map(async (member: any) => {
+              const userData = member.users;
+              let pfpUrl = null;
+
+              if (userData.pfp_url) {
+                try {
+                  const res = await fetch(
+                    `${nUrl}/api/upload/download-url/${userData.pfp_url}`
+                  );
+                  if (res.ok) {
+                    const { downloadURL } = await res.json();
+                    pfpUrl = downloadURL;
+                  }
+                } catch (err) {
+                  console.error('Failed to fetch pfp:', err);
+                }
+              }
+
+              return {
+                name: userData.username,
+                profilePic: pfpUrl
+                  ? pfpUrl
+                  : require('../../assets/images/profile.png'),
+              };
+            })
+          );
+
+          const { data: dailies } = await supabase
+            .from('dailies')
+            .select('id, prompt, date, created_at')
+            .eq('group_id', group.id)
+            .order('date', { ascending: false })
+            .limit(1);
+
+          const latestDaily = dailies?.[0];
+          let dailyInfo = null;
+
+          if (latestDaily) {
+            const { data: submission } = await supabase
+              .from('daily_submissions')
+              .select('rating, moment_id')
+              .eq('daily_id', latestDaily.id)
+              .eq('user_id', user.id)
+              .maybeSingle();
+
+            dailyInfo = {
+              moment: {
+                id: submission?.moment_id || '',
+                title: latestDaily.prompt,
+                artist: '',
+                songStart: 0,
+                songDuration: 30,
+                length: 180,
+                album: require('../../assets/images/album.png'),
+                waveform: Array(50)
+                  .fill(0)
+                  .map(() => Math.floor(Math.random() * 25)),
+              },
+              date: new Date(latestDaily.date).getTime(),
+              title: latestDaily.prompt,
+              rating: submission?.rating ?? -1,
+            };
+          } else {
+            dailyInfo = {
+              moment: {
+                id: '',
+                title: 'No daily yet',
+                artist: '',
+                songStart: 0,
+                songDuration: 30,
+                length: 180,
+                album: require('../../assets/images/album.png'),
+                waveform: Array(50)
+                  .fill(0)
+                  .map(() => Math.floor(Math.random() * 25)),
+              },
+              date: Date.now(),
+              title: 'No daily prompt yet',
+              rating: -1,
+            };
+          }
+
+          return {
+            name: group.name,
+            users: usersWithPfp,
+            dailies: [dailyInfo],
+          } as GroupInfo;
+        })
+      );
+
+      setGroups(groupsWithDetails);
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ======= FADE + SLIDE ON FOCUS =======
   useFocusEffect(
     React.useCallback(() => {
-      // Reset animation values
       fadeTabs.setValue(0);
       fadeSearch.setValue(0);
       slideUpAnim.setValue(20);
@@ -139,7 +279,6 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
     const toSearch = !isSearchActive;
     if (!toSearch) {
       textInputRef.current?.blur();
-      textInputRef.current?.clear();
       setSearchQuery('');
     }
     setIsSearchActive(toSearch);
@@ -160,52 +299,64 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
     ]).start();
   };
 
+  // ======= FILTER + SORT GROUPS =======
+  const filteredData = groups
+    .sort((a, b) => {
+      const ratingA = a.dailies[0]?.rating ?? 0;
+      const ratingB = b.dailies[0]?.rating ?? 0;
+      if (ratingA < 0 && ratingB >= 0) return -1;
+      if (ratingA >= 0 && ratingB < 0) return 1;
+      return (b.dailies[0]?.date ?? 0) - (a.dailies[0]?.date ?? 0);
+    })
+    .filter((group) => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        group.name.toLowerCase().includes(query) ||
+        group.dailies[0]?.title.toLowerCase().includes(query)
+      );
+    });
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Groups</Text>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#333C42" />
+          <Text
+            style={{
+              marginTop: 10,
+              fontFamily: 'Jacques Francois',
+              color: '#333C42',
+            }}
+          >
+            Loading groups...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const buttons = [
     { icon: 'clock' as const },
     { icon: 'search' as const },
     { icon: 'plus-circle' as const },
   ];
 
-  // Filter + sort groups
-  const filteredData = [...data]
-    .sort((a, b) => {
-      const ratingA = a.dailies[0].rating;
-      const ratingB = b.dailies[0].rating;
-      const dateA = new Date(a.dailies[0].date);
-      const dateB = new Date(b.dailies[0].date);
-
-      if (ratingA < 0 && ratingB >= 0) return -1;
-      if (ratingA >= 0 && ratingB < 0) return 1;
-      return dateA.getTime() - dateB.getTime();
-    })
-    .filter((group) => {
-      if (!searchQuery.trim()) return true;
-      const lowerQuery = searchQuery.toLowerCase();
-      return (
-        group.name.toLowerCase().includes(lowerQuery) ||
-        group.dailies[0].title.toLowerCase().includes(lowerQuery)
-      );
-    });
-
   const background = require('../../assets/images/groupBackground.png');
-
-  if (!fontsLoaded) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#000000', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#ffffff" />
-      </View>
-    );
-  }
 
   return (
     <ImageBackground source={background} style={styles.backgroundImage}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         {/* HEADER */}
         <View style={styles.header}>
-            <Text style={styles.title}>Dailies</Text>
-          </View>
+          <Text style={styles.title}>Dailies</Text>
+        </View>
+
+        {/* TABS + SEARCH */}
         <Animated.View style={{ opacity: fadeTabs, transform: [{ translateY: slideUpAnim }] }}>
-          {/* TABS */}
           <View style={styles.tabArea}>
             <Animated.View
               style={{
@@ -225,6 +376,7 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
                     onPress={() => {
                       setActive(i);
                       if (btn.icon === 'search') toggleSearch();
+                      else if (btn.icon === 'plus-circle') setCreateVisible(true);
                     }}
                   />
                 ))}
@@ -256,14 +408,16 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
         </Animated.View>
 
         {/* GROUP LIST */}
-        <Animated.View style={{ flex: 1, opacity: fadeTabs, transform: [{ translateY: slideUpAnim }] }}>
+        <Animated.View
+          style={{ flex: 1, opacity: fadeTabs, transform: [{ translateY: slideUpAnim }] }}
+        >
           <FlatList
             data={filteredData}
-            keyExtractor={(_, index) => index.toString()}
+            keyExtractor={(item, index) => `${item.name}-${index}`}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 100 }}
             renderItem={({ item }) => (
-              <GroupClickTab
+              <GroupRow
                 item={item}
                 onPress={() => {
                   setSelectedGroup(item);
@@ -285,33 +439,13 @@ export default function GroupsView({ data = demoGroups }: { data?: typeof demoGr
 
 // ======= STYLES =======
 const styles = StyleSheet.create({
-  backgroundImage: {
-    flex: 1,
-    resizeMode: 'cover',
-  },
-  container: {
-    flex: 1,
-  },
-  header: {
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  title: {
-    fontSize: 40,
-    fontFamily: 'Lato',
-    fontWeight: '700',
-    color: '#ffffffff',
-  },
-  tabArea: {
-    height: 70,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tabsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 25,
-  },
+  headerTitle: { fontSize: 40, fontFamily: 'Luxurious Roman', color: '#333C42' },
+  backgroundImage: { flex: 1, resizeMode: 'cover' },
+  container: { flex: 1 },
+  header: { alignItems: 'center', marginTop: 10 },
+  title: { fontSize: 40, fontFamily: 'Lato', fontWeight: '700', color: '#ffffffff' },
+  tabArea: { height: 70, justifyContent: 'center', alignItems: 'center' },
+  tabsRow: { flexDirection: 'row', justifyContent: 'center', gap: 25 },
   searchBar: {
     position: 'absolute',
     flexDirection: 'row',
@@ -323,20 +457,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     height: 50,
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: 'Lato',
-  },
-  groupRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 14,
-  },
-  groupTextContainer: {
-    flex: 1,
-  },
+  searchInput: { flex: 1, fontSize: 16, fontFamily: 'Lato' },
+  groupRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, paddingVertical: 14 },
+  groupTextContainer: { flex: 1 },
   groupName: {
     fontSize: 20,
     fontFamily: 'Lato',
@@ -355,20 +478,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     paddingTop: 5,
   },
-  unreadDotContainer: {
-    marginRight: 8,
-    marginLeft: -17,
-  },
-  unreadDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#008CFF',
-  },
-  separatorLine: {
-    height: 1,
-    backgroundColor: '#ffffffff',
-    opacity: 1,
-    marginHorizontal: 20,
-  },
+  unreadDotContainer: { marginRight: 8, marginLeft: -17 },
+  unreadDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#008CFF' },
+  separatorLine: { height: 1, backgroundColor: '#ffffffff', opacity: 1, marginHorizontal: 20 },
 });
