@@ -54,7 +54,7 @@ export default function SearchPage() {
   }>({});
   const [loading, setLoading] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
-  
+
 
   // Auto-search when user types
   useEffect(() => {
@@ -101,12 +101,12 @@ export default function SearchPage() {
           .from("stacks")
           .select(
             `
-            *,
-            users (
-              username,
-              pfp_url
-            )
-          `
+          *,
+          users (
+            username,
+            pfp_url
+          )
+        `
           )
           .eq("visibility", true)
           .ilike("title", `%${search}%`)
@@ -119,8 +119,28 @@ export default function SearchPage() {
           return;
         }
 
+        const stacksWithCovers = await Promise.all(
+          (stacks || []).map(async (stack) => {
+            let coverUrl = null;
+            if (stack.cover_url) {
+              try {
+                const res = await fetch(
+                  `${nUrl}/api/upload/download-url/${stack.cover_url}`
+                );
+                if (res.ok) {
+                  const { downloadURL } = await res.json();
+                  coverUrl = downloadURL;
+                }
+              } catch (err) {
+                console.error("Failed to fetch cover for stack:", stack.id, err);
+              }
+            }
+            return { ...stack, cover_url: coverUrl };
+          })
+        );
+
         setResults({
-          stacks: stacks || [],
+          stacks: stacksWithCovers,
         });
       } else if (activeFilter === "Users") {
         const { data: users, error } = await supabase
@@ -182,7 +202,12 @@ export default function SearchPage() {
   const showSearchResults = search.trim() && getCurrentResults().length > 0;
 
   const renderStack = ({ item, index }: { item: Stack; index: number }) => (
-    <View style={styles.songRow}>
+    <Pressable
+      style={styles.songRow}
+      onPress={() => {
+        router.push(`/(tabs)/stackViewer?id=${item.id}` as RelativePathString);
+      }}
+    >
       <Text style={styles.rank}>{index + 1}</Text>
       <View style={styles.songInfo}>
         <Text style={styles.songTitle} numberOfLines={1}>
@@ -204,7 +229,7 @@ export default function SearchPage() {
           <Text style={styles.placeholderText}>🎵</Text>
         </View>
       )}
-    </View>
+    </Pressable>
   );
 
   const renderUser = ({ item, index }: { item: User; index: number }) => {

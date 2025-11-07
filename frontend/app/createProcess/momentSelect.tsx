@@ -137,7 +137,7 @@ export default function SearchPage() {
 
       const trackPromises = topTrackIds.map(async ({ id, count }) => {
         try {
-          const response = await fetch(`${nUrl}/api/spotify/track/${id}`, {
+          const response = await fetch(`${nUrl}api/spotify/track/${id}`, {
             method: "GET",
             headers: {
               Authorization: `Bearer ${token}`,
@@ -184,7 +184,7 @@ export default function SearchPage() {
 
       setLoading(true);
 
-      const url = `${nUrl}/api/spotify/search?q=${encodeURIComponent(
+      const url = `${nUrl}api/spotify/search?q=${encodeURIComponent(
         search
       )}&type=track&limit=20`;
 

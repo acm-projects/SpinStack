@@ -62,17 +62,17 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
   startX.addListener(({ value }) => {
     updateStartPosition(value);
   });
-  
+
   // Update end position
   endX.addListener(({ value }) => {
     updateEndPosition(value);
   });
-  
+
   const updateStartPosition = (value: number) => {
     if (waveWidth > 0) {
       const newStart = Math.max(0, Math.min(value / waveWidth, 1));
-      
-      
+
+
       // Ensure we don't exceed max duration or overlap with mEnd
       if (newStart >= mEnd) {
         setStart(Math.max(0, mEnd - 0.01));
@@ -88,8 +88,8 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
   const updateEndPosition = (value: number) => {
     if (waveWidth > 0) {
       const newEnd = Math.min(1, Math.max(value / waveWidth, 0));
-      
-      
+
+
       // Ensure we don't exceed max duration or overlap with start
       if (newEnd <= mStart) {
         setEnd(Math.min(1, mStart + 0.01));
@@ -174,7 +174,7 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
       Alert.alert('Duration Too Long', `Please select a moment that is ${MAX_DURATION_SECONDS} seconds or less.`);
       return;
     }
-    
+
     // Update moment with new values
     moment.songStart = mStart * moment.length;
     moment.songDuration = (mEnd - mStart) * moment.length;
@@ -188,8 +188,8 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
         edges={['top', 'left', 'right']}
       >
 
-        {/* Title */}
-        <View style={{ width: '80%'}}>
+        {/* Title  TODO: FIX SIZING!!*/}
+        <View style={{ width: '80%' }}>
           <Text style={{ fontSize: 30, fontFamily: 'Luxurious Roman', fontWeight: 'bold', textAlign: 'center', color: '#333C42' }}>
             Pick Your Moment
           </Text>
@@ -199,7 +199,17 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ justifyContent: 'center', alignItems: 'center' }}>
             <View style={{ marginLeft: 10, marginTop: -20, marginBottom: 30 }}>
-              <Text style={{ fontSize: 16, fontFamily: 'Lato', color: '#333C42' }}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontFamily: 'Lato',
+                  color: '#333C42',
+                  flexShrink: 1,
+                  maxWidth: '90%',
+                }}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {moment.title} - {moment.artist}
               </Text>
             </View>
@@ -217,7 +227,7 @@ export default function MomentPickView({ moment, scrollFunc }: { moment: Moment,
                     start={mStart}
                     end={mEnd}
                     baseColor="#333C42"
-                    duration = {currentDuration}
+                    duration={currentDuration}
                     anim={false}
                     selectedColor={(currentDuration <= MAX_DURATION_SECONDS) ? '#B7FFF7' : 'red'}
                   />

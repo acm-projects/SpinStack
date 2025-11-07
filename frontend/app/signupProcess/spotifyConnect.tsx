@@ -33,7 +33,7 @@ export default function SpotifyConnect() {
     try {
       setIsConnecting(true);
       const token = await authenticateSpotify();
-      
+
       if (token) {
         setIsConnected(true);
         Alert.alert(
@@ -82,6 +82,7 @@ export default function SpotifyConnect() {
   const handleNext = () => {
     setProfileComplete(true);
     router.dismissAll();
+    console.log("dismissAll4");
     router.replace("../profile");
   };
 
@@ -131,9 +132,9 @@ export default function SpotifyConnect() {
                 ✓ Spotify Connected
               </Text>
             </View>
-            
-            <Pressable 
-              style={[styles.spotifyButton, { backgroundColor: '#FF6B6B' }]} 
+
+            <Pressable
+              style={[styles.spotifyButton, { backgroundColor: '#FF6B6B' }]}
               onPress={handleDisconnect}
             >
               <Text style={[styles.spotifyButtonText, { color: 'white' }]}>
@@ -142,8 +143,8 @@ export default function SpotifyConnect() {
             </Pressable>
           </View>
         ) : (
-          <Pressable 
-            style={styles.spotifyButton} 
+          <Pressable
+            style={styles.spotifyButton}
             onPress={handleConnectSpotify}
             disabled={isConnecting}
           >

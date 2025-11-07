@@ -74,8 +74,6 @@ export default function ProfileScreen() {
     setStackImageFileName(fileName);
   };
 
-
-
   const pickImage = async () => {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -629,7 +627,7 @@ export default function ProfileScreen() {
 
     setSelectedMomentInfo({
       moment: {
-        id: trackId || moment.id,
+        id: moment.id,
         spotifyId: trackId || null,
         title: moment.title,
         artist: moment.description || "Unknown Artist",

@@ -308,6 +308,7 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchAllContent(); // Refresh content whenever screen gains focus
+      fetchActiveStories();
     }, [])
   );
 
