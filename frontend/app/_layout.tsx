@@ -35,11 +35,13 @@ function RootStack() {
 
     if (!session) {
       router.dismissAll();
+      console.log("dismissAll1");
       router.replace('/signupProcess/signupPage');
     } else if (!profileComplete) {
       router.replace('/signupProcess/profileSetup');
     } else {
-      router.dismissAll();
+      //router.dismissAll();
+      console.log("dismissAll2");
       router.replace('/(tabs)/profile');
     }
   }, [loading, checkingProfile, initialLoading, session, profileComplete, fontsLoaded]);
@@ -56,151 +58,151 @@ function RootStack() {
 
   return (
     <TabBarProvider>
-    <Stack screenOptions={{ headerShown: false }}>
-      {/* Signup Page */}
-      <Stack.Screen
-        name="signupProcess/signupPage"
-        options={{ headerShown: false }}
-      />
+      <Stack screenOptions={{ headerShown: false }}>
+        {/* Signup Page */}
+        <Stack.Screen
+          name="signupProcess/signupPage"
+          options={{ headerShown: false }}
+        />
 
-      {/* Tabs */}
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        {/* Tabs */}
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 
-      {/* Modal */}
-      <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        {/* Modal */}
+        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
 
-      {/* Profile Settings */}
-      <Stack.Screen
-        name="profileSettings"
-        options={{
-          title: '',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
-          headerLeft: () => (
-            <Pressable
-              onPress={() => router.back()}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-            >
-              <Feather name="arrow-left" size={30} color="white" />
-              <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
-                Back
-              </Text>
-            </Pressable>
-          ),
-        }}
-      />
+        {/* Profile Settings */}
+        <Stack.Screen
+          name="profileSettings"
+          options={{
+            title: '',
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
+            headerLeft: () => (
+              <Pressable
+                onPress={() => router.back()}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              >
+                <Feather name="arrow-left" size={30} color="white" />
+                <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
+                  Back
+                </Text>
+              </Pressable>
+            ),
+          }}
+        />
 
-      <Stack.Screen
-        name="signupProcess/profileSetup"
-        options={{
-          title: '',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: "rgba(255, 255, 255, 1)" },
-          headerLeft: () => (
-            <Pressable
-              onPress={() => router.back()}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-            >
-              <Feather name="arrow-left" size={30} color="white" />
-              <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
-                Back
-              </Text>
-            </Pressable>
-          ),
-        }}
-      />
+        <Stack.Screen
+          name="signupProcess/profileSetup"
+          options={{
+            title: '',
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: "rgba(255, 255, 255, 1)" },
+            headerLeft: () => (
+              <Pressable
+                onPress={() => router.back()}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              >
+                <Feather name="arrow-left" size={30} color="white" />
+                <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
+                  Back
+                </Text>
+              </Pressable>
+            ),
+          }}
+        />
 
-      <Stack.Screen
-        name="signupProcess/profileImage"
-        options={{
-          title: '',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
-          headerLeft: () => (
-            <Pressable
-              onPress={() => router.back()}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-            >
-              <Feather name="arrow-left" size={30} color="white" />
-              <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
-                Back
-              </Text>
-            </Pressable>
-          ),
-        }}
-      />
+        <Stack.Screen
+          name="signupProcess/profileImage"
+          options={{
+            title: '',
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
+            headerLeft: () => (
+              <Pressable
+                onPress={() => router.back()}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              >
+                <Feather name="arrow-left" size={30} color="white" />
+                <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
+                  Back
+                </Text>
+              </Pressable>
+            ),
+          }}
+        />
 
-      <Stack.Screen
-        name="signupProcess/spotifyConnect"
-        options={{
-          title: '',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
-          headerLeft: () => (
-            <Pressable
-              onPress={() => router.back()}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-            >
-              <Feather name="arrow-left" size={30} color="white" />
-              <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
-                Back
-              </Text>
-            </Pressable>
-          ),
-        }}
-      />
-
-
-      <Stack.Screen
-        name="createProcess/momentSelect"
-        options={{
-          title: '',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
-          headerLeft: () => (
-            <Pressable
-              onPress={() => router.back()}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-            >
-              <Feather name="arrow-left" size={30} color="white" />
-              <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
-                Back
-              </Text>
-            </Pressable>
-          ),
-        }}
-      />
+        <Stack.Screen
+          name="signupProcess/spotifyConnect"
+          options={{
+            title: '',
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
+            headerLeft: () => (
+              <Pressable
+                onPress={() => router.back()}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              >
+                <Feather name="arrow-left" size={30} color="white" />
+                <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
+                  Back
+                </Text>
+              </Pressable>
+            ),
+          }}
+        />
 
 
-      <Stack.Screen
-        name="createProcess/momentCut"
-        options={{
-          title: '',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
-          headerLeft: () => (
-            <Pressable
-              onPress={() => router.back()}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-            >
-              <Feather name="arrow-left" size={30} color="white" />
-              <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
-                Back
-              </Text>
-            </Pressable>
-          ),
-        }}
-      />
-      <Stack.Screen
-        name="home2"
-        options={{
-          title: '',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: colorScheme === 'dark' ? '#FFF0E2' : '#FFF0E2' },
-          contentStyle: { backgroundColor: '#FFF0E2' }
-        }}
-      />
-    </Stack>
+        <Stack.Screen
+          name="createProcess/momentSelect"
+          options={{
+            title: '',
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
+            headerLeft: () => (
+              <Pressable
+                onPress={() => router.back()}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              >
+                <Feather name="arrow-left" size={30} color="white" />
+                <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
+                  Back
+                </Text>
+              </Pressable>
+            ),
+          }}
+        />
+
+
+        <Stack.Screen
+          name="createProcess/momentCut"
+          options={{
+            title: '',
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#000' : '#fff' },
+            headerLeft: () => (
+              <Pressable
+                onPress={() => router.back()}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              >
+                <Feather name="arrow-left" size={30} color="white" />
+                <Text style={{ fontSize: 16, color: colorScheme === 'dark' ? 'white' : 'black' }}>
+                  Back
+                </Text>
+              </Pressable>
+            ),
+          }}
+        />
+        <Stack.Screen
+          name="home2"
+          options={{
+            title: '',
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: colorScheme === 'dark' ? '#FFF0E2' : '#FFF0E2' },
+            contentStyle: { backgroundColor: '#FFF0E2' }
+          }}
+        />
+      </Stack>
     </TabBarProvider>
 
   );
