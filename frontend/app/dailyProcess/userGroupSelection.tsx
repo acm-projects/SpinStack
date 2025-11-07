@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,15 +11,15 @@ import {
   TouchableWithoutFeedback,
   ActivityIndicator,
   Alert,
-  Animated,
-  Dimensions,
+  TouchableOpacity,
 } from "react-native";
 import * as Font from "expo-font";
 import { supabase } from "@/constants/supabase";
 import { RelativePathString, useRouter } from "expo-router";
+import { useSelectedUsersStore } from "../stores/selectedUsersStore";
+import { useAuth } from "@/_context/AuthContext";
 
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
-const { width, height } = Dimensions.get("window");
 
 type SearchType = "Stacks" | "Users";
 
@@ -49,77 +49,80 @@ interface User {
 
 export default function SearchPage() {
   const router = useRouter();
-  const [activeFilter, setActiveFilter] = useState<SearchType>("Stacks");
+  const { user: currentUser } = useAuth(); // Get current logged-in user
+  const [activeFilter, setActiveFilter] = useState<SearchType>("Users");
   const [search, setSearch] = useState("");
-  const [results, setResults] = useState<{ stacks?: Stack[]; users?: User[] }>({});
+  const [results, setResults] = useState<{
+    stacks?: Stack[];
+    users?: User[];
+  }>({});
   const [loading, setLoading] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  // 🌬️ Rising bubbles animation setup
-  const bubbleCount = 10;
-  const bubbleAnims = useRef<Animated.Value[]>([]);
-  const bubbles = useRef(
-    Array.from({ length: bubbleCount }, () => ({
-      left: Math.random() * width,
-      size: 10 + Math.random() * 25,
-      delay: Math.random() * 4000,
-      speed: 7000 + Math.random() * 4000,
-      opacity: 0.15 + Math.random() * 0.3,
-    }))
-  ).current;
+  const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
+  const setSelectedUsersStore = useSelectedUsersStore(s => s.setUsersSelected);
 
-  if (bubbleAnims.current.length === 0) {
-    bubbles.forEach(() => bubbleAnims.current.push(new Animated.Value(0)));
-  }
+  const handleSelectUser = (user: User) => {
+    if (!selectedUsers.find((u) => u.id === user.id)) {
+      setSelectedUsers((prev) => [...prev, user]);
+    }
+  };
 
+  const handleRemoveUser = (id: string) => {
+    setSelectedUsers((prev) => prev.filter((u) => u.id !== id));
+  };
+
+  // Auto-search when user types
   useEffect(() => {
-    bubbleAnims.current.forEach((anim, i) => {
-      const animate = () => {
-        anim.setValue(0);
-        Animated.timing(anim, {
-          toValue: -height * 0.9,
-          duration: bubbles[i].speed,
-          delay: bubbles[i].delay,
-          useNativeDriver: true,
-        }).start(() => animate());
-      };
-      animate();
-    });
-  }, []);
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
 
-  // 🔍 Auto-search when user types
-  useEffect(() => {
-    if (searchTimeout) clearTimeout(searchTimeout);
     if (!search.trim()) {
       setResults({});
       return;
     }
-    const timeout = setTimeout(() => handleSearch(), 500);
+
+    const timeout = setTimeout(() => {
+      handleSearch();
+    }, 500);
+
     setSearchTimeout(timeout);
-    return () => clearTimeout(timeout);
+
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
   }, [search, activeFilter]);
 
   const handleSearch = async () => {
-    if (!search.trim()) return;
+    if (!search.trim()) {
+      return;
+    }
+
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
+
       if (!token) {
         Alert.alert("Error", "You are not signed in");
         return;
       }
+
       setLoading(true);
+
       if (activeFilter === "Stacks") {
         const { data: stacks, error } = await supabase
           .from("stacks")
           .select(
             `
-          *,
-          users (
-            username,
-            pfp_url
-          )
-        `
+            *,
+            users (
+              username,
+              pfp_url
+            )
+          `
           )
           .eq("visibility", true)
           .ilike("title", `%${search}%`)
@@ -132,28 +135,8 @@ export default function SearchPage() {
           return;
         }
 
-        const stacksWithCovers = await Promise.all(
-          (stacks || []).map(async (stack) => {
-            let coverUrl = null;
-            if (stack.cover_url) {
-              try {
-                const res = await fetch(
-                  `${nUrl}/api/upload/download-url/${stack.cover_url}`
-                );
-                if (res.ok) {
-                  const { downloadURL } = await res.json();
-                  coverUrl = downloadURL;
-                }
-              } catch (err) {
-                console.error("Failed to fetch cover for stack:", stack.id, err);
-              }
-            }
-            return { ...stack, cover_url: coverUrl };
-          })
-        );
-
         setResults({
-          stacks: stacksWithCovers,
+          stacks: stacks || [],
         });
       } else if (activeFilter === "Users") {
         const { data: users, error } = await supabase
@@ -162,45 +145,61 @@ export default function SearchPage() {
           .or(
             `username.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%`
           )
+          .neq("id", currentUser?.id || "") // Exclude current user from results
           .limit(20);
-        if (error) throw error;
+
+        if (error) {
+          Alert.alert("Error", "Failed to search users");
+          console.error(error);
+          setLoading(false);
+          return;
+        }
+
+        // Fetch download URLs for profile pictures
         const usersWithPfp = await Promise.all(
           (users || []).map(async (user) => {
             let pfp = null;
             if (user.pfp_url) {
               try {
-                const res = await fetch(`${nUrl}/api/upload/download-url/${user.pfp_url}`);
+                const res = await fetch(
+                  `${nUrl}/api/upload/download-url/${user.pfp_url}`
+                );
                 if (res.ok) {
                   const { downloadURL } = await res.json();
                   pfp = downloadURL;
                 }
-              } catch {}
+              } catch (err) {
+                console.error("Failed to fetch pfp for user:", user.id, err);
+              }
             }
             return { ...user, pfp_url: pfp };
           })
         );
-        setResults({ users: usersWithPfp });
+
+        setResults({
+          users: usersWithPfp,
+        });
       }
     } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Search failed");
+      console.error("Search error:", err);
+      Alert.alert("Error", "Failed to search");
     } finally {
       setLoading(false);
     }
   };
 
-  const getCurrentResults = () =>
-    activeFilter === "Stacks" ? results.stacks || [] : results.users || [];
+  const getCurrentResults = () => {
+    if (activeFilter === "Stacks") {
+      return results.stacks || [];
+    } else {
+      return results.users || [];
+    }
+  };
 
   const showSearchResults = search.trim() && getCurrentResults().length > 0;
 
   const renderStack = ({ item, index }: { item: Stack; index: number }) => (
-    <Pressable
-      style={styles.songRow}
-      onPress={() => {
-        router.push(`/(tabs)/stackViewer?id=${item.id}` as RelativePathString);
-      }}
-    >
+    <View style={styles.songRow}>
       <Text style={styles.rank}>{index + 1}</Text>
       <View style={styles.songInfo}>
         <Text style={styles.songTitle} numberOfLines={1}>
@@ -222,7 +221,7 @@ export default function SearchPage() {
           <Text style={styles.placeholderText}>🎵</Text>
         </View>
       )}
-    </Pressable>
+    </View>
   );
 
   const renderUser = ({ item, index }: { item: User; index: number }) => {
@@ -230,10 +229,11 @@ export default function SearchPage() {
       item.first_name && item.last_name
         ? `${item.first_name} ${item.last_name}`
         : item.username;
+
     return (
       <Pressable
         style={styles.songRow}
-        onPress={() => router.push(`/profile/${item.id}` as RelativePathString)}
+        onPress={() => handleSelectUser(item)}
       >
         <Text style={styles.rank}>{index + 1}</Text>
         <View style={styles.songInfo}>
@@ -265,86 +265,98 @@ export default function SearchPage() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        {bubbles.map((bubble, i) => (
-          <Animated.View
-            key={i}
-            style={{
-              position: "absolute",
-              bottom: 50,
-              left: bubble.left,
-              width: bubble.size,
-              height: bubble.size,
-              borderRadius: bubble.size / 2,
-              backgroundColor: "#39868F",
-              opacity: bubble.opacity,
-              transform: [{ translateY: bubbleAnims.current[i] }],
-              zIndex: 0,
-            }}
-          />
-        ))}
-
-        {/* Content */}
-        <View style={{ flex: 1, zIndex: 2 }}>
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search..."
-              placeholderTextColor="#333C42"
-              value={search}
-              onChangeText={setSearch}
-              returnKeyType="search"
-            />
-          </View>
-
-          <View style={styles.filterRow}>
-            {(["Stacks", "Users"] as SearchType[]).map((filter) => (
-              <Pressable
-                key={filter}
-                style={[
-                  styles.filterButton,
-                  activeFilter === filter && styles.filterButtonActive,
-                ]}
-                onPress={() => {
-                  setActiveFilter(filter);
-                  setResults({});
-                }}
-              >
-                <Text
-                  style={[
-                    styles.filterText,
-                    activeFilter === filter && styles.filterTextActive,
-                  ]}
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          {selectedUsers.length > 0 && (
+            <View style={styles.tagContainer}>
+              {selectedUsers.map((user) => (
+                <Pressable
+                  key={user.id}
+                  style={styles.tag}
+                  onPress={() => handleRemoveUser(user.id)}
                 >
-                  {filter}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          {loading ? (
-            <ActivityIndicator size="large" color="#39868F" style={styles.loader} />
-          ) : showSearchResults ? (
-            <FlatList
-              data={getCurrentResults()}
-              contentContainerStyle={styles.listContainer}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item, index }) =>
-                activeFilter === "Stacks"
-                  ? renderStack({ item: item as Stack, index })
-                  : renderUser({ item: item as User, index })
-              }
-              style={styles.list}
-            />
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                {search.trim()
-                  ? "No results found"
-                  : `Search for ${activeFilter.toLowerCase()} to get started`}
-              </Text>
+                  {user.pfp_url ? (
+                    <Image source={{ uri: user.pfp_url }} style={styles.tagPfp} />
+                  ) : (
+                    <View style={[styles.tagPfp, styles.tagPlaceholder]}>
+                      <Text style={styles.tagPlaceholderText}>
+                        {user.username.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  <Text style={styles.tagText}>@{user.username}</Text>
+                  <Text style={styles.tagRemove}>✕</Text>
+                </Pressable>
+              ))}
             </View>
           )}
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search users..."
+            placeholderTextColor="#333C42"
+            value={search}
+            onChangeText={setSearch}
+            returnKeyType="search"
+          />
         </View>
+
+        {/* Loading State */}
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color="#39868F"
+            style={styles.loader}
+          />
+        ) : showSearchResults ? (
+          /* Search Results List */
+          <FlatList
+            data={getCurrentResults()}
+            contentContainerStyle={styles.listContainer}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item, index }) => {
+              return renderUser({ item: item as User, index });
+            }}
+            style={styles.list}
+          />
+        ) : (
+          /* Empty State */
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              {search.trim()
+                ? "No results found"
+                : `Search for ${activeFilter.toLowerCase()} to get started`}
+            </Text>
+          </View>
+        )}
+        <View style={[{ flex: 0.5, width: '100%', alignItems: 'center' }]}>
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#39868F',
+              borderRadius: 10,
+              borderWidth: 4,
+              borderColor: '#333C42',
+              alignItems: 'center',
+              marginTop: 10,
+              width: '60%',
+            }}
+            onPress={() => {
+              {
+                if (selectedUsers.length == 0) {
+                  Alert.alert('You have to select at least one other person to make a group with.');
+                  return;
+                }
+                router.push({
+                  pathname: '/dailyProcess/groupCreation' as RelativePathString,
+                });
+                setSelectedUsersStore(selectedUsers)
+              }
+            }}>
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10, fontFamily: 'Jacques Francois' }}>
+              Next
+            </Text>
+          </TouchableOpacity>
+        </View>
+
       </View>
     </TouchableWithoutFeedback>
   );
@@ -354,9 +366,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFF0E2",
+    width: '100%',
     paddingHorizontal: 18,
     paddingTop: 70,
-    overflow: "hidden",
+    justifyContent: 'flex-start',
   },
   searchContainer: {
     backgroundColor: "#8DD2CA",
@@ -369,7 +382,7 @@ const styles = StyleSheet.create({
   searchInput: {
     color: "#333C42",
     fontSize: 16,
-    fontFamily: "Lato",
+    fontFamily: "Jacques Francois",
   },
   filterRow: {
     flexDirection: "row",
@@ -392,13 +405,13 @@ const styles = StyleSheet.create({
   filterText: {
     color: "#333C42",
     fontSize: 14,
-    fontFamily: "Lato",
+    fontFamily: "Jacques Francois",
   },
   filterTextActive: {
     color: "#FFF0E2",
   },
   listContainer: {
-    backgroundColor: "#F9DDC3",
+    backgroundColor: "#8DD2CA",
     borderRadius: 15,
     paddingVertical: 8,
     borderWidth: 1.5,
@@ -411,7 +424,7 @@ const styles = StyleSheet.create({
   songRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 4,
+    paddingVertical: 12,
     paddingHorizontal: 15,
   },
   rank: {
@@ -419,7 +432,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     width: 25,
     textAlign: "center",
-    fontFamily: "Lato",
+    fontFamily: "Jacques Francois",
   },
   songInfo: {
     flex: 1,
@@ -428,17 +441,17 @@ const styles = StyleSheet.create({
   songTitle: {
     color: "#333C42",
     fontSize: 18,
-    fontFamily: "Lato",
+    fontFamily: "Jacques Francois",
   },
   songArtist: {
-    color: "#7f8081ff",
+    color: "#39868F",
     fontSize: 13,
-    fontFamily: "Lato",
+    fontFamily: "Jacques Francois",
   },
   stackDesc: {
-    color: "#7f8081ff",
+    color: "#39868F",
     fontSize: 11,
-    fontFamily: "Lato",
+    fontFamily: "Jacques Francois",
     marginTop: 2,
   },
   albumArt: {
@@ -466,6 +479,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   loader: {
+    width: '100%',
     marginTop: 40,
   },
   emptyContainer: {
@@ -477,7 +491,51 @@ const styles = StyleSheet.create({
   emptyText: {
     color: "#39868F",
     fontSize: 16,
-    fontFamily: "Lato",
+    fontFamily: "Jacques Francois",
     textAlign: "center",
+  },
+  tagContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 8,
+  },
+  tag: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#333C42",
+    borderRadius: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  tagPfp: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginRight: 6,
+    borderWidth: 1,
+    borderColor: "#FFF0E2",
+  },
+  tagPlaceholder: {
+    backgroundColor: "#39868F",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  tagPlaceholderText: {
+    color: "#FFF0E2",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  tagText: {
+    color: "#FFF0E2",
+    fontSize: 14,
+    fontFamily: "Jacques Francois",
+  },
+  tagRemove: {
+    color: "#FFF0E2",
+    fontSize: 14,
+    marginLeft: 4,
+    fontWeight: "bold",
   },
 });

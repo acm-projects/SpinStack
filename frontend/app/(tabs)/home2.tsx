@@ -871,7 +871,7 @@ export default function HomeScreen() {
 
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FFF0E2" }}>
+    <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 0.747663551 * tabHeight}}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>SpinStack</Text>
@@ -910,7 +910,7 @@ export default function HomeScreen() {
               height: 65,
               borderRadius: 33,
               borderWidth: 3,
-              borderColor: "#ff5c5c",
+              borderColor: "#5cd6ffff",
               justifyContent: "center",
               alignItems: "center",
             }}
@@ -929,7 +929,7 @@ export default function HomeScreen() {
                 width: 22,
                 height: 22,
                 borderRadius: 11,
-                backgroundColor: "#ff5c5c",
+                backgroundColor: "#5cd6ffff",
                 justifyContent: "center",
                 alignItems: "center",
                 shadowColor: "#000",
