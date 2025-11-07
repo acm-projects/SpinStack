@@ -1,10 +1,11 @@
 import { useAuth } from "@/_context/AuthContext";
 import { supabase } from "@/constants/supabase";
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Image, Pressable, Dimensions } from "react-native";
+import React, { useEffect, useState, useRef } from "react";
+import { View, Text, StyleSheet, Image, Pressable, Dimensions, Animated } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { RelativePathString, useRouter } from "expo-router";
 import Bubble from '../assets/other/bubble.svg';
+import { AutoSizeText, ResizeTextMode } from 'react-native-auto-size-text';
 import { AutoSizeText, ResizeTextMode } from 'react-native-auto-size-text';
 
 export default function ProfileSettings() {
@@ -15,6 +16,25 @@ export default function ProfileSettings() {
   const IMAGE_SIZE = width * 0.2;
   const router = useRouter();
   const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
+
+  // Animation setup
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handleBackPress = () => {
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 3,
+        tension: 80,
+        useNativeDriver: true,
+      }),
+    ]).start(() => router.back());
+  };
 
   const handleSignOut = async () => {
     logout();
@@ -44,9 +64,7 @@ export default function ProfileSettings() {
         // Only fetch presigned URL if pfp_url exists and is not empty
         if (userData?.pfp_url && userData.pfp_url.trim() !== '') {
           try {
-            const res = await fetch(
-              `${nUrl}/api/upload/download-url/${userData.pfp_url}`
-            );
+            const res = await fetch(`${nUrl}/${userData.pfp_url}`);
             if (res.ok) {
               const { downloadURL } = await res.json();
               setPfpUrl(downloadURL);
@@ -76,15 +94,17 @@ export default function ProfileSettings() {
     <View style={styles.container}>
       {/* Header Row */}
       <View style={[styles.headerRow]}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <View style={{ marginLeft: 10, width: 60, height: 60 }}>
-            <View style={{ position: 'absolute', alignItems: 'center' }}>
-              <Bubble width={50} height={50} />
-              <View style={{ marginTop: -40 }}>
-                <Feather name="arrow-left" size={30} color="black" />
+        <Pressable onPress={handleBackPress} style={styles.backButton}>
+          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <View style={{ marginLeft: 10, width: 60, height: 60 }}>
+              <View style={{ position: 'absolute', alignItems: 'center' }}>
+                <Bubble width={50} height={50} />
+                <View style={{ marginTop: -40 }}>
+                  <Feather name="arrow-left" size={30} color="black" />
+                </View>
               </View>
             </View>
-          </View>
+          </Animated.View>
         </Pressable>
         <Text style={[styles.header, { marginBottom: 10 }]}>Settings</Text>
       </View>
@@ -105,14 +125,10 @@ export default function ProfileSettings() {
         </View>
 
         <View style={{ flexDirection: "column", paddingLeft: 18, justifyContent: "center" }}>
-          <Text
-            style={{ color: "#333C42", fontWeight: "500", fontSize: 20, fontFamily: "Lato", }}
-          >
+          <Text style={{ color: "#333C42", fontWeight: "500", fontSize: 20, fontFamily: "Lato" }}>
             {username}
           </Text>
-          <Text
-            style={{ color: "#333C42", fontWeight: "500", width: "150%", fontSize: 14, fontFamily: "Lato", }}
-          >
+          <Text style={{ color: "#333C42", fontWeight: "500", width: "150%", fontSize: 14, fontFamily: "Lato" }}>
             Bio: {bio}
           </Text>
         </View>
@@ -144,7 +160,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     width: "90%",
     marginRight: 128,
-    justifyContent: "center"
+    justifyContent: "center",
   },
   backButton: {
     paddingRight: 60,
