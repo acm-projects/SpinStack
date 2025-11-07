@@ -7,6 +7,7 @@ import { RelativePathString, useRouter } from "expo-router";
 import Bubble from '../assets/other/bubble.svg';
 import { AutoSizeText, ResizeTextMode } from 'react-native-auto-size-text';
 
+
 export default function ProfileSettings() {
   const { width } = Dimensions.get("window");
   const [username, setUsername] = useState<string>("Loading...");
