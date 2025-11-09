@@ -322,7 +322,7 @@ export default function ProfileScreen() {
       const checkSpotifyConnection = async () => {
         const hasAuth = await hasSpotifyAuth();
         setSpotifyConnected(hasAuth);
-        
+
         if (hasAuth) {
           console.log('✅ User has valid Spotify authentication');
         }
@@ -349,6 +349,10 @@ export default function ProfileScreen() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+
+      console.log("STACKS FROM SUPABASE:", data);
+      console.log("STACKS ERROR:", error);
+      console.log("CURRENT USER ID:", user.id);
 
       // Resolve cover image URLs
       const stacksWithResolvedCovers = await Promise.all(
@@ -392,10 +396,10 @@ export default function ProfileScreen() {
   const handleConnectSpotify = async () => {
     try {
       setIsConnectingSpotify(true);
-      
+
       // Use the updated authentication function
       const token = await authenticateSpotify();
-      
+
       if (!token) {
         throw new Error("Failed to get access token");
       }
@@ -644,7 +648,7 @@ export default function ProfileScreen() {
     }
     setSelectedMomentInfo({
       moment: {
-        id: trackId || moment.id,
+        id: moment.id,
         spotifyId: trackId || null,
         title: moment.title,
         artist: moment.description || "Unknown Artist",

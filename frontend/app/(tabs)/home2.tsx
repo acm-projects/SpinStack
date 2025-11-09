@@ -323,56 +323,56 @@ export default function HomeScreen() {
   }, [isMomentPickerVisible]);
 
   const fetchUserGroups = async () => {
-      try {
-        setLoading(true);
-  
-        // Get groups the user is a member of
-        const { data: groupMembers, error: membersError } = await supabase
-          .from('group_members')
-          .select('group_id')
-          .eq('user_id', user.id);
-  
-        if (membersError) throw membersError;
-  
-        const groupIds = groupMembers?.map(gm => gm.group_id) || [];
-  
-        if (groupIds.length === 0) {
-          setUserGroups([]);
-          setLoading(false);
-          return;
-        }
-  
-        // Fetch group details
-        const { data: groupsData, error: groupsError } = await supabase
-          .from('groups')
-          .select('id, name, created_at')
-          .in('id', groupIds);
-  
-        if (groupsError) throw groupsError;
-  
-        //dummy
-        const groupsWithDetails = await Promise.all(
-          (groupsData || []).map(async (group) => {
-            return {
-              name: group.name,
-              users: [],
-              dailies: [],
-            } as GroupInfo;
-          })
-        );
-  
-        setUserGroups(groupsWithDetails);
-      } catch (error) {
-        console.error('Error fetching groups:', error);
-      } finally {
+    try {
+      setLoading(true);
+
+      // Get groups the user is a member of
+      const { data: groupMembers, error: membersError } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', user.id);
+
+      if (membersError) throw membersError;
+
+      const groupIds = groupMembers?.map(gm => gm.group_id) || [];
+
+      if (groupIds.length === 0) {
+        setUserGroups([]);
         setLoading(false);
+        return;
       }
-    };
+
+      // Fetch group details
+      const { data: groupsData, error: groupsError } = await supabase
+        .from('groups')
+        .select('id, name, created_at')
+        .in('id', groupIds);
+
+      if (groupsError) throw groupsError;
+
+      //dummy
+      const groupsWithDetails = await Promise.all(
+        (groupsData || []).map(async (group) => {
+          return {
+            name: group.name,
+            users: [],
+            dailies: [],
+          } as GroupInfo;
+        })
+      );
+
+      setUserGroups(groupsWithDetails);
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-      if (!user?.id) return;
-      fetchUserGroups();
-    }, [user?.id]);
+    if (!user?.id) return;
+    fetchUserGroups();
+  }, [user?.id]);
 
   async function fetchUserMoments() {
     setLoadingMoments(true);
@@ -922,7 +922,7 @@ export default function HomeScreen() {
     setSelectedMoments(selectedMoments.filter((m) => m.id !== id));
   };
 
-  
+
   const sendMomentToGroup = (selectedItem: any) => {
     //todo
   };
@@ -931,7 +931,7 @@ export default function HomeScreen() {
 
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 0.747663551 * tabHeight}}>
+    <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 0.747663551 * tabHeight }}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>SpinStack</Text>
