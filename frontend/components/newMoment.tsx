@@ -38,10 +38,10 @@ export default function MomentView({ data }: { data: MomentInfo }) {
   const vinylSize = width * 0.98;
 
   const vinylStyle = {
-      width: vinylSize,
-      height: vinylSize,
-      top: 0.46*height - vinylSize / 2,
-      left: width / 2 - vinylSize / 2,
+    width: vinylSize,
+    height: vinylSize,
+    top: 0.46 * height - vinylSize / 2,
+    left: width / 2 - vinylSize / 2,
   };
 
   // Track current moment to detect changes - use a unique key
@@ -185,6 +185,14 @@ export default function MomentView({ data }: { data: MomentInfo }) {
     // Update current moment key
     currentMomentKey.current = newMomentKey;
   }, [data?.moment?.spotifyId, data?.moment?.songStart, data?.moment?.songDuration, token]);
+
+  // Helper function to convert seconds to mm:ss
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    const paddedSecs = secs < 10 ? `0${secs}` : secs;
+    return `${mins}:${paddedSecs}`;
+  };
 
   // Handle focus/unfocus with proper cleanup
   useFocusEffect(
@@ -363,6 +371,8 @@ export default function MomentView({ data }: { data: MomentInfo }) {
     }
   };
 
+
+
   if (!data) {
     return (
       <View style={{ flex: 1, backgroundColor: '#FFF0E2', justifyContent: 'center', alignItems: 'center' }}>
@@ -389,18 +399,18 @@ export default function MomentView({ data }: { data: MomentInfo }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFF0E2' }}>
-      <View style = {StyleSheet.absoluteFill}>
-        <View style = {{height: '100%', alignItems: 'center', justifyContent: "flex-start"}}>
-          <View style = {{width: '100%', height: 170}}>
-              <RNSVGSvgIOS><Background/></RNSVGSvgIOS>
+      <View style={StyleSheet.absoluteFill}>
+        <View style={{ height: '100%', alignItems: 'center', justifyContent: "flex-start" }}>
+          <View style={{ width: '100%', height: 170 }}>
+            <RNSVGSvgIOS><Background /></RNSVGSvgIOS>
           </View>
         </View>
       </View>
 
-      <SafeAreaView style = {[StyleSheet.absoluteFill, {justifyContent: 'space-between', marginBottom: 0.747663551 * tabHeight}]} edges = {['top', 'left', 'right']}>
-        <View style = {{justifyContent: 'flex-start'}}>
-                    <View style = {{marginLeft: 0.0465116279*width, marginHorizontal: 0.023255814*width, flexDirection: 'row', alignItems: 'flex-start', marginTop: -0.0107*height}}>
-                        <Image
+      <SafeAreaView style={[StyleSheet.absoluteFill, { justifyContent: 'space-between', marginBottom: 0.747663551 * tabHeight }]} edges={['top', 'left', 'right']}>
+        <View style={{ justifyContent: 'flex-start' }}>
+          <View style={{ marginLeft: 0.0465116279 * width, marginHorizontal: 0.023255814 * width, flexDirection: 'row', alignItems: 'flex-start', marginTop: -0.0107 * height }}>
+            <Image
               source={
                 typeof data.user.profilePic === "string"
                   ? { uri: data.user.profilePic }
@@ -408,49 +418,58 @@ export default function MomentView({ data }: { data: MomentInfo }) {
               }
               style={{ width: 40, height: 40, borderRadius: 50, overflow: 'hidden' }}
             />
-                  <View style = {{marginLeft: 0.023255814*width, marginRight: 0.0930232558*width, flexDirection: 'row', flex: 1}}>
-                            <View style = {[{width: '100%', justifyContent: "center"}]}>
-                                <View style = {[{width: '100%', height: 0.00536480687*height, borderRadius: 50, backgroundColor: '#333c42', marginTop: 0.00751072961*height}]}/>
-                                <View style = {{marginTop: 0.0321888*height}}><Waveform data = {data.moment.waveform} height = {0.058 * width} start = {data.moment.songStart / data.moment.length} end = {(data.moment.songStart + data.moment.songDuration)/(data.moment.length)} baseColor="#333C42"
-                    regionColor = "#6d976aff"
-                    selectedColor='#84DA7F' duration = {data.moment.songDuration} anim = {true}/></View>
-                        
-                            </View>
-                        </View>
-                    </View>
-                    <View style = {{marginLeft: '2.3255814%'}}>
-                        <Text style={[styles.texxt, {fontFamily: 'Luxurious Roman'}]}>{data.moment.title}</Text>
-                        <Text style={[styles.texxt, {fontSize: 15, fontFamily: 'Jacques Francois'}]}>{data.moment.artist} </Text>
-                    </View>
-                </View>
-                
-                {/* Absolutely centered spinning vinyl */}
-                <View style={[{position: 'absolute',
-                    width: vinylSize,
-                    height: vinylSize,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    }, vinylStyle]}>
-                    <Animated.View style={[styles.vinylWrapper, { transform: [{ rotate: spin }] }]}>
-                        <View style={styles.vinylContent}>
-                        <Image
-                            source={typeof data.moment.album === "string" ? { uri: data.moment.album } : data.moment.album}
-                            style={styles.albumImage}
-                        />
-                        
-                        </View>
-                        <Image source={vinylImg} style={styles.vinylImage} />
-                    </Animated.View>
-                </View>
+            <View style={{ marginLeft: 0.023255814 * width, marginRight: 0.0930232558 * width, flexDirection: 'row', flex: 1 }}>
+              <View style={[{ width: '100%', justifyContent: "center" }]}>
+                <View style={[{ width: '100%', height: 0.00536480687 * height, borderRadius: 50, backgroundColor: '#333c42', marginTop: 0.00751072961 * height }]} />
+                <View style={{ marginTop: 0.0321888 * height }}><Waveform data={data.moment.waveform} height={0.058 * width} start={data.moment.songStart / data.moment.length} end={(data.moment.songStart + data.moment.songDuration) / (data.moment.length)} baseColor="#333C42"
+                  regionColor="#6d976aff"
+                  selectedColor='#84DA7F' duration={data.moment.songDuration} anim={true} /></View>
 
-          <View style={[{ flexDirection: 'row', alignItems: "center", justifyContent: "flex-end", marginBottom: 0.0215053763*height, marginRight: 0.0348837209*width }]}>
-            <LikeButton
-              contentId={data.moment.id}
-              type={data.type}
-            />
+              </View>
+            </View>
+          </View>
+          <View style={{ marginLeft: '2.3255814%' }}>
+            <Text style={[styles.texxt, { fontFamily: 'Luxurious Roman' }]}>{data.moment.title}</Text>
+            <Text style={[styles.texxt, { fontSize: 15, fontFamily: 'Jacques Francois' }]}>{data.moment.artist} </Text>
+            <Text style={[styles.texxt, { fontSize: 13, color: '#555', marginTop: 2 }]}>
+              {`${formatTime(data.moment.songStart)} - ${formatTime(data.moment.songStart + data.moment.songDuration)}`}
+            </Text>
+            <Text style={[styles.texxt, { fontSize: 15, fontFamily: 'Jacques Francois' }]}>
+              {data.moment.description}
+            </Text>
 
           </View>
-        
+        </View>
+
+        {/* Absolutely centered spinning vinyl */}
+        <View style={[{
+          position: 'absolute',
+          width: vinylSize,
+          height: vinylSize,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }, vinylStyle]}>
+          <Animated.View style={[styles.vinylWrapper, { transform: [{ rotate: spin }] }]}>
+            <View style={styles.vinylContent}>
+              <Image
+                source={typeof data.moment.album === "string" ? { uri: data.moment.album } : data.moment.album}
+                style={styles.albumImage}
+              />
+
+            </View>
+            <Image source={vinylImg} style={styles.vinylImage} />
+          </Animated.View>
+        </View>
+
+
+        <View style={[{ flexDirection: 'row', alignItems: "center", justifyContent: "flex-end", marginBottom: 0.0215053763 * height, marginRight: 0.0348837209 * width }]}>
+          <LikeButton
+            contentId={data.moment.id}
+            type={data.type}
+          />
+
+        </View>
+
       </SafeAreaView>
     </View>
   );
@@ -463,34 +482,34 @@ const styles = StyleSheet.create({
     color: '#333C42',
   },
   vinylWrapper: {
-  justifyContent: 'center',
-  alignItems: 'center',
-  width: '100%',
-  height: '100%',
-},
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+  },
 
-vinylContent: {
-  justifyContent: 'center',
-  alignItems: 'center',
-  position: 'relative',
-  width: '100%',
-  height: '100%',
-  resizeMode: 'none'
-},
+  vinylContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    width: '100%',
+    height: '100%',
+    resizeMode: 'none'
+  },
 
-albumImage: {
-  width: '40%',
-  aspectRatio: 1,
-  zIndex: 1,
-  height: undefined,
-},
+  albumImage: {
+    width: '40%',
+    aspectRatio: 1,
+    zIndex: 1,
+    height: undefined,
+  },
 
-vinylImage: {
-  position: 'absolute',
-  width: '100%',
-  aspectRatio: 1,
-  height: undefined,
-  zIndex: 2,
-},
+  vinylImage: {
+    position: 'absolute',
+    width: '100%',
+    aspectRatio: 1,
+    height: undefined,
+    zIndex: 2,
+  },
 
 });

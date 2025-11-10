@@ -1,3 +1,4 @@
+import { ReactNode } from 'react';
 import { ImageSourcePropType } from 'react-native';
 
 export default interface MomentInfo {
@@ -8,6 +9,7 @@ export default interface MomentInfo {
 }
 
 export interface Moment {
+    description: string;
     spotifyId: any;
     id: string,
     title: string,

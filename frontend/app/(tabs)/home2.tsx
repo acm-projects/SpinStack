@@ -139,7 +139,7 @@ function Masonry({ data, spacing = 8, columns = 2, router, onPressMore, setSelec
         marginBottom: spacing,
         borderRadius: 16,
         backgroundColor: "#FFF0E2",
-        overflow: "hidden",
+        paddingBottom: 12,
       }}
     >
       <View style={styles.cardHeader}>
@@ -243,9 +243,25 @@ function Masonry({ data, spacing = 8, columns = 2, router, onPressMore, setSelec
         )}
       </Pressable>
 
-      {item.caption ? (
-        <Text style={styles.caption}>{item.caption}</Text>
-      ) : null}
+      <View style={styles.momentTextContainer}>
+        <Text
+          style={styles.momentTitle2}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {item.title}
+        </Text>
+
+        <Text
+          style={styles.momentDescription}
+          numberOfLines={2}
+          ellipsizeMode="tail"
+        >
+          {item.caption}
+        </Text>
+      </View>
+
+
     </View>
   );
 
@@ -621,7 +637,6 @@ export default function HomeScreen() {
 
       const data = await res.json();
 
-      // Process the stories into the shape your frontend expects
       const processed = await Promise.all(
         (data || []).map(async (story: any) => {
           const profileUrl = await fetchProfilePictureUrl(story.users.pfp_url);
@@ -772,7 +787,8 @@ export default function HomeScreen() {
             user: userData?.username || "Unknown User",
             profilePic: pfpUrl,
             time: getTimeAgo(item.created_at),
-            caption: item.description || item.title || "",
+            title: item.title,
+            caption: item.description || "",
             cover_url: coverUrl,
             type: item.type,
             userId: item.user_id,
@@ -896,39 +912,6 @@ export default function HomeScreen() {
     }
   };
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-
-    if (!result.canceled) {
-      setStackCover(result.assets[0].uri);
-    }
-  };
-
-  // Add a moment to selected moments (up to 5)
-  const addSelectedMoment = (moment: MasonryItem) => {
-    if (selectedMoments.length >= 5) {
-      Alert.alert("Limit reached", "You can only add up to 5 moments");
-      return;
-    }
-    setSelectedMoments([...selectedMoments, moment]);
-  };
-
-  const removeSelectedMoment = (id: string) => {
-    setSelectedMoments(selectedMoments.filter((m) => m.id !== id));
-  };
-
-
-  const sendMomentToGroup = (selectedItem: any) => {
-    //todo
-  };
-
-
-
 
   return (
     <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 0.747663551 * tabHeight }}>
@@ -951,7 +934,7 @@ export default function HomeScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ paddingVertical: 12, paddingHorizontal: 16 }}
+        style={{ paddingVertical: 16, paddingHorizontal: 16 }}
       >
 
         {/* Your own story circle */}
@@ -1154,24 +1137,6 @@ export default function HomeScreen() {
                     >
                       <Feather name="folder" size={20} color="#333C42" />
                       <Text style={styles.stackText}>{stack.title}</Text>
-                    </TouchableOpacity>
-                  ))
-                )}
-              </ScrollView>
-              <ScrollView style={{ width: "100%" }}>
-                {userGroups.length === 0 ? (
-                  <Text style={{ textAlign: "center", color: "#333C42", fontFamily: "Lato" }}>
-                    No groups to send to yet
-                  </Text>
-                ) : (
-                  userGroups.map((group) => (
-                    <TouchableOpacity
-                      key={group.id}
-                      style={styles.stackOption}
-                      onPress={() => sendMomentToGroup(selectedItem)}
-                    >
-                      <Feather name="folder" size={20} color="#333C42" />
-                      <Text style={styles.stackText}>{group.name}</Text>
                     </TouchableOpacity>
                   ))
                 )}
@@ -1441,5 +1406,21 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
+  momentTextContainer: {
+    width: "100%",
+    marginTop: 6,
+    alignItems: "center"
+  },
+  momentTitle2: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#111",
+  },
+  momentDescription: {
+    fontSize: 10,
+    color: "#555",
+    marginTop: 2,
+  },
+
 
 });

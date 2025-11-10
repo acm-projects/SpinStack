@@ -34,7 +34,7 @@ export default function SpotifyConnect() {
         if (error) throw error;
 
         const hasSpotifyInDB = !!userData?.spotify_user_id;
-        
+
         // If they have Spotify in DB, check if token is still valid
         if (hasSpotifyInDB) {
           const hasValidToken = await hasSpotifyAuth();
@@ -58,11 +58,11 @@ export default function SpotifyConnect() {
     try {
       setIsConnecting(true);
       const token = await authenticateSpotify();
-      
+
       if (token) {
         // Get Spotify user ID and save to database
         const spotifyUserId = await getSpotifyUserId(token);
-        
+
         if (spotifyUserId && user?.id) {
           // Save Spotify user ID to database
           const { error } = await supabase
@@ -111,7 +111,7 @@ export default function SpotifyConnect() {
           style: "destructive",
           onPress: async () => {
             await clearSpotifyTokens();
-            
+
             // Remove Spotify user ID from database
             if (user?.id) {
               await supabase
@@ -119,7 +119,7 @@ export default function SpotifyConnect() {
                 .update({ spotify_user_id: null })
                 .eq('id', user.id);
             }
-            
+
             setIsConnected(false);
             Alert.alert("Disconnected", "Your Spotify account has been disconnected.");
           }
@@ -190,7 +190,7 @@ export default function SpotifyConnect() {
 
       <View style={styles.container}>
         <Text style={styles.title}>Connect to Spotify</Text>
-        
+
         <Text style={styles.description}>
           Connect your Spotify account to play and share your favorite music moments with friends
         </Text>
@@ -202,9 +202,9 @@ export default function SpotifyConnect() {
                 ✓ Spotify Connected
               </Text>
             </View>
-            
-            <Pressable 
-              style={[styles.spotifyButton, { backgroundColor: '#FF6B6B' }]} 
+
+            <Pressable
+              style={[styles.spotifyButton, { backgroundColor: '#FF6B6B' }]}
               onPress={handleDisconnect}
             >
               <Text style={[styles.spotifyButtonText, { color: 'white' }]}>
@@ -213,8 +213,8 @@ export default function SpotifyConnect() {
             </Pressable>
           </View>
         ) : (
-          <Pressable 
-            style={styles.spotifyButton} 
+          <Pressable
+            style={styles.spotifyButton}
             onPress={handleConnectSpotify}
             disabled={isConnecting}
           >
@@ -312,29 +312,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textDecorationLine: "underline",
   },
-  buttonContainer: {
-    position: 'absolute',
-    bottom: 40,
-    width: '100%',
-    alignItems: 'center',
-    gap: 15,
-  },
-  nextButton: {
-    backgroundColor: "#333c42",
-    width: 352,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  nextButtonText: {
-    color: "white",
-    fontFamily: "Jacques Francois",
-    fontSize: 16,
-  },
-  skipText: {
-    color: "#39868F",
-    fontFamily: "Jacques Francois",
-    fontSize: 14,
-    textDecorationLine: "underline",
-  },
+
 });

@@ -72,6 +72,12 @@ export default function momentProcess() {
   const [saving, setSaving] = useState(false);
   const { isStory } = useLocalSearchParams();
   const [isStoryMode, setIsStoryMode] = useState(isStory === "true");
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [selectedStackIds, setSelectedStackIds] = useState<string[]>([]);
+  const [momentCaption, setMomentCaption] = useState('');
+
+
+
 
   // Check if user is signed in
   useEffect(() => {
@@ -135,29 +141,58 @@ export default function momentProcess() {
           song_url: songUrl,
           start_time: Math.floor(moment.songStart),
           duration: Math.floor(moment.songDuration),
-          cover_url: moment.album.uri || null,
+          cover_url: uploadedImageUrl || moment.album.uri || null,
           visibility: true,
-          description: `${moment.artist}` // Store artist as description for now
+          description: momentCaption // Store artist as description for now
         }),
       });
 
       const resp = await response.json();
 
-      // Handle errors from backend
       if (!response.ok) {
         console.error("Backend error:", resp);
         Alert.alert("Error", resp.error || "Failed to create moment");
         return false;
       }
 
+      const createdMomentId = resp.id; // Get the created moment's ID
       console.log("Moment created successfully:", resp);
+
+      // NEW: Add moment to selected stacks
+      if (selectedStackIds.length > 0) {
+        console.log(`Adding moment to ${selectedStackIds.length} stacks...`);
+
+        for (const stackId of selectedStackIds) {
+          try {
+            const addRes = await fetch(`${nUrl}/api/stacks/${stackId}/moments`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ momentId: createdMomentId }),
+            });
+
+            if (!addRes.ok) {
+              const errData = await addRes.json();
+              console.error(`Failed to add moment to stack ${stackId}:`, errData);
+            } else {
+              console.log(`Added moment to stack ${stackId}`);
+            }
+          } catch (err) {
+            console.error(`Error adding moment to stack ${stackId}:`, err);
+          }
+        }
+      }
 
       // Show success alert and navigate back to profile
       Alert.alert(
         "Success!",
         isStoryMode
           ? "Your story moment has been created and will disappear in 24 hours"
-          : "Your moment has been created",
+          : selectedStackIds.length > 0
+            ? `Your moment has been created and added to ${selectedStackIds.length} stack(s)!`
+            : "Your moment has been created",
         [
           {
             text: "OK",
@@ -218,7 +253,7 @@ export default function momentProcess() {
   useEffect(() => {
     return () => clearMoment(); // Clear when unmounting
   }, []);
-  
+
   if (!moment) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF0E2' }}>
@@ -300,12 +335,24 @@ export default function momentProcess() {
           { useNativeDriver: false }
         )}
       >
-        <MomentPick 
-          moment={moment} 
+        <MomentPick
+          moment={moment}
           scrollFunc={goToPage}
         />
-        <MomentSpecify moment={moment} scrollFunc={goToPage}/>
-        <MomentFinalize moment={moment} scrollFunc={goToPage} height={height} />
+        <MomentSpecify
+          moment={moment}
+          scrollFunc={goToPage}
+          onImageSelected={(fileName, _) => setUploadedImageUrl(fileName)} // Store filename only
+          onCaptionChange={(newCaption) => setMomentCaption(newCaption)}
+        />
+        <MomentFinalize
+          moment={moment}
+          scrollFunc={goToPage}
+          height={height}
+          uploadedImageUrl={uploadedImageUrl}
+          selectedStackIds={selectedStackIds}
+          onStackSelectionChange={setSelectedStackIds}
+        />
       </Animated.ScrollView>
 
       {saving && (
