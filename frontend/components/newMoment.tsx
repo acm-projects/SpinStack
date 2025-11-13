@@ -412,8 +412,8 @@ export default function MomentView({ data }: { data: MomentInfo }) {
                             <View style = {[{width: '100%', justifyContent: "center"}]}>
                                 <View style = {[{width: '100%', height: 0.00536480687*height, borderRadius: 50, backgroundColor: '#333c42', marginTop: 0.00751072961*height}]}/>
                                 <View style = {{marginTop: 0.0321888*height}}><Waveform data = {data.moment.waveform} height = {0.058 * width} start = {data.moment.songStart / data.moment.length} end = {(data.moment.songStart + data.moment.songDuration)/(data.moment.length)} baseColor="#333C42"
-                    regionColor = "#6d976aff"
-                    selectedColor='#84DA7F' duration = {data.moment.songDuration} anim = {true}/></View>
+                    regionColor = "#1396c1ff"
+                    selectedColor='#5cd6ffff' duration = {data.moment.songDuration} anim = {true}/></View>
                         
                             </View>
                         </View>

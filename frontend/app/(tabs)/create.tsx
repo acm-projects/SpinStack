@@ -418,12 +418,13 @@ const styles2 = StyleSheet.create({
     color: "#39868F",
     fontFamily: 'Lato',
     fontSize: 13,
+    fontStyle: 'italic'
   },
   momentCount: {
-    color: "#1DB954",
+    color: "#537580ff",
     fontSize: 12,
     marginTop: 2,
-    fontWeight: "500",
+    fontWeight: "800",
     fontFamily: "Lato",
   },
   albumArt: {

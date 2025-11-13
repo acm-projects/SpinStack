@@ -10,8 +10,9 @@ import {
   Easing,
   ImageBackground,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
-import { useRouter, RelativePathString} from 'expo-router';
+import { useRouter, RelativePathString } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Feather from '@expo/vector-icons/Feather';
@@ -102,6 +103,39 @@ export default function GroupsView({ data }: { data?: GroupInfo[] }) {
   const router = useRouter();
   const setSelectedGroup = useGroupStore((s) => s.setSelectedGroup);
   const { user } = useAuth();
+
+  // ======= BUBBLE BACKGROUND =======
+  const { width, height } = Dimensions.get('window');
+  const bubbleCount = 25;
+  const bubbles = useRef(
+  Array.from({ length: bubbleCount }).map(() => {
+    const size = Math.random() * 12 + 8;
+    return {
+      anim: new Animated.Value(Math.random() * height),
+      left: Math.random() * (width - size), // adjust for size
+      size,
+      delay: Math.random() * 4000,
+      speed: 6000 + Math.random() * 4000,
+    };
+  })
+).current;
+
+
+  useEffect(() => {
+    bubbles.forEach((bubble) => {
+      const animateBubble = () => {
+        bubble.anim.setValue(height + bubble.size);
+        Animated.timing(bubble.anim, {
+          toValue: -bubble.size,
+          duration: bubble.speed,
+          delay: bubble.delay,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }).start(() => animateBubble());
+      };
+      animateBubble();
+    });
+  }, []);
 
   // ======= FETCH GROUPS =======
   useEffect(() => {
@@ -349,6 +383,23 @@ export default function GroupsView({ data }: { data?: GroupInfo[] }) {
 
   return (
     <ImageBackground source={background} style={styles.backgroundImage}>
+      {/* BUBBLES */}
+      {bubbles.map((bubble, i) => (
+        <Animated.View
+          key={i}
+          style={[
+            styles.bubble,
+            {
+              width: bubble.size,
+              height: bubble.size,
+              left: bubble.left,
+              transform: [{ translateY: bubble.anim }],
+              opacity: 0.4 + Math.random() * 0.6,
+            },
+          ]}
+        />
+      ))}
+
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         {/* HEADER */}
         <View style={styles.header}>
@@ -374,13 +425,13 @@ export default function GroupsView({ data }: { data?: GroupInfo[] }) {
                     icon={btn.icon}
                     isActive={active === i}
                     onPress={() => {
-                    setActive(i);
-                    if (btn.icon === 'search') {
-                      toggleSearch();
-                    } else if (btn.icon === "plus-circle") {
-                      router.push('/dailyProcess/userGroupSelection' as RelativePathString);
-                    }
-                  }}
+                      setActive(i);
+                      if (btn.icon === 'search') {
+                        toggleSearch();
+                      } else if (btn.icon === 'plus-circle') {
+                        router.push('/dailyProcess/userGroupSelection' as RelativePathString);
+                      }
+                    }}
                   />
                 ))}
               </View>
@@ -484,4 +535,5 @@ const styles = StyleSheet.create({
   unreadDotContainer: { marginRight: 8, marginLeft: -17 },
   unreadDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#008CFF' },
   separatorLine: { height: 1, backgroundColor: '#ffffffff', opacity: 1, marginHorizontal: 20 },
+  bubble: { position: 'absolute', backgroundColor: '#a3d9ff', borderRadius: 50 },
 });

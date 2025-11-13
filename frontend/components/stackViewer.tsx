@@ -48,13 +48,6 @@ export default function StackViewer({ moments }: StackViewerProps) {
 
     return (
         <View style={{ flex: 1 }}>
-            {/* Back Button */}
-            <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => router.back()}
-            >
-                <Feather name="arrow-left" size={28} color="#333C42" />
-            </TouchableOpacity>
 
             {/* Display the current moment */}
             <MomentView data={moments[index]} />

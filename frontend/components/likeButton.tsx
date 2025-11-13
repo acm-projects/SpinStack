@@ -77,7 +77,7 @@ export default function LikeButton({ contentId, type }: LikeButtonProps) {
       <FontAwesome
         name={liked ? 'heart' : 'heart-o'}
         size={50}
-        color={liked ? 'red' : 'white'}
+        color={liked ? 'red' : '#333C42'}
       />
     </TouchableOpacity>
   );
