@@ -377,12 +377,12 @@ export default function MomentPickView({
   startX.addListener(({ value }) => {
     updateStartPosition(value);
   });
-  
+
   // Update end position
   endX.addListener(({ value }) => {
     updateEndPosition(value);
   });
-  
+
   const updateStartPosition = (value: number) => {
     if (waveWidth > 0) {
       const newStart = Math.max(0, Math.min(value / waveWidth, 1));
@@ -594,7 +594,7 @@ export default function MomentPickView({
       Alert.alert('Duration Too Long', `Please select a moment that is ${MAX_DURATION_SECONDS} seconds or less.`);
       return;
     }
-    
+
     // Update moment with new values
     moment.songStart = mStart * moment.length;
     moment.songDuration = (mEnd - mStart) * moment.length;
@@ -611,8 +611,8 @@ export default function MomentPickView({
         edges={['top', 'left', 'right']}
       >
 
-        {/* Title */}
-        <View style={{ width: '80%'}}>
+        {/* Title  TODO: FIX SIZING!!*/}
+        <View style={{ width: '80%' }}>
           <Text style={{ fontSize: 30, fontFamily: 'Luxurious Roman', fontWeight: 'bold', textAlign: 'center', color: '#333C42' }}>
             Pick Your Moment
           </Text>
@@ -622,7 +622,17 @@ export default function MomentPickView({
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ justifyContent: 'center', alignItems: 'center' }}>
             <View style={{ marginLeft: 10, marginTop: -20, marginBottom: 30 }}>
-              <Text style={{ fontSize: 16, fontFamily: 'Lato', color: '#333C42' }}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontFamily: 'Lato',
+                  color: '#333C42',
+                  flexShrink: 1,
+                  maxWidth: '90%',
+                }}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {moment.title} - {moment.artist}
               </Text>
             </View>
@@ -640,7 +650,7 @@ export default function MomentPickView({
                     start={mStart}
                     end={mEnd}
                     baseColor="#333C42"
-                    duration = {currentDuration}
+                    duration={currentDuration}
                     anim={false}
                     selectedColor={(currentDuration <= MAX_DURATION_SECONDS) ? '#B7FFF7' : 'red'}
                   />

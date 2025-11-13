@@ -12,14 +12,16 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.mohammadmehrab.SpinStack",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "lsApplicationQueriesSchemes": [
-          "spotify",
-          "spotify-action",
-          "spotify-api",
-          "spotify-remote"
-        ]
-      }
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      },
+      "lsApplicationQueriesSchemes": [
+        "spotify",
+        "spotify-action",
+        "spotify-api",
+        "spotify-remote"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -66,7 +68,15 @@
         }
       ],
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

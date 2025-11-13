@@ -171,6 +171,10 @@ export default function SpotifyConnect() {
     try {
       setIsConnecting(true);
       const token = await authenticateSpotify();
+<<<<<<< HEAD
+
+=======
+>>>>>>> main
       if (token) {
         // Get Spotify user ID and save to database
         const spotifyUserId = await getSpotifyUserId(token);
@@ -258,6 +262,16 @@ export default function SpotifyConnect() {
     );
   };
 
+<<<<<<< HEAD
+  const handleNext = () => {
+    setProfileComplete(true);
+    router.dismissAll();
+    console.log("dismissAll4");
+    router.replace("../profile");
+  };
+
+=======
+>>>>>>> main
   if (isLoading) {
     return (
       <View
@@ -304,7 +318,48 @@ export default function SpotifyConnect() {
                   </View>
                 </View>
               </View>
+<<<<<<< HEAD
+            </View>
+          </View>
+        </Pressable>
+      </View>
+
+      <View style={styles.container}>
+        <Text style={styles.title}>Connect to Spotify</Text>
+
+        {isConnected ? (
+          <View style={{ alignItems: 'center', gap: 20 }}>
+            <View style={{ backgroundColor: '#8DD2CA', padding: 15, borderRadius: 10, borderWidth: 2, borderColor: '#333C42' }}>
+              <Text style={{ fontFamily: 'Lato', fontSize: 16, color: '#333C42', textAlign: 'center' }}>
+                ✓ Spotify Connected
+              </Text>
+            </View>
+
+            <Pressable
+              style={[styles.spotifyButton, { backgroundColor: '#FF6B6B' }]}
+              onPress={handleDisconnect}
+            >
+              <Text style={[styles.spotifyButtonText, { color: 'white' }]}>
+                Disconnect
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            style={styles.spotifyButton}
+            onPress={handleConnectSpotify}
+            disabled={isConnecting}
+          >
+            {isConnecting ? (
+              <ActivityIndicator color="black" />
+            ) : (
+              <Text style={styles.spotifyButtonText}>
+                Connect with Spotify
+              </Text>
+            )}
+=======
             </Animated.View>
+>>>>>>> main
           </Pressable>
         </View>
 

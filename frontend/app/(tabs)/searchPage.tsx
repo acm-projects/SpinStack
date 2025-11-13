@@ -112,13 +112,50 @@ export default function SearchPage() {
       if (activeFilter === "Stacks") {
         const { data: stacks, error } = await supabase
           .from("stacks")
-          .select(`*, users ( username, pfp_url )`)
+          .select(
+            `
+          *,
+          users (
+            username,
+            pfp_url
+          )
+        `
+          )
           .eq("visibility", true)
           .ilike("title", `%${search}%`)
           .limit(20);
-        if (error) throw error;
-        setResults({ stacks: stacks || [] });
-      } else {
+
+        if (error) {
+          Alert.alert("Error", "Failed to search stacks");
+          console.error(error);
+          setLoading(false);
+          return;
+        }
+
+        const stacksWithCovers = await Promise.all(
+          (stacks || []).map(async (stack) => {
+            let coverUrl = null;
+            if (stack.cover_url) {
+              try {
+                const res = await fetch(
+                  `${nUrl}/api/upload/download-url/${stack.cover_url}`
+                );
+                if (res.ok) {
+                  const { downloadURL } = await res.json();
+                  coverUrl = downloadURL;
+                }
+              } catch (err) {
+                console.error("Failed to fetch cover for stack:", stack.id, err);
+              }
+            }
+            return { ...stack, cover_url: coverUrl };
+          })
+        );
+
+        setResults({
+          stacks: stacksWithCovers,
+        });
+      } else if (activeFilter === "Users") {
         const { data: users, error } = await supabase
           .from("users")
           .select("*")
@@ -179,7 +216,7 @@ export default function SearchPage() {
           <Text style={styles.placeholderText}>🎵</Text>
         </View>
       )}
-    </View>
+    </Pressable>
   );
 
   const renderUser = ({ item, index }: { item: User; index: number }) => {
