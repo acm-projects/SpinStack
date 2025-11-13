@@ -159,7 +159,6 @@ export default function SearchPage() {
 
   const renderStack = ({ item, index }: { item: Stack; index: number }) => (
     <View style={styles.songRow}>
-      <Text style={styles.rank}>{index + 1}</Text>
       <View style={styles.songInfo}>
         <Text style={styles.songTitle} numberOfLines={1}>
           {item.title}
@@ -193,7 +192,7 @@ export default function SearchPage() {
         style={styles.songRow}
         onPress={() => router.push(`/profile/${item.id}` as RelativePathString)}
       >
-        <Text style={styles.rank}>{index + 1}</Text>
+  
         <View style={styles.songInfo}>
           <Text style={styles.songTitle} numberOfLines={1}>
             {displayName}
@@ -201,11 +200,7 @@ export default function SearchPage() {
           <Text numberOfLines={1} ellipsizeMode="tail" style={styles.songArtist}>
             @{item.username}
           </Text>
-          {item.bio && (
-            <Text numberOfLines={1} ellipsizeMode="tail" style={styles.stackDesc}>
-              {item.bio}
-            </Text>
-          )}
+          
         </View>
         {item.pfp_url ? (
           <Image source={{ uri: item.pfp_url }} style={styles.profilePic} />
@@ -392,6 +387,7 @@ const styles = StyleSheet.create({
     color: "#7f8081ff",
     fontSize: 13,
     fontFamily: "Lato",
+    fontStyle: 'italic'
   },
   stackDesc: {
     color: "#7f8081ff",
@@ -407,8 +403,9 @@ const styles = StyleSheet.create({
     borderColor: "#333C42",
   },
   profilePic: {
-    width: 45,
-    height: 45,
+    width: 43,
+    height: 43,
+    marginVertical: 5,
     borderRadius: 22.5,
     borderWidth: 1,
     borderColor: "#333C42",
@@ -430,7 +427,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 40,
+    marginBottom: 140,
   },
   emptyText: {
     color: "#39868F",

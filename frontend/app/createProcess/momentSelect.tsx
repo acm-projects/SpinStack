@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     fontFamily: "Lato",
   },
   momentCount: {
-    color: "#1DB954",
+    color: "#5cd6ffff",
     fontSize: 12,
     marginTop: 2,
     fontWeight: "500",

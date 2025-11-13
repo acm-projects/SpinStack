@@ -4,7 +4,7 @@ import Svg, { Rect, Ellipse } from "react-native-svg";
 
 //specify types for some dumbahh reason
 //start and end are the relative starts and ends of the moments
-const Waveform = ({ data, height, start, end, baseColor='#ffffff', regionColor = "#87bd84", selectedColor = '#84DA7F', anim=true, duration}: {data: number[], height: number, start: number, end: number, baseColor: ColorValue, regionColor: ColorValue, selectedColor: ColorValue, anim: boolean, duration: number}) => {
+const Waveform = ({ data, height, start, end, baseColor='#ffffff', regionColor = "#5cd6ffff", selectedColor = '#5cd6ffff', anim=true, duration}: {data: number[], height: number, start: number, end: number, baseColor: ColorValue, regionColor: ColorValue, selectedColor: ColorValue, anim: boolean, duration: number}) => {
     const [width, setWidth] = useState(0);
     const barWidth = width / data.length;
     const maxVal = Math.max(...data);
