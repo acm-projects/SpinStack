@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,16 @@ import {
   StyleSheet,
   TouchableWithoutFeedback,
   Keyboard,
+  Animated,
+  Easing,
+  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "@/constants/supabase";
 import { useSelectedUsersStore } from "../stores/selectedUsersStore";
 
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
+const { width, height } = Dimensions.get("window");
 
 export default function GroupCreationPage() {
   const router = useRouter();
@@ -22,6 +26,31 @@ export default function GroupCreationPage() {
   const [groupName, setGroupName] = useState("");
   const [dailyPrompt, setDailyPrompt] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Create bubble animation refs
+  const bubbleCount = 15;
+  const bubbles = Array.from({ length: bubbleCount }).map(() => ({
+    anim: useRef(new Animated.Value(height)).current,
+    left: Math.random() * width,
+    size: Math.random() * 12 + 8,
+    delay: Math.random() * 4000,
+  }));
+
+  useEffect(() => {
+    bubbles.forEach((bubble) => {
+      const animateBubble = () => {
+        bubble.anim.setValue(height + bubble.size);
+        Animated.timing(bubble.anim, {
+          toValue: -bubble.size,
+          duration: 6000 + Math.random() * 4000,
+          delay: bubble.delay,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }).start(() => animateBubble());
+      };
+      animateBubble();
+    });
+  }, []);
 
   if (!selectedUsers) {
     return (
@@ -58,11 +87,8 @@ export default function GroupCreationPage() {
         return;
       }
 
-      // Calculate max_members: creator + selected users
       const max_members = selectedUsers.length + 1;
-      
-      // Extract just the user IDs
-      const member_ids = selectedUsers.map(user => user.id);
+      const member_ids = selectedUsers.map((user) => user.id);
 
       // Create the group
       const groupRes = await fetch(`${nUrl}/api/groups`, {
@@ -78,64 +104,23 @@ export default function GroupCreationPage() {
         }),
       });
 
-      const groupResult = await groupRes.json();
-
-      if (!groupRes.ok) {
-        throw new Error(groupResult.error || "Failed to create group");
-      }
-
-      // Create the first daily for this group
-      const dailyRes = await fetch(`${nUrl}/api/dailies`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          group_id: groupResult.group.id,
-          prompt: dailyPrompt.trim(),
-          date: new Date().toISOString().split("T")[0], // Today's date in YYYY-MM-DD format
-        }),
-      });
-
       const dailyResult = await dailyRes.json();
 
-      if (!dailyRes.ok) {
-        // Group was created but daily failed - still consider it a partial success
-        console.error("Failed to create daily:", dailyResult.error);
-        Alert.alert(
-          "Partial Success",
-          `Group "${groupResult.group.name}" created, but failed to create daily prompt. You can add one later.`,
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                clearSelectedUsers();
-                router.dismissAll();
-                router.replace("/(tabs)/dGroup");
-              }
-            }
-          ]
-        );
-        return;
+      if (!res.ok) {
+        throw new Error(result.error || "Failed to create group");
       }
 
-      // Both group and daily created successfully
       clearSelectedUsers();
-      
-      Alert.alert(
-        "Success", 
-        `Group "${groupResult.group.name}" created with first daily prompt!`,
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              router.dismissAll();
-              router.replace("/(tabs)/dGroup");
-            }
-          }
-        ]
-      );
+
+      Alert.alert("Success", `Group "${result.group.name}" created successfully!`, [
+        {
+          text: "OK",
+          onPress: () => {
+            router.dismissAll();
+            router.replace("/(tabs)/dGroup");
+          },
+        },
+      ]);
     } catch (err: any) {
       console.error("Create group error:", err);
       Alert.alert("Error", err.message || "Failed to create group");
@@ -147,6 +132,23 @@ export default function GroupCreationPage() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
+        {/* Bubbles in background */}
+        {bubbles.map((bubble, index) => (
+          <Animated.View
+            key={index}
+            style={[
+              styles.bubble,
+              {
+                width: bubble.size,
+                height: bubble.size,
+                left: bubble.left,
+                transform: [{ translateY: bubble.anim }],
+                opacity: 0.4 + Math.random() * 0.6,
+              },
+            ]}
+          />
+        ))}
+
         <Text style={styles.title}>Create a New Group</Text>
 
         <TextInput
@@ -184,9 +186,7 @@ export default function GroupCreationPage() {
           onPress={handleCreateGroup}
           disabled={loading}
         >
-          <Text style={styles.createButtonText}>
-            {loading ? "Creating..." : "Create Group"}
-          </Text>
+          <Text style={styles.createButtonText}>{loading ? "Creating..." : "Create Group"}</Text>
         </TouchableOpacity>
       </View>
     </TouchableWithoutFeedback>
@@ -201,13 +201,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 70,
     justifyContent: "flex-start",
+    overflow: "hidden", // Important to keep bubbles within screen
+  },
+  bubble: {
+    position: "absolute",
+    backgroundColor: "#a3d9ff",
+    borderRadius: 50,
   },
   title: {
     fontSize: 28,
-    fontWeight: "bold",
+    fontWeight: "800",
     marginBottom: 20,
     color: "#333C42",
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   input: {
     borderWidth: 1.5,
@@ -218,7 +224,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333C42",
     marginBottom: 20,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
     backgroundColor: "#FFF0E2",
   },
   promptInput: {
@@ -229,8 +235,8 @@ const styles = StyleSheet.create({
   selectedUsersTitle: {
     fontSize: 16,
     marginBottom: 8,
-    color: "#39868F",
-    fontFamily: "Jacques Francois",
+    color: "#b18430ff",
+    fontFamily: "Lato",
   },
   tagContainer: {
     flexDirection: "row",
@@ -250,15 +256,15 @@ const styles = StyleSheet.create({
   tagText: {
     color: "#FFF0E2",
     fontSize: 14,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
   },
   createButton: {
-    backgroundColor: "#39868F",
+    backgroundColor: "#333C42",
     borderRadius: 10,
-    borderWidth: 4,
+    borderWidth: 2,
     borderColor: "#333C42",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 4,
     width: "60%",
     alignSelf: "center",
   },
@@ -268,13 +274,14 @@ const styles = StyleSheet.create({
   createButtonText: {
     color: "white",
     fontWeight: "bold",
-    fontSize: 20,
-    fontFamily: "Jacques Francois",
+    fontSize: 18,
+    paddingVertical: 6,
+    fontFamily: "Lato",
   },
   errorText: {
     color: "#333C42",
     fontSize: 18,
-    fontFamily: "Jacques Francois",
+    fontFamily: "Lato",
     textAlign: "center",
   },
 });

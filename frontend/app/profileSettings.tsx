@@ -1,11 +1,14 @@
 import { useAuth } from "@/_context/AuthContext";
 import { supabase } from "@/constants/supabase";
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Image, Pressable, Dimensions } from "react-native";
+import React, { useEffect, useState, useRef } from "react";
+import { View, Text, StyleSheet, Image, Pressable, Dimensions, Animated, Alert, ActivityIndicator } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { RelativePathString, useRouter } from "expo-router";
 import Bubble from '../assets/other/bubble.svg';
 import { AutoSizeText, ResizeTextMode } from 'react-native-auto-size-text';
+import * as Spotify from "@wwdrew/expo-spotify-sdk";
+import * as SecureStore from 'expo-secure-store';
+import { authenticateSpotify, clearSpotifyTokens, getValidSpotifyToken } from "./utils/spotifyAuth";
 
 export default function ProfileSettings() {
   const { width } = Dimensions.get("window");
@@ -16,9 +19,33 @@ export default function ProfileSettings() {
   const router = useRouter();
   const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
+  const [isConnectingSpotify, setIsConnectingSpotify] = useState(false);
+  const [spotifyConnected, setSpotifyConnected] = useState(false);
+
+
+  // Animation setup
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handleBackPress = () => {
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 3,
+        tension: 80,
+        useNativeDriver: true,
+      }),
+    ]).start(() => router.back());
+  };
+
   const handleSignOut = async () => {
     logout();
     router.dismissAll();
+    console.log("dismissAll3");
     router.replace("/signupProcess/signupPage" as RelativePathString);
   };
 
@@ -44,9 +71,7 @@ export default function ProfileSettings() {
         // Only fetch presigned URL if pfp_url exists and is not empty
         if (userData?.pfp_url && userData.pfp_url.trim() !== '') {
           try {
-            const res = await fetch(
-              `${nUrl}/api/upload/download-url/${userData.pfp_url}`
-            );
+            const res = await fetch(`${nUrl}/${userData.pfp_url}`);
             if (res.ok) {
               const { downloadURL } = await res.json();
               setPfpUrl(downloadURL);
@@ -72,19 +97,91 @@ export default function ProfileSettings() {
     fetchUserInfo();
   }, [user?.id]);
 
+
+  const handleConnectSpotify = async () => {
+    try {
+      setIsConnectingSpotify(true);
+
+      // Use the updated authentication function
+      const token = await authenticateSpotify();
+
+      if (!token) {
+        throw new Error("Failed to get access token");
+      }
+
+      setSpotifyConnected(true);
+
+      Alert.alert(
+        "Success! 🎉",
+        "Your Spotify account has been connected. Your session will be maintained automatically.",
+        [{ text: "OK" }]
+      );
+    } catch (error: any) {
+      console.error("Spotify connection error:", error);
+      Alert.alert(
+        "Error",
+        error?.message || "An error occurred while connecting to Spotify.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setIsConnectingSpotify(false);
+    }
+  };
+
+  // Disconnect Spotify
+  const handleDisconnectSpotify = async () => {
+    Alert.alert(
+      "Disconnect Spotify",
+      "Are you sure you want to disconnect your Spotify account?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Disconnect",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await clearSpotifyTokens();
+              setSpotifyConnected(false);
+              Alert.alert("Disconnected", "Spotify has been disconnected");
+            } catch (err) {
+              console.error("Error disconnecting Spotify:", err);
+              Alert.alert("Error", "Failed to disconnect Spotify");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Test token refresh (optional - for debugging)
+  const testTokenRefresh = async () => {
+    try {
+      const token = await getValidSpotifyToken();
+      if (token) {
+        Alert.alert("Success", "Token is valid and refreshed if needed");
+      } else {
+        Alert.alert("Error", "Failed to get valid token. Please reconnect.");
+      }
+    } catch (error) {
+      console.error("Token test error:", error);
+      Alert.alert("Error", "Failed to validate token");
+    }
+  };
   return (
     <View style={styles.container}>
       {/* Header Row */}
       <View style={[styles.headerRow]}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <View style={{ marginLeft: 10, width: 60, height: 60 }}>
-            <View style={{ position: 'absolute', alignItems: 'center' }}>
-              <Bubble width={50} height={50} />
-              <View style={{ marginTop: -40 }}>
-                <Feather name="arrow-left" size={30} color="black" />
+        <Pressable onPress={handleBackPress} style={styles.backButton}>
+          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <View style={{ marginLeft: 10, width: 60, height: 60 }}>
+              <View style={{ position: 'absolute', alignItems: 'center' }}>
+                <Bubble width={50} height={50} />
+                <View style={{ marginTop: -40 }}>
+                  <Feather name="arrow-left" size={30} color="black" />
+                </View>
               </View>
             </View>
-          </View>
+          </Animated.View>
         </Pressable>
         <Text style={[styles.header, { marginBottom: 10 }]}>Settings</Text>
       </View>
@@ -105,14 +202,10 @@ export default function ProfileSettings() {
         </View>
 
         <View style={{ flexDirection: "column", paddingLeft: 18, justifyContent: "center" }}>
-          <Text
-            style={{ color: "#333C42", fontWeight: "500", fontSize: 20, fontFamily: "Lato", }}
-          >
+          <Text style={{ color: "#333C42", fontWeight: "500", fontSize: 20, fontFamily: "Lato" }}>
             {username}
           </Text>
-          <Text
-            style={{ color: "#333C42", fontWeight: "500", width: "150%", fontSize: 14, fontFamily: "Lato", }}
-          >
+          <Text style={{ color: "#333C42", fontWeight: "500", width: "150%", fontSize: 14, fontFamily: "Lato" }}>
             Bio: {bio}
           </Text>
         </View>
@@ -126,6 +219,76 @@ export default function ProfileSettings() {
         <Text style={styles.optionText}>Edit Email</Text>
         <Text style={styles.optionText}>Edit Password</Text>
         <Text style={styles.optionText} onPress={handleSignOut}>Sign Out</Text>
+        {/* Spotify Connection Button */}
+        <View style={{ width: "90%", alignItems: "center", marginTop: 15 }}>
+          {spotifyConnected ? (
+            <View style={{ width: '100%', alignItems: 'center', gap: 10 }}>
+              <Pressable
+                onPress={handleDisconnectSpotify}
+                style={{
+                  backgroundColor: "#1DB954",
+                  paddingVertical: 8,
+                  paddingHorizontal: 20,
+                  borderRadius: 8,
+                  borderWidth: 2,
+                  borderColor: "#333C42",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <Feather name="check-circle" size={18} color="#FFF0E2" />
+                <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois", fontSize: 14 }}>
+                  Spotify Connected (Tap to Disconnect)
+                </Text>
+              </Pressable>
+
+              {/* Optional: Debug button to test token refresh */}
+              {__DEV__ && (
+                <Pressable
+                  onPress={testTokenRefresh}
+                  style={{
+                    backgroundColor: "#333C42",
+                    paddingVertical: 6,
+                    paddingHorizontal: 15,
+                    borderRadius: 6,
+                  }}
+                >
+                  <Text style={{ color: "#FFF0E2", fontFamily: "Jacques Francois", fontSize: 12 }}>
+                    Test Token Refresh
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          ) : (
+            <Pressable
+              onPress={handleConnectSpotify}
+              disabled={isConnectingSpotify}
+              style={{
+                backgroundColor: "#1DB954",
+                paddingVertical: 8,
+                paddingHorizontal: 20,
+                borderRadius: 8,
+                borderWidth: 2,
+                marginLeft: 35,
+                borderColor: "#333C42",
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                opacity: isConnectingSpotify ? 0.6 : 1,
+              }}
+            >
+              {isConnectingSpotify ? (
+                <ActivityIndicator size="small" color="#FFF0E2" />
+              ) : (
+                <Feather name="music" size={18} color="#FFF0E2" />
+              )}
+              <Text style={{ color: "#FFF0E2", fontFamily: "Lato", fontSize: 14 }}>
+                {isConnectingSpotify ? "Connecting..." : "Connect Spotify"}
+              </Text>
+            </Pressable>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -144,7 +307,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     width: "90%",
     marginRight: 128,
-    justifyContent: "center"
+    justifyContent: "center",
   },
   backButton: {
     paddingRight: 60,

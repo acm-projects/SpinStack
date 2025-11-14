@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -11,12 +11,15 @@ import {
   TouchableWithoutFeedback,
   ActivityIndicator,
   Alert,
+  Animated,
+  Dimensions,
 } from "react-native";
 import * as Font from "expo-font";
 import { supabase } from "@/constants/supabase";
 import { RelativePathString, useRouter } from "expo-router";
 
 const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
+const { width, height } = Dimensions.get("window");
 
 type SearchType = "Stacks" | "Users";
 
@@ -48,65 +51,75 @@ export default function SearchPage() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<SearchType>("Stacks");
   const [search, setSearch] = useState("");
-  const [results, setResults] = useState<{
-    stacks?: Stack[];
-    users?: User[];
-  }>({});
+  const [results, setResults] = useState<{ stacks?: Stack[]; users?: User[] }>({});
   const [loading, setLoading] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
-  
 
-  // Auto-search when user types
+  // 🌬️ Rising bubbles animation setup
+  const bubbleCount = 10;
+  const bubbleAnims = useRef<Animated.Value[]>([]);
+  const bubbles = useRef(
+    Array.from({ length: bubbleCount }, () => ({
+      left: Math.random() * width,
+      size: 10 + Math.random() * 25,
+      delay: Math.random() * 4000,
+      speed: 7000 + Math.random() * 4000,
+      opacity: 0.15 + Math.random() * 0.3,
+    }))
+  ).current;
+
+  if (bubbleAnims.current.length === 0) {
+    bubbles.forEach(() => bubbleAnims.current.push(new Animated.Value(0)));
+  }
+
   useEffect(() => {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
+    bubbleAnims.current.forEach((anim, i) => {
+      const animate = () => {
+        anim.setValue(0);
+        Animated.timing(anim, {
+          toValue: -height * 0.9,
+          duration: bubbles[i].speed,
+          delay: bubbles[i].delay,
+          useNativeDriver: true,
+        }).start(() => animate());
+      };
+      animate();
+    });
+  }, []);
 
+  // 🔍 Auto-search when user types
+  useEffect(() => {
+    if (searchTimeout) clearTimeout(searchTimeout);
     if (!search.trim()) {
       setResults({});
       return;
     }
-
-    const timeout = setTimeout(() => {
-      handleSearch();
-    }, 500);
-
+    const timeout = setTimeout(() => handleSearch(), 500);
     setSearchTimeout(timeout);
-
-    return () => {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-    };
+    return () => clearTimeout(timeout);
   }, [search, activeFilter]);
 
   const handleSearch = async () => {
-    if (!search.trim()) {
-      return;
-    }
-
+    if (!search.trim()) return;
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
-
       if (!token) {
         Alert.alert("Error", "You are not signed in");
         return;
       }
-
       setLoading(true);
-
       if (activeFilter === "Stacks") {
         const { data: stacks, error } = await supabase
           .from("stacks")
           .select(
             `
-            *,
-            users (
-              username,
-              pfp_url
-            )
-          `
+          *,
+          users (
+            username,
+            pfp_url
+          )
+        `
           )
           .eq("visibility", true)
           .ilike("title", `%${search}%`)
@@ -119,8 +132,28 @@ export default function SearchPage() {
           return;
         }
 
+        const stacksWithCovers = await Promise.all(
+          (stacks || []).map(async (stack) => {
+            let coverUrl = null;
+            if (stack.cover_url) {
+              try {
+                const res = await fetch(
+                  `${nUrl}/api/upload/download-url/${stack.cover_url}`
+                );
+                if (res.ok) {
+                  const { downloadURL } = await res.json();
+                  coverUrl = downloadURL;
+                }
+              } catch (err) {
+                console.error("Failed to fetch cover for stack:", stack.id, err);
+              }
+            }
+            return { ...stack, cover_url: coverUrl };
+          })
+        );
+
         setResults({
-          stacks: stacks || [],
+          stacks: stacksWithCovers,
         });
       } else if (activeFilter === "Users") {
         const { data: users, error } = await supabase
@@ -130,60 +163,39 @@ export default function SearchPage() {
             `username.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%`
           )
           .limit(20);
-
-        if (error) {
-          Alert.alert("Error", "Failed to search users");
-          console.error(error);
-          setLoading(false);
-          return;
-        }
-
-        // Fetch download URLs for profile pictures
+        if (error) throw error;
         const usersWithPfp = await Promise.all(
           (users || []).map(async (user) => {
             let pfp = null;
             if (user.pfp_url) {
               try {
-                const res = await fetch(
-                  `${nUrl}/api/upload/download-url/${user.pfp_url}`
-                );
+                const res = await fetch(`${nUrl}/api/upload/download-url/${user.pfp_url}`);
                 if (res.ok) {
                   const { downloadURL } = await res.json();
                   pfp = downloadURL;
                 }
-              } catch (err) {
-                console.error("Failed to fetch pfp for user:", user.id, err);
-              }
+              } catch { }
             }
             return { ...user, pfp_url: pfp };
           })
         );
-
-        setResults({
-          users: usersWithPfp,
-        });
+        setResults({ users: usersWithPfp });
       }
     } catch (err) {
-      console.error("Search error:", err);
-      Alert.alert("Error", "Failed to search");
+      console.error(err);
+      Alert.alert("Error", "Search failed");
     } finally {
       setLoading(false);
     }
   };
 
-  const getCurrentResults = () => {
-    if (activeFilter === "Stacks") {
-      return results.stacks || [];
-    } else {
-      return results.users || [];
-    }
-  };
+  const getCurrentResults = () =>
+    activeFilter === "Stacks" ? results.stacks || [] : results.users || [];
 
   const showSearchResults = search.trim() && getCurrentResults().length > 0;
 
   const renderStack = ({ item, index }: { item: Stack; index: number }) => (
     <View style={styles.songRow}>
-      <Text style={styles.rank}>{index + 1}</Text>
       <View style={styles.songInfo}>
         <Text style={styles.songTitle} numberOfLines={1}>
           {item.title}
@@ -212,15 +224,12 @@ export default function SearchPage() {
       item.first_name && item.last_name
         ? `${item.first_name} ${item.last_name}`
         : item.username;
-
     return (
       <Pressable
         style={styles.songRow}
-        onPress={() => {
-          router.push(`/profile/${item.id}` as RelativePathString);
-        }}
+        onPress={() => router.push(`/profile/${item.id}` as RelativePathString)}
       >
-        <Text style={styles.rank}>{index + 1}</Text>
+
         <View style={styles.songInfo}>
           <Text style={styles.songTitle} numberOfLines={1}>
             {displayName}
@@ -228,11 +237,7 @@ export default function SearchPage() {
           <Text numberOfLines={1} ellipsizeMode="tail" style={styles.songArtist}>
             @{item.username}
           </Text>
-          {item.bio && (
-            <Text numberOfLines={1} ellipsizeMode="tail" style={styles.stackDesc}>
-              {item.bio}
-            </Text>
-          )}
+
         </View>
         {item.pfp_url ? (
           <Image source={{ uri: item.pfp_url }} style={styles.profilePic} />
@@ -250,76 +255,86 @@ export default function SearchPage() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search..."
-            placeholderTextColor="#333C42"
-            value={search}
-            onChangeText={setSearch}
-            returnKeyType="search"
-          />
-        </View>
-
-        {/* Filter Buttons */}
-        <View style={styles.filterRow}>
-          {(["Stacks", "Users"] as SearchType[]).map((filter) => (
-            <Pressable
-              key={filter}
-              style={[
-                styles.filterButton,
-                activeFilter === filter && styles.filterButtonActive,
-              ]}
-              onPress={() => {
-                setActiveFilter(filter);
-                setResults({});
-              }}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  activeFilter === filter && styles.filterTextActive,
-                ]}
-              >
-                {filter}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {/* Loading State */}
-        {loading ? (
-          <ActivityIndicator
-            size="large"
-            color="#39868F"
-            style={styles.loader}
-          />
-        ) : showSearchResults ? (
-          /* Search Results List */
-          <FlatList
-            data={getCurrentResults()}
-            contentContainerStyle={styles.listContainer}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item, index }) => {
-              if (activeFilter === "Stacks") {
-                return renderStack({ item: item as Stack, index });
-              } else {
-                return renderUser({ item: item as User, index });
-              }
+        {bubbles.map((bubble, i) => (
+          <Animated.View
+            key={i}
+            style={{
+              position: "absolute",
+              bottom: 50,
+              left: bubble.left,
+              width: bubble.size,
+              height: bubble.size,
+              borderRadius: bubble.size / 2,
+              backgroundColor: "#39868F",
+              opacity: bubble.opacity,
+              transform: [{ translateY: bubbleAnims.current[i] }],
+              zIndex: 0,
             }}
-            style={styles.list}
           />
-        ) : (
-          /* Empty State */
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              {search.trim()
-                ? "No results found"
-                : `Search for ${activeFilter.toLowerCase()} to get started`}
-            </Text>
+        ))}
+
+        {/* Content */}
+        <View style={{ flex: 1, zIndex: 2 }}>
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search..."
+              placeholderTextColor="#333C42"
+              value={search}
+              onChangeText={setSearch}
+              returnKeyType="search"
+            />
           </View>
-        )}
+
+          <View style={styles.filterRow}>
+            {(["Stacks", "Users"] as SearchType[]).map((filter) => (
+              <Pressable
+                key={filter}
+                style={[
+                  styles.filterButton,
+                  activeFilter === filter && styles.filterButtonActive,
+                ]}
+                onPress={() => {
+                  setActiveFilter(filter);
+                  setResults({});
+                }}
+              >
+                <Text
+                  style={[
+                    styles.filterText,
+                    activeFilter === filter && styles.filterTextActive,
+                  ]}
+                >
+                  {filter}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {loading ? (
+            <ActivityIndicator size="large" color="#39868F" style={styles.loader} />
+          ) : showSearchResults ? (
+            <FlatList
+              data={getCurrentResults()}
+              contentContainerStyle={styles.listContainer}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item, index }) =>
+                activeFilter === "Stacks"
+                  ? renderStack({ item: item as Stack, index })
+                  : renderUser({ item: item as User, index })
+              }
+              style={styles.list}
+            />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                {search.trim()
+                  ? "No results found"
+                  : `Search for ${activeFilter.toLowerCase()} to get started`}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
     </TouchableWithoutFeedback>
   );
@@ -331,6 +346,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF0E2",
     paddingHorizontal: 18,
     paddingTop: 70,
+    overflow: "hidden",
   },
   searchContainer: {
     backgroundColor: "#8DD2CA",
@@ -372,7 +388,7 @@ const styles = StyleSheet.create({
     color: "#FFF0E2",
   },
   listContainer: {
-    backgroundColor: "#8DD2CA",
+    backgroundColor: "#F9DDC3",
     borderRadius: 15,
     paddingVertical: 8,
     borderWidth: 1.5,
@@ -385,7 +401,7 @@ const styles = StyleSheet.create({
   songRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 4,
     paddingHorizontal: 15,
   },
   rank: {
@@ -405,12 +421,13 @@ const styles = StyleSheet.create({
     fontFamily: "Lato",
   },
   songArtist: {
-    color: "#39868F",
+    color: "#7f8081ff",
     fontSize: 13,
     fontFamily: "Lato",
+    fontStyle: 'italic'
   },
   stackDesc: {
-    color: "#39868F",
+    color: "#7f8081ff",
     fontSize: 11,
     fontFamily: "Lato",
     marginTop: 2,
@@ -423,8 +440,9 @@ const styles = StyleSheet.create({
     borderColor: "#333C42",
   },
   profilePic: {
-    width: 45,
-    height: 45,
+    width: 43,
+    height: 43,
+    marginVertical: 5,
     borderRadius: 22.5,
     borderWidth: 1,
     borderColor: "#333C42",
@@ -446,7 +464,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 40,
+    marginBottom: 140,
   },
   emptyText: {
     color: "#39868F",

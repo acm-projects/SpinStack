@@ -622,7 +622,17 @@ export default function MomentPickView({
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ justifyContent: 'center', alignItems: 'center' }}>
             <View style={{ marginLeft: 10, marginTop: -20, marginBottom: 30 }}>
-              <Text numberOfLines={1} ellipsizeMode="tail" style={{ fontSize: 14, fontFamily: 'Lato', color: '#333C42' }}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontFamily: 'Lato',
+                  color: '#333C42',
+                  flexShrink: 1,
+                  maxWidth: '90%',
+                }}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {moment.title} - {moment.artist}
               </Text>
             </View>

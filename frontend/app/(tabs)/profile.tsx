@@ -630,11 +630,12 @@ export default function ProfileScreen() {
         id: moment.id,
         spotifyId: trackId || null,
         title: moment.title,
-        artist: moment.description || "Unknown Artist",
+        artist: moment.artist || "Unknown Artist",
         songStart: moment.start_time || 0,
         songDuration: moment.duration || 30,
         length: moment.length || 180,
         album: moment.cover_url ? { uri: moment.cover_url } : require("../../assets/images/album1.jpeg"),
+        description: moment.description,
         waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
       },
       user: {
@@ -693,13 +694,13 @@ export default function ProfileScreen() {
           }}
         />
         <View style={{ flex: 1, alignItems: "flex-start", justifyContent: "center", paddingHorizontal: 10 }}>
-          <Text style={{ fontSize: 20, fontFamily: "Lato", color: "#333C42", fontWeight: "500" }}
+          <Text style={{ fontSize: 20, fontFamily: "Lato", color: "#333C42", fontWeight: "700" }}
             numberOfLines={1} ellipsizeMode="tail">
             {username}
           </Text>
-          <Text style={{ fontSize: 14, fontFamily: "Lato", color: "#333C42", textAlign: "center", }}
+          <Text style={{ fontSize: 14, fontFamily: "Lato", color: "#72797eff", textAlign: "center", fontStyle: 'italic', }}
             numberOfLines={2} ellipsizeMode="tail">
-            "{bio || 'loading...'}"
+            {bio || 'loading...'}
           </Text>
         </View>
         <View style={{ alignItems: "flex-end" }}>
@@ -722,84 +723,16 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Spotify Connection Button */}
-      <View style={{ width: "90%", alignItems: "center", marginTop: 15 }}>
-        {spotifyConnected ? (
-          <View style={{ width: '100%', alignItems: 'center', gap: 10 }}>
-            <Pressable
-              onPress={handleDisconnectSpotify}
-              style={{
-                backgroundColor: "#1DB954",
-                paddingVertical: 8,
-                paddingHorizontal: 20,
-                borderRadius: 8,
-                borderWidth: 2,
-                borderColor: "#333C42",
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              <Feather name="check-circle" size={18} color="#FFF0E2" />
-              <Text style={{ color: "#FFF0E2", fontFamily: "Lato", fontSize: 14 }}>
-                Spotify Connected (Tap to Disconnect)
-              </Text>
-            </Pressable>
 
-            {/* Optional: Debug button to test token refresh */}
-            {__DEV__ && (
-              <Pressable
-                onPress={testTokenRefresh}
-                style={{
-                  backgroundColor: "#333C42",
-                  paddingVertical: 6,
-                  paddingHorizontal: 15,
-                  borderRadius: 6,
-                }}
-              >
-                <Text style={{ color: "#FFF0E2", fontFamily: "Lato", fontSize: 12 }}>
-                  Test Token Refresh
-                </Text>
-              </Pressable>
-            )}
-          </View>
-        ) : (
-          <Pressable
-            onPress={handleConnectSpotify}
-            disabled={isConnectingSpotify}
-            style={{
-              backgroundColor: "#1DB954",
-              paddingVertical: 8,
-              paddingHorizontal: 20,
-              borderRadius: 8,
-              borderWidth: 2,
-              borderColor: "#333C42",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-              opacity: isConnectingSpotify ? 0.6 : 1,
-            }}
-          >
-            {isConnectingSpotify ? (
-              <ActivityIndicator size="small" color="#FFF0E2" />
-            ) : (
-              <Feather name="music" size={18} color="#FFF0E2" />
-            )}
-            <Text style={{ color: "#FFF0E2", fontFamily: "Lato", fontSize: 14 }}>
-              {isConnectingSpotify ? "Connecting..." : "Connect Spotify"}
-            </Text>
-          </Pressable>
-        )}
-      </View>
 
       <View style={styles.content}>
-        <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8, width: "100%", justifyContent: "space-between", paddingHorizontal: 20 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8, width: "90%", justifyContent: "space-between", paddingHorizontal: 0, borderColor: "#333C42", borderBottomWidth: 1, paddingBottom: 10, }}>
           <Pressable onPress={openCreateStackModal}>
             <Feather name="plus-circle" size={28} color="#333C42" />
           </Pressable>
 
 
-          <Text style={{ fontSize: 24, color: "#333C42", fontWeight: "500", fontFamily: "Lato" }}>
+          <Text style={{ fontSize: 24, color: "#333C42", fontWeight: "500", fontFamily: "Lato", }}>
             {viewMode === "moments" ? "Moments" : "Stacks"}
           </Text>
           <Pressable onPress={() => setViewMode(prev => (prev === "moments" ? "stacks" : "moments"))}>
@@ -950,7 +883,7 @@ export default function ProfileScreen() {
                     <View style={{ flex: 1, marginLeft: 10 }}>
                       <Text style={styles.friendName}>{item.username}</Text>
                       <Text style={styles.friendBio} numberOfLines={1}>
-                        "{String(item.bio || "No bio")}"
+                        {String(item.bio || "No bio")}
                       </Text>
                     </View>
                   </Pressable>
@@ -965,11 +898,11 @@ export default function ProfileScreen() {
       <Modal
         visible={createStackVisible}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setCreateStackVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.friendsPopup, { height: "85%" }]}>
+          <View style={[styles.friendsPopup, { height: "67%" }]}>
             <SafeAreaView style={{ flex: 1 }}>
               {/* Header */}
               <View style={styles.popupHeader}>
@@ -990,7 +923,7 @@ export default function ProfileScreen() {
                         height: 150,
                         borderRadius: 12,
                         overflow: "hidden",
-                        backgroundColor: "#f0f0f0",
+                        backgroundColor: "#F9DDC3",
                         justifyContent: "center",
                         alignItems: "center",
                       }}
@@ -1011,7 +944,7 @@ export default function ProfileScreen() {
                           width: 36,
                           height: 36,
                           borderRadius: 18,
-                          backgroundColor: "#ff5c5c",
+                          backgroundColor: "#5cd6ffff",
                           justifyContent: "center",
                           alignItems: "center",
                           bottom: 8,
@@ -1028,10 +961,7 @@ export default function ProfileScreen() {
                     </Pressable>
 
                   </View>
-                  {/* Label below the image picker */}
-                  <Text style={{ color: "#666", fontSize: 14, marginTop: 5 }}>
-                    {stackImageUri ? "Replace your Custom Stack Image" : "Add a custom stack image"}
-                  </Text>
+
                 </View>
 
 
@@ -1258,9 +1188,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    alignSelf: "center",
+    padding: 15,
     borderBottomWidth: 1,
-    borderColor: "#ccc",
+    width: "90%",
+    borderColor: "#333C42",
   },
   popupTitle: {
     fontSize: 20,
@@ -1274,7 +1206,7 @@ const styles = StyleSheet.create({
     color: "#333C42",
   },
   input: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#F9DDC3",
     padding: 10,
     borderRadius: 10,
     marginBottom: 15,

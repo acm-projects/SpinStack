@@ -43,6 +43,7 @@ export default GroupProfile;
 const styles = StyleSheet.create({
   container: {
     position: "relative",
+    marginTop: 20
   },
   image: {
     position: "absolute",

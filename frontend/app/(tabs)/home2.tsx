@@ -328,6 +328,7 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchAllContent(); // Refresh content whenever screen gains focus
+      fetchActiveStories();
     }, [])
   );
 
@@ -890,12 +891,14 @@ export default function HomeScreen() {
           id: data.id,
           spotifyId: trackId || null,
           title: data.title,
-          artist: data.description || "Unknown Artist",
+          artist: data.artist || "Unknown Artist",
           songStart: data.start_time || 0,
           songDuration: data.duration || 30,
           length: 180,
           album: coverUrl ? { uri: coverUrl } : require("@/assets/images/album1.jpeg"),
           waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
+          description: data.description,
+
         },
         user: {
           name: userData?.username || "Unknown User",
@@ -953,7 +956,7 @@ export default function HomeScreen() {
               height: 65,
               borderRadius: 33,
               borderWidth: 3,
-              borderColor: "#ff5c5c",
+              borderColor: "#5cd6ffff",
               justifyContent: "center",
               alignItems: "center",
             }}
@@ -972,7 +975,7 @@ export default function HomeScreen() {
                 width: 22,
                 height: 22,
                 borderRadius: 11,
-                backgroundColor: "#ff5c5c",
+                backgroundColor: "#5cd6ffff",
                 justifyContent: "center",
                 alignItems: "center",
                 shadowColor: "#000",

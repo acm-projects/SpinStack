@@ -35,10 +35,13 @@ function RootStack() {
 
     if (!session) {
       router.dismissAll();
+      console.log("dismissAll1");
       router.replace('/signupProcess/signupPage');
     } else if (!profileComplete) {
       router.replace('/signupProcess/profileSetup');
     } else {
+      //router.dismissAll();
+      console.log("dismissAll2");
       router.replace('/(tabs)/profile');
     }
   }, [loading, checkingProfile, initialLoading, session, profileComplete, fontsLoaded]);

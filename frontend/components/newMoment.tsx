@@ -33,6 +33,8 @@ export default function MomentView({ data }: { data: MomentInfo }) {
   const [token, setToken] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [artist, setArtist] = useState<string | null>(null);
+
 
 
   const vinylSize = width * 0.98;
@@ -56,6 +58,28 @@ export default function MomentView({ data }: { data: MomentInfo }) {
   const getMomentKey = (momentData: typeof data.moment) => {
     return `${momentData.spotifyId}_${momentData.songStart}_${momentData.songDuration}`;
   };
+
+  const getTrackInfo = async (spotifyToken: string, trackId: string) => {
+    try {
+      const res = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
+        headers: {
+          Authorization: `Bearer ${spotifyToken}`,
+          Accept: "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        console.error("Failed to fetch track info:", res.status);
+        return null;
+      }
+
+      return await res.json();
+    } catch (error) {
+      console.error("Error fetching track info:", error);
+      return null;
+    }
+  };
+
 
   // Vinyl animation loop
   useEffect(() => {
@@ -126,6 +150,35 @@ export default function MomentView({ data }: { data: MomentInfo }) {
       spinAnim.stopAnimation();
     };
   }, []);
+
+  useEffect(() => {
+    if (!token || !data?.moment?.spotifyId) {
+      console.log("❌ Artist fetch skipped - token:", !!token, "spotifyId:", data?.moment?.spotifyId);
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchArtist = async () => {
+      console.log("Fetching artist for:", data.moment.spotifyId);
+      const trackInfo = await getTrackInfo(token, data.moment.spotifyId);
+      console.log("Track info received:", trackInfo);
+      if (trackInfo && isMounted) {
+        const artistNames = trackInfo.artists.map((a: any) => a.name).join(", ");
+        console.log("Artist names:", artistNames);
+        setArtist(artistNames);
+      } else {
+        console.log("No track info or component unmounted");
+      }
+    };
+
+    fetchArtist();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [token, data?.moment?.spotifyId]);
+
 
   // Cleanup function to stop playback
   const cleanup = React.useCallback(async (cleanupToken: string | null) => {
@@ -430,7 +483,9 @@ export default function MomentView({ data }: { data: MomentInfo }) {
           </View>
           <View style={{ marginLeft: '2.3255814%' }}>
             <Text style={[styles.texxt, { fontFamily: 'Luxurious Roman' }]}>{data.moment.title}</Text>
-            <Text style={[styles.texxt, { fontSize: 15, fontFamily: 'Jacques Francois' }]}>{data.moment.artist} </Text>
+            <Text style={[styles.texxt, { fontSize: 15, fontFamily: 'Jacques Francois' }]}>
+              {artist || "Unknown Artist"}
+            </Text>
             <Text style={[styles.texxt, { fontSize: 13, color: '#555', marginTop: 2 }]}>
               {`${formatTime(data.moment.songStart)} - ${formatTime(data.moment.songStart + data.moment.songDuration)}`}
             </Text>

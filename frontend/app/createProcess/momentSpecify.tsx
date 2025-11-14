@@ -47,6 +47,7 @@ export default function MomentSpecifyView({
     const toSearch = !isSearchActive;
     setIsSearchActive(toSearch);
 
+
     // If closing search, trigger the callback with the caption
     if (!toSearch && onCaptionChange) {
       onCaptionChange(caption);

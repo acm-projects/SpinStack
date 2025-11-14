@@ -45,7 +45,7 @@ export default function LikeStoryButton({ storyId }: LikeStoryButtonProps) {
             <FontAwesome
                 name={liked ? "heart" : "heart-o"}
                 size={50}
-                color={liked ? "red" : "white"}
+                color={liked ? "red" : "#333C42"}
             />
         </TouchableOpacity>
     );
