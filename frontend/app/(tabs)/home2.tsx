@@ -25,6 +25,8 @@ import MomentInfo, { Moment } from "@/components/momentInfo";
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
+import GroupInfo from '../../components/groupInfo';
+import { useAuth } from '@/_context/AuthContext';
 
 
 const { width } = Dimensions.get("window");
@@ -137,7 +139,7 @@ function Masonry({ data, spacing = 8, columns = 2, router, onPressMore, setSelec
         marginBottom: spacing,
         borderRadius: 16,
         backgroundColor: "#FFF0E2",
-        overflow: "hidden",
+        paddingBottom: 12,
       }}
     >
       <View style={styles.cardHeader}>
@@ -241,9 +243,25 @@ function Masonry({ data, spacing = 8, columns = 2, router, onPressMore, setSelec
         )}
       </Pressable>
 
-      {item.caption ? (
-        <Text style={styles.caption}>{item.caption}</Text>
-      ) : null}
+      <View style={styles.momentTextContainer}>
+        <Text
+          style={styles.momentTitle2}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {item.title}
+        </Text>
+
+        <Text
+          style={styles.momentDescription}
+          numberOfLines={2}
+          ellipsizeMode="tail"
+        >
+          {item.caption}
+        </Text>
+      </View>
+
+
     </View>
   );
 
@@ -273,6 +291,7 @@ export default function HomeScreen() {
   const [activeFilter, setActiveFilter] = useState("For You");
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [userStacks, setUserStacks] = useState<any[]>([]);
+  const [userGroups, setUserGroups] = useState<any[]>([]);
   const [stories, setStories] = useState<any[]>([]);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [friends, setFriends] = useState<string[]>([]);
@@ -281,6 +300,7 @@ export default function HomeScreen() {
   const [friendRequests, setFriendRequests] = useState<any[]>([]);
   const [loadingMoments, setLoadingMoments] = useState(false);
   const [userMoments, setUserMoments] = useState<MomentInfo[]>([]);
+  const { user } = useAuth();
 
 
   const router = useRouter();
@@ -318,6 +338,58 @@ export default function HomeScreen() {
       fetchUserMoments();
     }
   }, [isMomentPickerVisible]);
+
+  const fetchUserGroups = async () => {
+    try {
+      setLoading(true);
+
+      // Get groups the user is a member of
+      const { data: groupMembers, error: membersError } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', user.id);
+
+      if (membersError) throw membersError;
+
+      const groupIds = groupMembers?.map(gm => gm.group_id) || [];
+
+      if (groupIds.length === 0) {
+        setUserGroups([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch group details
+      const { data: groupsData, error: groupsError } = await supabase
+        .from('groups')
+        .select('id, name, created_at')
+        .in('id', groupIds);
+
+      if (groupsError) throw groupsError;
+
+      //dummy
+      const groupsWithDetails = await Promise.all(
+        (groupsData || []).map(async (group) => {
+          return {
+            name: group.name,
+            users: [],
+            dailies: [],
+          } as GroupInfo;
+        })
+      );
+
+      setUserGroups(groupsWithDetails);
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!user?.id) return;
+    fetchUserGroups();
+  }, [user?.id]);
 
   async function fetchUserMoments() {
     setLoadingMoments(true);
@@ -566,7 +638,6 @@ export default function HomeScreen() {
 
       const data = await res.json();
 
-      // Process the stories into the shape your frontend expects
       const processed = await Promise.all(
         (data || []).map(async (story: any) => {
           const profileUrl = await fetchProfilePictureUrl(story.users.pfp_url);
@@ -717,7 +788,8 @@ export default function HomeScreen() {
             user: userData?.username || "Unknown User",
             profilePic: pfpUrl,
             time: getTimeAgo(item.created_at),
-            caption: item.description || item.title || "",
+            title: item.title,
+            caption: item.description || "",
             cover_url: coverUrl,
             type: item.type,
             userId: item.user_id,
@@ -819,12 +891,14 @@ export default function HomeScreen() {
           id: data.id,
           spotifyId: trackId || null,
           title: data.title,
-          artist: data.description || "Unknown Artist",
+          artist: data.artist || "Unknown Artist",
           songStart: data.start_time || 0,
           songDuration: data.duration || 30,
           length: 180,
           album: coverUrl ? { uri: coverUrl } : require("@/assets/images/album1.jpeg"),
           waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
+          description: data.description,
+
         },
         user: {
           name: userData?.username || "Unknown User",
@@ -841,37 +915,9 @@ export default function HomeScreen() {
     }
   };
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-
-    if (!result.canceled) {
-      setStackCover(result.assets[0].uri);
-    }
-  };
-
-  // Add a moment to selected moments (up to 5)
-  const addSelectedMoment = (moment: MasonryItem) => {
-    if (selectedMoments.length >= 5) {
-      Alert.alert("Limit reached", "You can only add up to 5 moments");
-      return;
-    }
-    setSelectedMoments([...selectedMoments, moment]);
-  };
-
-  const removeSelectedMoment = (id: string) => {
-    setSelectedMoments(selectedMoments.filter((m) => m.id !== id));
-  };
-
-
-
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 0.747663551 * tabHeight}}>
+    <View style={{ flex: 1, backgroundColor: "#FFF0E2", marginBottom: 0.747663551 * tabHeight }}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>SpinStack</Text>
@@ -891,7 +937,7 @@ export default function HomeScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ paddingVertical: 12, paddingHorizontal: 16 }}
+        style={{ paddingVertical: 16, paddingHorizontal: 16 }}
       >
 
         {/* Your own story circle */}
@@ -1073,7 +1119,7 @@ export default function HomeScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.friendsPopup}>
             <View style={styles.popupHeader}>
-              <Text style={styles.popupTitle}>Add to Stack</Text>
+              <Text style={styles.popupTitle}>Moment Options</Text>
               <Pressable onPress={() => setAddToStackVisible(false)}>
                 <Feather name="x" size={26} color="#333C42" />
               </Pressable>
@@ -1363,5 +1409,21 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
+  momentTextContainer: {
+    width: "100%",
+    marginTop: 6,
+    alignItems: "center"
+  },
+  momentTitle2: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#111",
+  },
+  momentDescription: {
+    fontSize: 10,
+    color: "#555",
+    marginTop: 2,
+  },
+
 
 });

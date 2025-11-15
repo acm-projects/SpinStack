@@ -11,15 +11,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useWindowDimensions } from 'react-native';
-import Waveform from './waveform';
-import { Moment } from './momentInfo';
-import { User } from './momentInfo';
+import Waveform from '../../components/waveform';
+import { Moment } from '../../components/momentInfo';
+import { User } from '../../components/momentInfo';
 import Background from '@/assets/other/Moment Background(1).svg';
-import GroupProfile from './groupProfile';
+import GroupProfile from '../../components/groupProfile';
 import { useNavigation } from '@react-navigation/native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { RNSVGSvgIOS, Svg, Path } from 'react-native-svg';
-import { DailyInfo } from './groupInfo';
+import { DailyInfo } from '../../components/groupInfo';
 
 export default function DailyView({ daily, users }: { daily: DailyInfo, users: User[] }) {
   if (!daily) {
@@ -27,7 +27,7 @@ export default function DailyView({ daily, users }: { daily: DailyInfo, users: U
   }
   const data = daily.moment;
   const { height, width } = useWindowDimensions();
-  const vinylImg = require('../assets/images/vinyl.png');
+  const vinylImg = require('../../assets/images/vinyl.png');
   const spinAnim = useRef(new Animated.Value(0)).current;
   const [rating, setRating] = useState<number>(3);
 
@@ -190,9 +190,8 @@ export default function DailyView({ daily, users }: { daily: DailyInfo, users: U
                 return (
                   <Path
                     key={i}
-                    d={`M${segmentStart} 40 Q ${(segmentStart + segmentEnd) / 2} ${
-                      i % 2 === 0 ? 0 : 80
-                    }, ${segmentEnd} 40`}
+                    d={`M${segmentStart} 40 Q ${(segmentStart + segmentEnd) / 2} ${i % 2 === 0 ? 0 : 80
+                      }, ${segmentEnd} 40`}
                     fill="none"
                     stroke="#5eb0d9"
                     strokeWidth={6}
@@ -239,6 +238,10 @@ export default function DailyView({ daily, users }: { daily: DailyInfo, users: U
     </View>
   );
 }
+
+export const options = {
+  headerShown: false,
+};
 
 const styles = StyleSheet.create({
   texxt: {

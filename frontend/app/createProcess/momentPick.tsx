@@ -33,7 +33,7 @@ export default function MomentPickView({
   //----------Spotify integration ----------------------
   const [token, setToken] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  
+
   // Track current moment to detect changes - use a unique key
   const currentMomentKey = useRef<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -90,11 +90,11 @@ export default function MomentPickView({
       console.log("🔄 Cleanup already executed, skipping");
       return;
     }
-    
+
     console.log("🛑 Executing cleanup");
     cleanupExecutedRef.current = true;
     isActiveRef.current = false;
-    
+
     // CRITICAL: Reset dragging flag during cleanup
     isDraggingRef.current = false;
 
@@ -116,29 +116,29 @@ export default function MomentPickView({
 
     const newMomentKey = getMomentKey(moment);
     const momentChanged = currentMomentKey.current !== null && currentMomentKey.current !== newMomentKey;
-    
+
     if (momentChanged) {
       console.log(`🔄 Moment changed from ${currentMomentKey.current} to ${newMomentKey}`);
       console.log(`   Title: ${moment.title}, Start: ${moment.songStart}, Duration: ${moment.songDuration}`);
-      
+
       // IMMEDIATELY stop playback and clear intervals
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
       }
-      
+
       setIsPlaying(false);
-      
+
       // Pause playback asynchronously
       if (token) {
         pausePlayback(token).catch(console.error);
       }
-      
+
       // Reset flags for new moment
       cleanupExecutedRef.current = false;
       isActiveRef.current = false;
     }
-    
+
     // Update current moment key
     currentMomentKey.current = newMomentKey;
   }, [moment?.id, moment?.songStart, moment?.songDuration, token]);
@@ -149,7 +149,7 @@ export default function MomentPickView({
       const momentKey = moment ? getMomentKey(moment) : null;
       console.log("🎧 MomentView focused for:", moment?.title, "Key:", momentKey);
       isActiveRef.current = true;
-      
+
       // Only reset cleanup flag if this is truly a new focus (not just re-render)
       if (cleanupExecutedRef.current) {
         cleanupExecutedRef.current = false;
@@ -172,7 +172,7 @@ export default function MomentPickView({
 
       return () => {
         console.log("🛑 MomentView unfocused from:", moment?.title);
-        
+
         if (startTimeout) {
           clearTimeout(startTimeout);
         }
@@ -285,7 +285,7 @@ export default function MomentPickView({
 
         await transferPlayback(spotifyToken, target.id);
         await new Promise((r) => setTimeout(r, 800));
-        
+
         res = await api(
           spotifyToken,
           `/me/player/play?device_id=${encodeURIComponent(target.id)}`,
@@ -400,16 +400,16 @@ export default function MomentPickView({
       setCurrentDuration(newDuration);
       moment.songStart = mStart * moment.length;
       moment.songDuration = newDuration;
-      
+
       // Store pending seek position instead of calling immediately
       pendingSeekMs.current = Math.floor(newStart * moment.length * 1000);
-      
+
       // Cancel any previous scheduled seeks - user is still adjusting
       if (seekTimeoutRef.current) {
         clearTimeout(seekTimeoutRef.current);
         seekTimeoutRef.current = null;
       }
-      
+
       return newStart;
     }
 
@@ -432,13 +432,13 @@ export default function MomentPickView({
       const newDuration = Math.round((newEnd - mStart) * moment.length * 10) / 10;
       setCurrentDuration(newDuration);
       moment.songDuration = newDuration;
-      
+
       // Cancel any previous scheduled seeks - user is still adjusting
       if (seekTimeoutRef.current) {
         clearTimeout(seekTimeoutRef.current);
         seekTimeoutRef.current = null;
       }
-      
+
       return newEnd;
     }
 
@@ -497,7 +497,7 @@ export default function MomentPickView({
         // Schedule batched seek after user releases
         if (currentDuration > 0 && currentDuration <= MAX_DURATION_SECONDS) {
           scheduleBatchedSeek();
-          
+
           // Wait longer for seek to complete before restarting - increased delay
           setTimeout(() => {
             restartAnimation();
@@ -543,7 +543,7 @@ export default function MomentPickView({
           // Seek to start position since duration changed
           pendingSeekMs.current = Math.floor(mStart * moment.length * 1000);
           scheduleBatchedSeek();
-          
+
           // Wait longer for seek to complete before restarting - increased delay
           setTimeout(() => {
             restartAnimation();
@@ -611,7 +611,7 @@ export default function MomentPickView({
         edges={['top', 'left', 'right']}
       >
 
-        {/* Title  TODO: FIX SIZING!!*/}
+        {/* Title */}
         <View style={{ width: '80%' }}>
           <Text style={{ fontSize: 30, fontFamily: 'Luxurious Roman', fontWeight: 'bold', textAlign: 'center', color: '#333C42' }}>
             Pick Your Moment
@@ -706,7 +706,7 @@ export default function MomentPickView({
                 </View>
 
                 {/* Duration Display */}
-                <View style={{ marginTop: 15 }}>
+                <View style={{ marginTop: 12 }}>
                   <Text
                     style={{
                       fontSize: 16,
@@ -792,7 +792,7 @@ export default function MomentPickView({
             borderWidth: 4,
             borderColor: '#333C42',
             alignItems: 'center',
-            marginTop: 10,
+            marginTop: 0,
             width: '60%',
           }}
           onPress={handleSelect}

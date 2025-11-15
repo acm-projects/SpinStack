@@ -16,9 +16,10 @@ import {
   TouchableOpacity,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
-import { RelativePathString, useRouter, useFocusEffect } from "expo-router";
+import { RelativePathString, useRouter } from "expo-router";
 import { supabase } from "@/constants/supabase";
 import { useAuth } from "@/_context/AuthContext";
+import { useFocusEffect } from "expo-router";
 import { authenticateSpotify, hasSpotifyAuth, clearSpotifyTokens, getValidSpotifyToken } from "../utils/spotifyAuth";
 import { useMomentInfoStore } from "../stores/useMomentInfoStore";
 import * as Spotify from "@wwdrew/expo-spotify-sdk";
@@ -171,43 +172,6 @@ export default function ProfileScreen() {
     setSelectedMoments(selectedMoments.filter(m => m.id !== id));
   };
 
-  const fetchUserStacks = async () => {
-    if (!user?.id) return;
-
-    try {
-      setLoadingStacks(true);
-
-      const session = await supabase.auth.getSession();
-      const token = session.data.session?.access_token;
-      if (!token) {
-        Alert.alert("Error", "User not authenticated");
-        return;
-      }
-
-      const response = await fetch(`${nUrl}/stacks?userId=${user.id}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error fetching stacks:", errorData);
-        Alert.alert("Error", errorData.error || "Failed to fetch stacks");
-        return;
-      }
-
-      const data = await response.json();
-      setStacks(data || []);
-    } catch (err) {
-      console.error("Unexpected error fetching stacks:", err);
-      Alert.alert("Error", "Something went wrong while fetching stacks");
-    } finally {
-      setLoadingStacks(false);
-    }
-  };
-
 
   const createStack = async () => {
     if (!newStackTitle.trim() || selectedMoments.length === 0) {
@@ -320,7 +284,7 @@ export default function ProfileScreen() {
       const checkSpotifyConnection = async () => {
         const hasAuth = await hasSpotifyAuth();
         setSpotifyConnected(hasAuth);
-        
+
         if (hasAuth) {
           console.log('✅ User has valid Spotify authentication');
         }
@@ -387,35 +351,6 @@ export default function ProfileScreen() {
     }
     return null;
   };
-  const handleConnectSpotify = async () => {
-    try {
-      setIsConnectingSpotify(true);
-      
-      // Use the updated authentication function
-      const token = await authenticateSpotify();
-      
-      if (!token) {
-        throw new Error("Failed to get access token");
-      }
-
-      setSpotifyConnected(true);
-
-      Alert.alert(
-        "Success! 🎉",
-        "Your Spotify account has been connected. Your session will be maintained automatically.",
-        [{ text: "OK" }]
-      );
-    } catch (error: any) {
-      console.error("Spotify connection error:", error);
-      Alert.alert(
-        "Error",
-        error?.message || "An error occurred while connecting to Spotify.",
-        [{ text: "OK" }]
-      );
-    } finally {
-      setIsConnectingSpotify(false);
-    }
-  };
 
   // Disconnect Spotify
   const handleDisconnectSpotify = async () => {
@@ -457,6 +392,36 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleConnectSpotify = async () => {
+    try {
+      setIsConnectingSpotify(true);
+
+      // Use the updated authentication function
+      const token = await authenticateSpotify();
+
+      if (!token) {
+        throw new Error("Failed to get access token");
+      }
+
+      setSpotifyConnected(true);
+
+      Alert.alert(
+        "Success! 🎉",
+        "Your Spotify account has been connected. Your session will be maintained automatically.",
+        [{ text: "OK" }]
+      );
+    } catch (error: any) {
+      console.error("Spotify connection error:", error);
+      Alert.alert(
+        "Error",
+        error?.message || "An error occurred while connecting to Spotify.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setIsConnectingSpotify(false);
+    }
+  };
+
   const getSpotifyTrackLength = async (trackId: string, token: string): Promise<number | null> => {
     try {
       const res = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
@@ -470,6 +435,7 @@ export default function ProfileScreen() {
       return null;
     }
   };
+
 
   // Fetch user info
   useEffect(() => {
@@ -501,9 +467,11 @@ export default function ProfileScreen() {
               setPfpUrl(downloadURL);
             } else {
               console.error("Failed to fetch presigned URL:", res.status);
+              // Don't set pfpUrl if it fails, will use default
             }
           } catch (err) {
             console.error("Error fetching presigned URL:", err);
+            // Don't set pfpUrl if it fails, will use default
           }
         }
 
@@ -539,7 +507,19 @@ export default function ProfileScreen() {
           .order("created_at", { ascending: false });
 
         if (error) throw error;
-        setMoments(data || []);
+
+        // Resolve cover image URLs (same as you do for stacks)
+        const momentsWithResolvedCovers = await Promise.all(
+          (data || []).map(async (moment) => {
+            const resolvedCoverUrl = await fetchCoverImageUrl(moment.cover_url);
+            return {
+              ...moment,
+              cover_url: resolvedCoverUrl || moment.cover_url,
+            };
+          })
+        );
+
+        setMoments(momentsWithResolvedCovers);
       } catch (err) {
         console.error("Error fetching moments:", err);
       } finally {
@@ -634,22 +614,28 @@ export default function ProfileScreen() {
     }
 
     const trackId = extractTrackId(moment.song_url);
-    const token = await getValidSpotifyToken(); // Use the new token refresh function
+    const token = await getValidSpotifyToken();
 
     if (trackId && token) {
       const length = await getSpotifyTrackLength(trackId, token);
       if (length) moment.length = length;
     }
+
+
+
+
+
     setSelectedMomentInfo({
       moment: {
         id: moment.id,
         spotifyId: trackId || null,
         title: moment.title,
-        artist: moment.description || "Unknown Artist",
+        artist: moment.artist || "Unknown Artist",
         songStart: moment.start_time || 0,
         songDuration: moment.duration || 30,
         length: moment.length || 180,
         album: moment.cover_url ? { uri: moment.cover_url } : require("../../assets/images/album1.jpeg"),
+        description: moment.description,
         waveform: Array(50).fill(0).map(() => Math.floor(Math.random() * 25)),
       },
       user: {
@@ -667,7 +653,9 @@ export default function ProfileScreen() {
       router.replace('/stack' as RelativePathString);
     } else {
       console.log("Pushing new /stack screen");
+      //router.push('/stack' as RelativePathString);
     }
+
   };
 
   const resetCreateStackModal = () => {
@@ -735,7 +723,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      
+
 
       <View style={styles.content}>
         <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8, width: "90%", justifyContent: "space-between", paddingHorizontal: 0, borderColor: "#333C42", borderBottomWidth: 1, paddingBottom: 10, }}>
@@ -744,7 +732,7 @@ export default function ProfileScreen() {
           </Pressable>
 
 
-          <Text style={{ fontSize: 24, color: "#333C42", fontWeight: "500", fontFamily: "Lato",  }}>
+          <Text style={{ fontSize: 24, color: "#333C42", fontWeight: "500", fontFamily: "Lato", }}>
             {viewMode === "moments" ? "Moments" : "Stacks"}
           </Text>
           <Pressable onPress={() => setViewMode(prev => (prev === "moments" ? "stacks" : "moments"))}>
@@ -785,10 +773,10 @@ export default function ProfileScreen() {
                       resizeMode="cover"
                     />
                     <View style={{ width: Dimensions.get("window").width / 2 - 24, marginTop: 6 }}>
-                      <Text style={{ fontFamily: "Lato", fontSize: 15, color: "#333C42" }} numberOfLines={1}>
+                      <Text style={{ fontFamily: "Lato", fontSize: 15, color: "#333C42", alignSelf: "center", }} numberOfLines={1}>
                         {item.title}
                       </Text>
-                      <Text style={{ fontFamily: "Lato", fontSize: 13, color: "#555" }} numberOfLines={1}>
+                      <Text style={{ fontFamily: "Lato", fontSize: 13, color: "#555", alignSelf: "center", }} numberOfLines={1}>
                         {item.description}
                       </Text>
                     </View>
@@ -973,7 +961,7 @@ export default function ProfileScreen() {
                     </Pressable>
 
                   </View>
-                 
+
                 </View>
 
 
@@ -1073,6 +1061,9 @@ export default function ProfileScreen() {
   );
 }
 
+const POLAROID_WIDTH = 150;
+const POLAROID_HEIGHT = 200;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1096,6 +1087,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   momentContainer: {
+    width: POLAROID_WIDTH,
+    height: POLAROID_HEIGHT,
     position: "relative",
     margin: 10,
     justifyContent: "center",
@@ -1118,6 +1111,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     fontFamily: "Lato",
+    alignItems: "center",
   },
   captionText: {
     color: "#333C42",

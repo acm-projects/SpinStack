@@ -24,6 +24,7 @@ export default function GroupCreationPage() {
   const selectedUsers = useSelectedUsersStore((state) => state.selectedUsers);
   const clearSelectedUsers = useSelectedUsersStore((state) => state.clearSelectedUsers);
   const [groupName, setGroupName] = useState("");
+  const [dailyPrompt, setDailyPrompt] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Create bubble animation refs
@@ -65,6 +66,11 @@ export default function GroupCreationPage() {
       return;
     }
 
+    if (!dailyPrompt.trim()) {
+      Alert.alert("Error", "Please enter a daily prompt");
+      return;
+    }
+
     if (selectedUsers.length === 0) {
       Alert.alert("Error", "Select at least one user to create a group with");
       return;
@@ -84,7 +90,8 @@ export default function GroupCreationPage() {
       const max_members = selectedUsers.length + 1;
       const member_ids = selectedUsers.map((user) => user.id);
 
-      const res = await fetch(`${nUrl}/api/groups`, {
+      // Create the group
+      const groupRes = await fetch(`${nUrl}/api/groups`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -97,7 +104,7 @@ export default function GroupCreationPage() {
         }),
       });
 
-      const result = await res.json();
+      const dailyResult = await dailyRes.json();
 
       if (!res.ok) {
         throw new Error(result.error || "Failed to create group");
@@ -150,6 +157,17 @@ export default function GroupCreationPage() {
           placeholderTextColor="#333C42"
           value={groupName}
           onChangeText={setGroupName}
+        />
+
+        <TextInput
+          style={[styles.input, styles.promptInput]}
+          placeholder="First Daily Prompt (e.g., 'A song that makes you feel nostalgic')"
+          placeholderTextColor="#333C42"
+          value={dailyPrompt}
+          onChangeText={setDailyPrompt}
+          multiline
+          numberOfLines={3}
+          textAlignVertical="top"
         />
 
         <Text style={styles.selectedUsersTitle}>
@@ -208,6 +226,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontFamily: "Lato",
     backgroundColor: "#FFF0E2",
+  },
+  promptInput: {
+    minHeight: 80,
+    paddingTop: 12,
+    borderRadius: 15,
   },
   selectedUsersTitle: {
     fontSize: 16,

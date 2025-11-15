@@ -12,7 +12,20 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from '@/constants/supabase';
 
-export default function MomentSpecifyView({ moment, scrollFunc }: { moment: Moment, scrollFunc: (page: number) => void }) {
+// Add interface for props to include callbacks
+interface MomentSpecifyViewProps {
+  moment: Moment;
+  scrollFunc: (page: number) => void;
+  onImageSelected?: (uri: string, fileName: string) => void;
+  onCaptionChange?: (caption: string) => void;
+}
+
+export default function MomentSpecifyView({
+  moment,
+  scrollFunc,
+  onImageSelected,
+  onCaptionChange
+}: MomentSpecifyViewProps) {
   const src = require('../../assets/images/stack.png');
   const vinylImg = require('../../assets/images/vinyl.png');
   const { width } = useWindowDimensions();
@@ -24,10 +37,21 @@ export default function MomentSpecifyView({ moment, scrollFunc }: { moment: Mome
   const fadeSearch = useRef(new Animated.Value(0)).current;
   const textInputRef = useRef(null);
   const [caption, setCaption] = useState('');
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageFileName, setImageFileName] = useState<string | null>(null);
+
+  const { user } = useAuth();
+  const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
 
   const toggleSearch = () => {
     const toSearch = !isSearchActive;
     setIsSearchActive(toSearch);
+
+
+    // If closing search, trigger the callback with the caption
+    if (!toSearch && onCaptionChange) {
+      onCaptionChange(caption);
+    }
 
     Animated.parallel([
       Animated.timing(fadeCaptionButton, {
@@ -45,33 +69,15 @@ export default function MomentSpecifyView({ moment, scrollFunc }: { moment: Mome
     ]).start();
   };
 
-  const [imageUri, setImageUri] = useState<string | null>(null);
-  const { user, setProfileComplete } = useAuth();
-  const router = useRouter();
-  const nUrl = process.env.EXPO_PUBLIC_NGROK_URL;
-
-  const convertToWebP = async (uri: string): Promise<string | null> => {
-    try {
-      const manipulatedImage = await ImageManipulator.manipulateAsync(
-        uri,
-        [],
-        {
-          compress: 0.8,
-          format: ImageManipulator.SaveFormat.WEBP,
-        }
-      );
-      return manipulatedImage.uri;
-    } catch (err) {
-      console.error('WebP conversion error:', err);
-      Alert.alert('Error', 'Failed to convert image to WebP.');
-      return null;
-    }
-  };
-
   const pickImage = async (): Promise<void> => {
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permissionResult.granted) {
+      if (!user) {
+        Alert.alert('Error', 'You must be signed in to upload an image.');
+        return;
+      }
+
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
         Alert.alert('Permission required', 'Please allow access to your photo library.');
         return;
       }
@@ -85,24 +91,25 @@ export default function MomentSpecifyView({ moment, scrollFunc }: { moment: Mome
 
       if (result.canceled || !result.assets?.length) return;
       const image = result.assets[0];
-      const webpUri = await convertToWebP(image.uri);
-      if (!webpUri) return;
-      setImageUri(webpUri);
 
-      //?
-      const fileName = `user_${user?.id}_profile.webp`;
+      // Compress & convert to WebP
+      const manipulatedImage = await ImageManipulator.manipulateAsync(image.uri, [], {
+        compress: 0.8,
+        format: ImageManipulator.SaveFormat.WEBP,
+      });
+
+      const timestamp = Date.now();
+      const fileName = `user_${user.id}_moment_${timestamp}.webp`;
       const fileType = 'image/webp';
 
-      const uploadUrlRes = await fetch(
-        `${nUrl}/api/upload/presigned-url`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName, fileType }),
-        }
-      );
+      // Get presigned URL
+      const presignRes = await fetch(`${nUrl}/api/upload/presigned-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName, fileType }),
+      });
 
-      const text = await uploadUrlRes.text();
+      const text = await presignRes.text();
       let uploadURL: string | undefined;
       try {
         uploadURL = JSON.parse(text).uploadURL;
@@ -117,13 +124,13 @@ export default function MomentSpecifyView({ moment, scrollFunc }: { moment: Mome
         return;
       }
 
-      const fileData = await fetch(webpUri);
+      // Upload to S3
+      const fileData = await fetch(manipulatedImage.uri);
       const blob = await fileData.blob();
-
       const s3Res = await fetch(uploadURL, {
         method: 'PUT',
         headers: { 'Content-Type': fileType },
-        body: blob,
+        body: blob
       });
 
       if (!s3Res.ok) {
@@ -132,23 +139,19 @@ export default function MomentSpecifyView({ moment, scrollFunc }: { moment: Mome
         return;
       }
 
-      const { error } = await supabase
-        .from('users')
-        .update({ pfp_url: fileName })
-        .eq('id', user?.id);
+      // Store locally for preview & trigger callback with FILENAME ONLY (not full URL)
+      setImageUri(manipulatedImage.uri);
+      setImageFileName(fileName);
+      if (onImageSelected) onImageSelected(fileName, fileName); // Pass fileName, not URI
 
-      if (error) {
-        console.error('Failed to update Supabase:', error);
-        Alert.alert('Database Error', 'Failed to save moment picture.');
-        return;
-      }
-
-      Alert.alert('Success', 'Profile picture uploaded successfully!');
+      Alert.alert('Success', 'Moment image uploaded!');
     } catch (err) {
-      console.error('Unexpected error:', err);
-      Alert.alert('Error', 'Something went wrong while uploading the picture picture.');
+      console.error('Image upload error:', err);
+      Alert.alert('Error', 'Something went wrong while uploading the image.');
     }
   };
+
+
   return (
     <View style={{ width, justifyContent: 'center', alignItems: 'center' }}>
       <SafeAreaView
@@ -197,6 +200,7 @@ export default function MomentSpecifyView({ moment, scrollFunc }: { moment: Mome
                 onChangeText={setCaption}
               />
             </Animated.View>
+
             <Animated.View style={{ opacity: fadeCaptionButton }}>
               <TouchableOpacity style={{ alignItems: 'center' }} onPress={() => toggleSearch()}>
                 <View style={{ position: 'absolute', alignItems: 'center' }}>
@@ -225,8 +229,9 @@ export default function MomentSpecifyView({ moment, scrollFunc }: { moment: Mome
             <View style={{ alignItems: 'center', width: '100%' }}>
               <View style={{ width: '70%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <View style={[{ justifyContent: 'center', alignItems: 'center' }]}>
+                  {/* Show custom image if uploaded, otherwise show album art */}
                   <Image
-                    source={moment.album}
+                    source={imageUri ? { uri: imageUri } : moment.album}
                     style={{ width: '40%', aspectRatio: 1, height: undefined }}
                   />
                   <Image
@@ -236,19 +241,21 @@ export default function MomentSpecifyView({ moment, scrollFunc }: { moment: Mome
                 </View>
               </View>
               <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center', marginTop: 0.6 * bubbleHeight }}>
-                <View style={{ marginLeft: 0.2 * bubbleHeight, maxWidth: '90%' }}>
+                <View style={{ marginLeft: 0.2 * bubbleHeight }}>
                   <Text
-                    style={{
-                      fontSize: 0.6 * bubbleHeight,
-                      fontFamily: 'Lato',
-                      color: '#333C42',
-                      flexShrink: 1,
-                    }}
-                    numberOfLines={1}
+                    style={{ textAlign: 'center', fontSize: 0.6 * bubbleHeight, fontFamily: 'Lato', color: '#333C42' }}
+                    numberOfLines={2}
                     ellipsizeMode="tail"
                   >
                     {moment.title} - {moment.artist}
                   </Text>
+
+                  {/* Show caption if set */}
+                  {caption && (
+                    <Text style={{ fontSize: 0.4 * bubbleHeight, fontFamily: 'Lato', color: '#515f69ff', textAlign: 'center', marginTop: 5 }}>
+                      "{caption}"
+                    </Text>
+                  )}
                 </View>
               </View>
             </View>
@@ -266,8 +273,10 @@ export default function MomentSpecifyView({ moment, scrollFunc }: { moment: Mome
               alignItems: 'center',
               width: '60%',
             }}
-            onPress={() => scrollFunc(2)}
-          >
+            onPress={() => {
+              if (onCaptionChange) onCaptionChange(caption);
+              scrollFunc(2);
+            }}>
             <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10, fontFamily: 'Lato' }}>
               Next
             </Text>

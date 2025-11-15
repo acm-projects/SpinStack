@@ -174,7 +174,7 @@ export default function SearchPage() {
                   const { downloadURL } = await res.json();
                   pfp = downloadURL;
                 }
-              } catch {}
+              } catch { }
             }
             return { ...user, pfp_url: pfp };
           })
@@ -216,7 +216,7 @@ export default function SearchPage() {
           <Text style={styles.placeholderText}>🎵</Text>
         </View>
       )}
-    </Pressable>
+    </View>
   );
 
   const renderUser = ({ item, index }: { item: User; index: number }) => {
@@ -229,7 +229,7 @@ export default function SearchPage() {
         style={styles.songRow}
         onPress={() => router.push(`/profile/${item.id}` as RelativePathString)}
       >
-  
+
         <View style={styles.songInfo}>
           <Text style={styles.songTitle} numberOfLines={1}>
             {displayName}
@@ -237,7 +237,7 @@ export default function SearchPage() {
           <Text numberOfLines={1} ellipsizeMode="tail" style={styles.songArtist}>
             @{item.username}
           </Text>
-          
+
         </View>
         {item.pfp_url ? (
           <Image source={{ uri: item.pfp_url }} style={styles.profilePic} />

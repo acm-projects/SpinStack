@@ -381,6 +381,8 @@ export default function GroupsView({ data }: { data?: GroupInfo[] }) {
 
   const background = require('../../assets/images/groupBackground.png');
 
+  console.log("Hello: " + filteredData.length)
+  console.log(filteredData[0])
   return (
     <ImageBackground source={background} style={styles.backgroundImage}>
       {/* BUBBLES */}
