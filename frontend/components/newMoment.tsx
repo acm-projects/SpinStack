@@ -499,6 +499,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
         {/* Absolutely centered spinning vinyl */}
         <View style={[{
           position: 'absolute',
+          paddingTop: 94,
           width: vinylSize,
           height: vinylSize,
           justifyContent: 'center',
