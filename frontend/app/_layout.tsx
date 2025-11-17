@@ -20,7 +20,9 @@ function RootStack() {
   const { session, loading, profileComplete, checkingProfile } = useAuth(); // Added 'loading' from AuthContext
   const [initialLoading, setInitialLoading] = useState(true);
   const [fontsLoaded] = useFonts({
-    "Luxurious Roman": require("@/fonts/LuxuriousRoman-Regular.ttf"),
+    "Lato": require("@/fonts/Lato-Regular.ttf"),
+    "LatoItalic": require("@/fonts/Lato-Italic.ttf"),
+    "LatoBold": require("@/fonts/Lato-Bold.ttf"),
     "Jacques Francois": require("@/fonts/JacquesFrancois-Regular.ttf"),
   });
 
@@ -42,7 +44,7 @@ function RootStack() {
     } else {
       //router.dismissAll();
       console.log("dismissAll2");
-      router.replace('/(tabs)/profile');
+      router.replace('/signupProcess/spotifyConnect');
     }
   }, [loading, checkingProfile, initialLoading, session, profileComplete, fontsLoaded]);
 
