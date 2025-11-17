@@ -293,16 +293,16 @@ export default function momentProcess() {
         alignItems: 'center'
       }}>
         <View style={{ justifyContent: 'flex-start', alignItems: 'center' }}>
-          <View style={{ width: '95%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginRight:40 }}>
+          <View style={{ width: '95%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
             <View
-              style={{ width: '90%', marginHorizontal: 20, borderWidth: 3, height: 10, borderRadius: 10, position: 'absolute',  }}
+              style={{ width: '90%', marginHorizontal: 30, borderWidth: 3, height: 10, borderRadius: 10, position: 'absolute' }}
               onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}
             >
               {headerWidth > 0 && (
                 <Animated.View
                   style={{
                     height: '100%',
-                    backgroundColor: '#333C42',
+                    backgroundColor: 'black',
                     width: scrollX.interpolate({
                       inputRange: [0, width, 2 * width],
                       outputRange: [0, headerWidth / 2, headerWidth],
@@ -314,13 +314,13 @@ export default function momentProcess() {
               )}
             </View>
 
-            <View style={{ backgroundColor: '#333C42', width: 43, height: 43, justifyContent: 'center', alignItems: 'center', borderRadius: 100, borderWidth: 3 }}>
-              <FontAwesome5 name="music" size={20} color="#FFF0E2" />
+            <View style={{ backgroundColor: 'black', width: 40, height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 100, borderWidth: 3 }}>
+              <FontAwesome5 name="music" size={20} color="#8DD2CA" />
             </View>
-            <View style={{ backgroundColor: '#FFF0E2', width: 43, height: 43, justifyContent: 'center', alignItems: 'center', borderRadius: 100, borderWidth: 3, marginRight:4 }}>
-              <Ionicons name="text" size={20} color="#333C42" />
+            <View style={{ backgroundColor: 'white', width: 40, height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 100, borderWidth: 3 }}>
+              <Ionicons name="text" size={20} color="black" />
             </View>
-            <Image source={src} style={{ width: 43, height: 43 }} />
+            <Image source={src} style={{ width: 40, height: 40 }} />
           </View>
         </View>
       </View>
@@ -367,7 +367,7 @@ export default function momentProcess() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: '#333C42',
+          backgroundColor: 'rgba(0,0,0,0.5)',
           justifyContent: 'center',
           alignItems: 'center'
         }}>

@@ -95,9 +95,9 @@ export default function SignUpPage() {
 
   useEffect(() => {
     if (loading) return;
-    // if (session && !signingUp && !isSigningIn) {
-    //   router.replace("/(tabs)/profile");
-    // }
+    if (session && !signingUp && !isSigningIn) {
+      router.replace("/(tabs)/profile");
+    }
   }, [session, loading, signingUp, isSigningIn]);
 
   const handleSignUp = async () => {
@@ -139,7 +139,6 @@ export default function SignUpPage() {
     Keyboard.dismiss();
     setIsSigningIn(true);
     setSigningUp(false);
-    router.push("/signupProcess/spotifyConnect");
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({

@@ -39,9 +39,6 @@ export default function MomentPickView({
   const clearMoment = useMomentStore((s) => s.clearMoment);
 
 
-  // 🔹 Pulsing animation for Select button (same pattern as Sign Up / Sign In)
-  const selectPulseAnim = useRef(new Animated.Value(1)).current;
-
   // Track current moment to detect changes - use a unique key
   const currentMomentKey = useRef<string | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -91,30 +88,6 @@ export default function MomentPickView({
       }
     };
   }, []);
-
-  // 🔹 Start continuous pulsing animation for Select button
-  useEffect(() => {
-    const createPulse = (animRef: Animated.Value) => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(animRef, {
-            toValue: 1.03,
-            duration: 1000,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(animRef, {
-            toValue: 1,
-            duration: 800,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    };
-
-    createPulse(selectPulseAnim);
-  }, [selectPulseAnim]);
 
   // Cleanup function to stop playback
   const cleanup = React.useCallback(async (cleanupToken: string | null) => {
@@ -636,7 +609,7 @@ export default function MomentPickView({
 
         {/* Title */}
         <View style={{ width: '80%' }}>
-          <Text style={{ fontSize: 30, fontFamily: 'Lato-Bold', textAlign: 'center', color: '#333C42', fontWeight: '700'}}>
+          <Text style={{ fontSize: 30, fontFamily: 'Luxurious Roman', fontWeight: 'bold', textAlign: 'center', color: '#333C42' }}>
             Pick Your Moment
           </Text>
         </View>
@@ -647,7 +620,7 @@ export default function MomentPickView({
             <View style={{ marginLeft: 10, marginTop: -20, marginBottom: 30 }}>
               <Text
                 style={{
-                  fontSize: 20,
+                  fontSize: 16,
                   fontFamily: 'Lato',
                   color: '#333C42',
                   flexShrink: 1,
@@ -658,7 +631,6 @@ export default function MomentPickView({
               >
                 {moment.title} - {moment.artist}
               </Text>
-              
             </View>
             <View style={{ alignItems: 'center', width: '100%' }}>
               <Image
@@ -760,7 +732,6 @@ export default function MomentPickView({
             width: '60%',
             height: 40,
             overflow: 'hidden',
-            marginBottom: -20,
           }}
         >
           <View
@@ -809,31 +780,23 @@ export default function MomentPickView({
           />
         </View>
 
-        {/* Select Button with pulsing animation */}
-        <Animated.View
+        {/* Select Button */}
+        <TouchableOpacity
           style={{
-            transform: [{ scale: selectPulseAnim }],
+            backgroundColor: ((currentDuration) <= MAX_DURATION_SECONDS) ? '#39868F' : '#999',
+            borderRadius: 10,
+            borderWidth: 4,
+            borderColor: '#333C42',
+            alignItems: 'center',
+            marginTop: 0,
             width: '60%',
           }}
+          onPress={handleSelect}
         >
-          <TouchableOpacity
-            style={{
-              backgroundColor: (currentDuration <= MAX_DURATION_SECONDS) ? '#333C42' : '#999',
-              borderRadius: 30,
-              borderWidth: 4,
-              borderColor: '#333C42',
-              alignItems: 'center',
-              marginTop: 0,
-              width: '100%',
-              
-            }}
-            onPress={handleSelect}
-          >
-            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 25, marginVertical: 5, fontFamily: 'Lato' }}>
-              Select
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
+          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 30, marginVertical: 10, fontFamily: 'Lato' }}>
+            Select
+          </Text>
+        </TouchableOpacity>
       </SafeAreaView>
     </View>
   );
