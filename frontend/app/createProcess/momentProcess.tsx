@@ -75,6 +75,8 @@ export default function momentProcess() {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [selectedStackIds, setSelectedStackIds] = useState<string[]>([]);
   const [momentCaption, setMomentCaption] = useState('');
+  const [currentPage, setCurrentPage] = useState(1); // 1 = pick moment, 2 = specify moment (caption, image)
+
 
 
 
@@ -143,7 +145,7 @@ export default function momentProcess() {
           duration: Math.floor(moment.songDuration),
           cover_url: uploadedImageUrl || moment.album.uri || null,
           visibility: true,
-          description: momentCaption // Store artist as description for now
+          description: momentCaption || moment.artist// Store artist as description for now
         }),
       });
 
@@ -337,8 +339,11 @@ export default function momentProcess() {
       >
         <MomentPick
           moment={moment}
-          scrollFunc={goToPage}
+          scrollFunc={goToPage} 
+          currentPage={currentPage}
         />
+
+
         <MomentSpecify
           moment={moment}
           scrollFunc={goToPage}
