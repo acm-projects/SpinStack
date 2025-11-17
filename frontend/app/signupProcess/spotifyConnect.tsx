@@ -185,7 +185,7 @@ export default function SpotifyConnect() {
         }
 
         setIsConnected(true);
-        Alert.alert("Success! 🎉", "Your Spotify account has been connected.");
+        //Alert.alert("Success! 🎉", "Your Spotify account has been connected.");
       } else {
         Alert.alert(
           "Connection Failed",

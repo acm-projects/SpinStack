@@ -585,7 +585,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
             </View>
             <Image source={vinylImg} style={styles.vinylImage} />
           </Animated.View>
-        </TouchableOpacity>
+          </View>
 
 
         <View style={[{ flexDirection: 'row', alignItems: "center", justifyContent: "flex-end", marginBottom: 0.0215053763 * height, marginRight: 0.0348837209 * width }]}>

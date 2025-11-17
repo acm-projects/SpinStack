@@ -152,7 +152,7 @@ export default function SignUpPage() {
         return;
       }
 
-      Alert.alert("Welcome back!", `Signed in as ${data.user?.email}`);
+      //Alert.alert("Welcome back!", `Signed in as ${data.user?.email}`);
     } catch (error) {
       console.error("Sign in error:", error);
       Alert.alert("Error", "Something went wrong. Please try again.");
