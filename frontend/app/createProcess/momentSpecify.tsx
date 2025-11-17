@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, View, Image, Text, TouchableOpacity, useWindowDimensions, Animated, Easing, Alert } from 'react-native';
+import { StyleSheet, View, Image, Text, TouchableOpacity, useWindowDimensions, Animated, Easing, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Moment } from '../../components/momentInfo';
 import Bubble from '../../assets/other/bubble.svg';
@@ -29,6 +29,7 @@ export default function MomentSpecifyView({
   const [isSearchActive, setIsSearchActive] = useState(false);
   const fadeCaptionButton = useRef(new Animated.Value(1)).current;
   const fadeSearch = useRef(new Animated.Value(0)).current;
+  const textInputRef = useRef(null);
   const [caption, setCaption] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
@@ -171,42 +172,73 @@ export default function MomentSpecifyView({
 
           {/* Right Side Bubbles */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: bubbleHeight, paddingLeft: 130, paddingRight: 0 }}>
+            {/* Caption Text Input */}
+            <Animated.View
+              style={{
+                opacity: fadeSearch,
+                position: 'absolute',
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: '#F9DDC3',
+                borderColor: '#2E3337',
+                borderWidth: 2,
+                borderRadius: 3,
+                marginLeft: -.24 * bubbleHeight,
+                marginTop: -1 * bubbleHeight,
+                paddingHorizontal: 0.5 * bubbleHeight,
+                width: 5.5 * bubbleHeight,
+                height: 1 * bubbleHeight,
+              }}
+            >
+              <TouchableOpacity onPress={toggleSearch} style={{ position: 'absolute', right: 0.25 * bubbleHeight }}>
+                <AntDesign name="check" size={bubbleHeight / 2} color="black" />
+              </TouchableOpacity>
+              <TextInput
+                placeholder="Set moment caption:"
+                placeholderTextColor="#515f69ff"
+                style={{ flex: 1, paddingRight: bubbleHeight, fontSize: 16, fontFamily: "Lato" }}
+                autoFocus={false}
+                onEndEditing={toggleSearch}
+                ref={textInputRef}
+                value={caption}
+                onChangeText={setCaption}
+              />
+            </Animated.View>
+
             {/* Comment Bubble */}
             <View style={{ marginRight: 40 }}>
               <Animated.View
-              style={{
-                opacity: fadeCaptionButton,
-                transform: [
-                  { translateY: floatY(commentBubbleAnim, 6) },
-                  { translateX: floatX(commentBubbleAnim, 3) },
-                ],
-              }}
-            >
-              <TouchableOpacity onPress={toggleSearch} style={{ alignItems: 'center' }}>
-                <Bubble width={1.5 * bubbleHeight} height={1.5 * bubbleHeight} />
-                <AntDesign name="comment" size={0.53333 * 1.5 * bubbleHeight} color="black" style={{ position: 'absolute', top: '25%' }} />
-              </TouchableOpacity>
-            </Animated.View>
+                style={{
+                  opacity: fadeCaptionButton,
+                  transform: [
+                    { translateY: floatY(commentBubbleAnim, 6) },
+                    { translateX: floatX(commentBubbleAnim, 3) },
+                  ],
+                }}
+              >
+                <TouchableOpacity onPress={toggleSearch} style={{ alignItems: 'center' }}>
+                  <Bubble width={1.5 * bubbleHeight} height={1.5 * bubbleHeight} />
+                  <AntDesign name="comment" size={0.53333 * 1.5 * bubbleHeight} color="black" style={{ position: 'absolute', top: '25%' }} />
+                </TouchableOpacity>
+              </Animated.View>
             </View>
-            
 
             {/* Image Bubble */}
             <View style={{ marginLeft: -95, paddingTop: 120 }}>
               <Animated.View
-              style={{
-                transform: [
-                  { translateY: floatY(imageBubbleAnim, 8) },
-                  { translateX: floatX(imageBubbleAnim, 4) },
-                ],
-              }}
-            >
-              <TouchableOpacity onPress={pickImage} style={{ alignItems: 'center' }}>
-                <Bubble width={2 * bubbleHeight} height={2 * bubbleHeight} />
-                <EvilIcons name="image" size={0.8 * 2 * bubbleHeight} color="black" style={{ position: 'absolute', top: '20%' }} />
-              </TouchableOpacity>
-            </Animated.View>
+                style={{
+                  transform: [
+                    { translateY: floatY(imageBubbleAnim, 8) },
+                    { translateX: floatX(imageBubbleAnim, 4) },
+                  ],
+                }}
+              >
+                <TouchableOpacity onPress={pickImage} style={{ alignItems: 'center' }}>
+                  <Bubble width={2 * bubbleHeight} height={2 * bubbleHeight} />
+                  <EvilIcons name="image" size={0.8 * 2 * bubbleHeight} color="black" style={{ position: 'absolute', top: '20%' }} />
+                </TouchableOpacity>
+              </Animated.View>
             </View>
-            
           </View>
         </View>
 
