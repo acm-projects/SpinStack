@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { StyleSheet, Text, View, Image, Easing, Animated, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, Image, Easing, Animated, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useWindowDimensions } from 'react-native';
 import Waveform from './waveform';
@@ -82,10 +82,17 @@ export default function MomentView({ data }: { data: MomentInfo }) {
 
 
   // Vinyl animation loop
+  const animationRef = useRef<Animated.CompositeAnimation | null>(null);
+
   useEffect(() => {
-    let loop: Animated.CompositeAnimation | null = null;
     if (isPlaying) {
-      loop = Animated.loop(
+      // Stop any existing animation first
+      if (animationRef.current) {
+        animationRef.current.stop();
+      }
+
+      // Create and start new loop
+      animationRef.current = Animated.loop(
         Animated.timing(spinAnim, {
           toValue: 1,
           duration: 2000,
@@ -94,13 +101,20 @@ export default function MomentView({ data }: { data: MomentInfo }) {
         })
       );
 
-      loop.start();
+      animationRef.current.start();
     } else {
-      spinAnim.stopAnimation();
+      // Stop animation when paused
+      if (animationRef.current) {
+        animationRef.current.stop();
+        animationRef.current = null;
+      }
     }
 
     return () => {
-      loop?.stop?.();
+      if (animationRef.current) {
+        animationRef.current.stop();
+        animationRef.current = null;
+      }
     };
   }, [isPlaying]);
 
@@ -328,6 +342,62 @@ export default function MomentView({ data }: { data: MomentInfo }) {
     }
   };
 
+  const resumePlayback = async (spotifyToken: string) => {
+    try {
+      await api(spotifyToken, "/me/player/play", { method: "PUT" });
+      console.log("▶️ Playback resumed");
+    } catch (error) {
+      console.error("Error resuming playback:", error);
+    }
+  };
+
+  const togglePlayPause = async () => {
+    if (!token) return;
+
+    if (isPlaying) {
+      await pausePlayback(token);
+      setIsPlaying(false);
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    } else {
+      await resumePlayback(token);
+      setIsPlaying(true);
+
+      // Restart polling loop
+      const startMs = Math.floor(data.moment.songStart * 1000);
+      const endMs = Math.floor((data.moment.songStart + data.moment.songDuration) * 1000);
+
+      if (pollingRef.current) clearInterval(pollingRef.current);
+
+      pollingRef.current = setInterval(async () => {
+        if (!isActiveRef.current) {
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+          return;
+        }
+
+        try {
+          const playbackRes = await api(token, "/me/player");
+          if (playbackRes.status === 204 || !playbackRes.ok) return;
+
+          const playbackData = await playbackRes.json();
+          const pos = playbackData.progress_ms ?? 0;
+
+          if (pos > endMs || pos < startMs) {
+            console.log(`🔁 Looping back to start`);
+            await seekTo(token, startMs);
+          }
+        } catch (error) {
+          console.error("Error in playback loop:", error);
+        }
+      }, 500);
+    }
+  };
+
   // --- Main playback logic ---
   const startPlayback = async (spotifyToken: string) => {
     if (!isActiveRef.current) {
@@ -496,14 +566,18 @@ export default function MomentView({ data }: { data: MomentInfo }) {
           </View>
         </View>
 
-        {/* Absolutely centered spinning vinyl */}
-        <View style={[{
-          position: 'absolute',
-          width: vinylSize,
-          height: vinylSize,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }, vinylStyle]}>
+        {/* Absolutely centered spinning vinyl - now tappable */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={togglePlayPause}
+          style={[{
+            position: 'absolute',
+            width: vinylSize,
+            height: vinylSize,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }, vinylStyle]}
+        >
           <Animated.View style={[styles.vinylWrapper, { transform: [{ rotate: spin }] }]}>
             <View style={styles.vinylContent}>
               <Image
@@ -514,7 +588,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
             </View>
             <Image source={vinylImg} style={styles.vinylImage} />
           </Animated.View>
-        </View>
+        </TouchableOpacity>
 
 
         <View style={[{ flexDirection: 'row', alignItems: "center", justifyContent: "flex-end", marginBottom: 0.0215053763 * height, marginRight: 0.0348837209 * width }]}>

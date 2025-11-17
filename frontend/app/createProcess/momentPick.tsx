@@ -7,6 +7,7 @@ import Feather from '@expo/vector-icons/Feather';
 import * as SecureStore from 'expo-secure-store';
 import { useProgressAnimation } from "../progressAnimation";
 import { useFocusEffect } from '@react-navigation/native';
+import { useMomentStore } from '../stores/useMomentStore';
 
 const MAX_DURATION_SECONDS = 30;
 const API_BASE = "https://api.spotify.com/v1";
@@ -22,9 +23,11 @@ type Device = {
 export default function MomentPickView({
   moment,
   scrollFunc,
+  currentPage,
 }: {
   moment: Moment;
   scrollFunc: (page: number) => void;
+  currentPage: number;
 }) {
   const src = require('../../assets/images/stack.png');
   const { width } = useWindowDimensions();
@@ -33,6 +36,8 @@ export default function MomentPickView({
   //----------Spotify integration ----------------------
   const [token, setToken] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const clearMoment = useMomentStore((s) => s.clearMoment);
+
 
   // Track current moment to detect changes - use a unique key
   const currentMomentKey = useRef<string | null>(null);
@@ -110,78 +115,61 @@ export default function MomentPickView({
     setIsPlaying(false);
   }, []);
 
-  // Detect moment changes and cleanup immediately
   useEffect(() => {
-    if (!moment?.id) return;
+    if (!moment?.spotifyId) return;
 
-    const newMomentKey = getMomentKey(moment);
+    const newMomentKey = `${moment.spotifyId}_${moment.songStart}_${moment.songDuration}`;
     const momentChanged = currentMomentKey.current !== null && currentMomentKey.current !== newMomentKey;
 
     if (momentChanged) {
-      console.log(`🔄 Moment changed from ${currentMomentKey.current} to ${newMomentKey}`);
-      console.log(`   Title: ${moment.title}, Start: ${moment.songStart}, Duration: ${moment.songDuration}`);
-
-      // IMMEDIATELY stop playback and clear intervals
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-
+      // Stop playback only if the actual song changed
+      if (pollingRef.current) clearInterval(pollingRef.current);
       setIsPlaying(false);
 
-      // Pause playback asynchronously
-      if (token) {
-        pausePlayback(token).catch(console.error);
-      }
+      if (token) pausePlayback(token).catch(console.error);
 
-      // Reset flags for new moment
       cleanupExecutedRef.current = false;
       isActiveRef.current = false;
     }
 
-    // Update current moment key
     currentMomentKey.current = newMomentKey;
-  }, [moment?.id, moment?.songStart, moment?.songDuration, token]);
+  }, [moment?.spotifyId, moment?.songStart, moment?.songDuration, token]);
 
-  // Handle focus/unfocus with proper cleanup
+
   useFocusEffect(
     React.useCallback(() => {
-      const momentKey = moment ? getMomentKey(moment) : null;
-      console.log("🎧 MomentView focused for:", moment?.title, "Key:", momentKey);
+      if (!moment?.id || currentPage > 1) {
+        // Skip effect if we're past page 1
+        return;
+      }
+
+      const momentKey = getMomentKey(moment);
+      console.log("🎧 MomentView focused for:", moment.title, "Key:", momentKey);
       isActiveRef.current = true;
 
-      // Only reset cleanup flag if this is truly a new focus (not just re-render)
       if (cleanupExecutedRef.current) {
         cleanupExecutedRef.current = false;
       }
 
       let startTimeout: NodeJS.Timeout | null = null;
 
-      // ✅ Only start playback if token exists and moment exists
-      // Duration validation happens inside startPlayback
-      if (token && moment?.id) {
-        // Wait longer for cleanup and devices to be ready
+      if (token) {
         startTimeout = setTimeout(async () => {
           if (isActiveRef.current && !cleanupExecutedRef.current) {
-            console.log("🎯 Starting playback after delay for:", moment.title);
-            console.log("   Start time:", moment.songStart, "Duration:", moment.songDuration);
+            console.log("🎯 Starting playback for:", moment.title);
             await startPlayback(token);
           }
         }, 800);
       }
 
       return () => {
-        console.log("🛑 MomentView unfocused from:", moment?.title);
-
-        if (startTimeout) {
-          clearTimeout(startTimeout);
-        }
-
-        // CRITICAL: Actually call cleanup when losing focus
+        console.log("🛑 MomentView unfocused from:", moment.title);
+        if (startTimeout) clearTimeout(startTimeout);
         cleanup(token);
       };
-    }, [token, moment?.id, moment?.songStart, moment?.songDuration, moment?.title, cleanup])
+    }, [token, moment?.id, moment?.songStart, moment?.songDuration, cleanup, currentPage])
   );
+
 
   // --- Spotify API helpers ---
   const api = async (spotifyToken: string, path: string, init?: RequestInit) => {
@@ -588,18 +576,26 @@ export default function MomentPickView({
     }
   }, [mEnd, waveWidth]);
 
-  // Handle select button
-  const handleSelect = () => {
+  const handleSelect = async () => {
     if (!(currentDuration <= MAX_DURATION_SECONDS)) {
-      Alert.alert('Duration Too Long', `Please select a moment that is ${MAX_DURATION_SECONDS} seconds or less.`);
+      Alert.alert(
+        'Duration Too Long',
+        `Please select a moment that is ${MAX_DURATION_SECONDS} seconds or less.`
+      );
       return;
     }
 
     // Update moment with new values
     moment.songStart = mStart * moment.length;
     moment.songDuration = (mEnd - mStart) * moment.length;
+
+    // Wait for playback to stop before scrolling
+    if (token) await pausePlayback(token);
+
+    // Scroll to next page
     scrollFunc(1);
   };
+
 
   const [barWidth, setBarWidth] = useState(0);
   const barFactor = 180 / currentDuration;
