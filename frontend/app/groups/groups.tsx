@@ -108,17 +108,17 @@ export default function GroupsView({ data }: { data?: GroupInfo[] }) {
   const { width, height } = Dimensions.get('window');
   const bubbleCount = 25;
   const bubbles = useRef(
-  Array.from({ length: bubbleCount }).map(() => {
-    const size = Math.random() * 12 + 8;
-    return {
-      anim: new Animated.Value(Math.random() * height),
-      left: Math.random() * (width - size), // adjust for size
-      size,
-      delay: Math.random() * 4000,
-      speed: 6000 + Math.random() * 4000,
-    };
-  })
-).current;
+    Array.from({ length: bubbleCount }).map(() => {
+      const size = Math.random() * 12 + 8;
+      return {
+        anim: new Animated.Value(Math.random() * height),
+        left: Math.random() * (width - size), // adjust for size
+        size,
+        delay: Math.random() * 4000,
+        speed: 6000 + Math.random() * 4000,
+      };
+    })
+  ).current;
 
 
   useEffect(() => {
@@ -476,8 +476,7 @@ export default function GroupsView({ data }: { data?: GroupInfo[] }) {
               <GroupRow
                 item={item}
                 onPress={() => {
-                  setSelectedGroup(item);
-                  router.push({ pathname: '/groups/group' });
+                  router.push({ pathname: '/dailyProcess/demoDaily' });
                 }}
               />
             )}

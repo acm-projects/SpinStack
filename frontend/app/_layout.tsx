@@ -34,7 +34,7 @@ function RootStack() {
     if (loading || checkingProfile || initialLoading || !fontsLoaded) return;
 
     if (!session) {
-      router.dismissAll();
+      //router.dismissAll();
       console.log("dismissAll1");
       router.replace('/signupProcess/signupPage');
     } else if (!profileComplete) {
