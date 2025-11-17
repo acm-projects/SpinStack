@@ -566,15 +566,19 @@ export default function MomentView({ data }: { data: MomentInfo }) {
           </View>
         </View>
 
-        {/* Absolutely centered spinning vinyl */}
-        <View style={[{
-          position: 'absolute',
-          paddingTop: 94,
-          width: vinylSize,
-          height: vinylSize,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }, vinylStyle]}>
+        {/* Absolutely centered spinning vinyl - now tappable */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={togglePlayPause}
+          style={[{
+            position: 'absolute',
+            width: vinylSize,
+            height: vinylSize,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginTop: 45
+          }, vinylStyle]}
+        >
           <Animated.View style={[styles.vinylWrapper, { transform: [{ rotate: spin }] }]}>
             <View style={styles.vinylContent}>
               <Image
@@ -585,7 +589,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
             </View>
             <Image source={vinylImg} style={styles.vinylImage} />
           </Animated.View>
-          </View>
+        </TouchableOpacity>
 
 
         <View style={[{ flexDirection: 'row', alignItems: "center", justifyContent: "flex-end", marginBottom: 0.0215053763 * height, marginRight: 0.0348837209 * width }]}>
