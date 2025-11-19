@@ -759,7 +759,7 @@ export default function ProfileScreen() {
                 contentContainerStyle={{ paddingBottom: 100 }}
                 renderItem={({ item }) => (
                   <Pressable
-                    style={{ flex: 1, margin: 6, alignItems: "center" }}
+                    style={{ flex: 1, margin: 6, alignItems: "center",  }}
                     onPress={() => handleMomentPress(item)}
                   >
                     <Image
@@ -768,7 +768,9 @@ export default function ProfileScreen() {
                         width: Dimensions.get("window").width / 2 - 24,
                         height: Dimensions.get("window").width / 2 - 24,
                         borderRadius: 20,
-                        backgroundColor: "#eaeaea",
+                        backgroundColor: "transparent",
+                        paddingHorizontal: 5
+        
                       }}
                       resizeMode="cover"
                     />

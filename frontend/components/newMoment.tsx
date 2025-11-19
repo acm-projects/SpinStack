@@ -552,14 +552,14 @@ export default function MomentView({ data }: { data: MomentInfo }) {
             </View>
           </View>
           <View style={{ marginLeft: '2.3255814%' }}>
-            <Text style={[styles.texxt, { fontFamily: 'Luxurious Roman' }]}>{data.moment.title}</Text>
-            <Text style={[styles.texxt, { fontSize: 15, fontFamily: 'Jacques Francois' }]}>
+            <Text style={[styles.texxt, { fontFamily: 'Lato' }]}>{data.moment.title}</Text>
+            <Text style={[styles.texxt, { fontSize: 15, fontFamily: 'Lato' }]}>
               {artist || "Unknown Artist"}
             </Text>
             <Text style={[styles.texxt, { fontSize: 13, color: '#555', marginTop: 2 }]}>
               {`${formatTime(data.moment.songStart)} - ${formatTime(data.moment.songStart + data.moment.songDuration)}`}
             </Text>
-            <Text style={[styles.texxt, { fontSize: 15, fontFamily: 'Jacques Francois' }]}>
+            <Text style={[styles.texxt, { fontSize: 15, fontFamily: 'Lato' }]}>
               {data.moment.description}
             </Text>
 
@@ -576,7 +576,7 @@ export default function MomentView({ data }: { data: MomentInfo }) {
             height: vinylSize,
             justifyContent: 'center',
             alignItems: 'center',
-            marginTop: 45
+            marginTop: 26
           }, vinylStyle]}
         >
           <Animated.View style={[styles.vinylWrapper, { transform: [{ rotate: spin }] }]}>
